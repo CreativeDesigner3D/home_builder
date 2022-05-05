@@ -226,6 +226,17 @@ class home_builder_OT_update_materials_for_pointer(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_disconnect_constraint(bpy.types.Operator):
+    bl_idname = "home_builder.disconnect_constraint"
+    bl_label = "Disconnect Constraint"
+    
+    obj_name: bpy.props.StringProperty(name="Base Point Name")
+
+    def execute(self, context):
+        obj = bpy.data.objects[self.obj_name]
+        obj.constraints.clear()
+        return {'FINISHED'}
+
 
 classes = (
     home_builder_OT_about_home_builder,
@@ -234,6 +245,7 @@ classes = (
     home_builder_OT_show_library_material_pointers,
     home_builder_OT_assign_material_to_pointer,
     home_builder_OT_update_materials_for_pointer,
+    home_builder_OT_disconnect_constraint,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

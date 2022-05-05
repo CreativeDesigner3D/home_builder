@@ -494,6 +494,320 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
         row.operator('home_builder.add_room_light',text='Add Room Light',icon='LIGHT_SUN')
         row.operator('home_builder.draw_floor_plane',text='Add Floor',icon='MESH_PLANE')
 
+
+class home_builder_OT_draw_floor_plane(bpy.types.Operator):
+    bl_idname = "home_builder.draw_floor_plane"
+    bl_label = "Draw Floor Plane"
+    bl_options = {'UNDO'}
+    
+    def create_floor_mesh(self,name,size):
+        
+        verts = [(0.0, 0.0, 0.0),
+                (0.0, size[1], 0.0),
+                (size[0], size[1], 0.0),
+                (size[0], 0.0, 0.0),
+                ]
+
+        faces = [(0, 1, 2, 3),
+                ]
+
+        return pc_utils.create_object_from_verts_and_faces(verts,faces,name)
+
+    def execute(self, context):
+        largest_x = 0
+        largest_y = 0
+        smallest_x = 0
+        smallest_y = 0
+        overhang = pc_unit.inch(6)
+        wall_assemblies = []
+        wall_bps = []
+        for obj in context.visible_objects:
+            if obj.parent and 'IS_WALL_BP' in obj.parent and obj.parent not in wall_bps:
+                wall_bps.append(obj.parent)
+                wall_assemblies.append(pc_types.Assembly(obj.parent))
+            
+        for assembly in wall_assemblies:
+            start_point = (assembly.obj_bp.matrix_world[0][3],assembly.obj_bp.matrix_world[1][3],0)
+            end_point = (assembly.obj_x.matrix_world[0][3],assembly.obj_x.matrix_world[1][3],0)
+
+            if start_point[0] > largest_x:
+                largest_x = start_point[0]
+            if start_point[1] > largest_y:
+                largest_y = start_point[1]
+            if start_point[0] < smallest_x:
+                smallest_x = start_point[0]
+            if start_point[1] < smallest_y:
+                smallest_y = start_point[1]
+            if end_point[0] > largest_x:
+                largest_x = end_point[0]
+            if end_point[1] > largest_y:
+                largest_y = end_point[1]
+            if end_point[0] < smallest_x:
+                smallest_x = end_point[0]
+            if end_point[1] < smallest_y:
+                smallest_y = end_point[1]
+
+        loc = (smallest_x - overhang, smallest_y - overhang,0)
+        width = math.fabs(smallest_y) + math.fabs(largest_y) + (overhang*2)
+        length = math.fabs(largest_x) + math.fabs(smallest_x) + (overhang*2)
+        if width == 0:
+            width = pc_unit.inch(-48)
+        if length == 0:
+            length = pc_unit.inch(-48)
+        obj_plane = self.create_floor_mesh('Floor',(length,width,0.0))
+        context.view_layer.active_layer_collection.collection.objects.link(obj_plane)
+        obj_plane.location = loc
+        hb_utils.unwrap_obj(context,obj_plane)
+        # home_builder_pointers.assign_pointer_to_object(obj_plane,"Floor")
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.flip_normals()
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.object.select_all(action='DESELECT')
+        obj_plane["PROMPT_ID"] = "home_builder.floor_prompts"
+
+        #SET CONTEXT
+        context.view_layer.objects.active = obj_plane
+        
+        return {'FINISHED'}
+
+
+class home_builder_OT_add_room_light(bpy.types.Operator):
+    bl_idname = "home_builder.add_room_light"
+    bl_label = "Add Room Light"
+    bl_options = {'UNDO'}
+    
+    def execute(self, context):
+        largest_x = 0
+        largest_y = 0
+        smallest_x = 0
+        smallest_y = 0
+        wall_groups = []
+        height = 0
+
+        wall_assemblies = []
+        wall_bps = []
+        for obj in context.visible_objects:
+            if obj.parent and 'IS_WALL_BP' in obj.parent and obj.parent not in wall_bps:
+                wall_bps.append(obj.parent)
+                wall_assemblies.append(pc_types.Assembly(obj.parent))
+
+        for assembly in wall_assemblies:
+            start_point = (assembly.obj_bp.matrix_world[0][3],assembly.obj_bp.matrix_world[1][3],0)
+            end_point = (assembly.obj_x.matrix_world[0][3],assembly.obj_x.matrix_world[1][3],0)
+            height = assembly.obj_z.location.z
+            
+            if start_point[0] > largest_x:
+                largest_x = start_point[0]
+            if start_point[1] > largest_y:
+                largest_y = start_point[1]
+            if start_point[0] < smallest_x:
+                smallest_x = start_point[0]
+            if start_point[1] < smallest_y:
+                smallest_y = start_point[1]
+            if end_point[0] > largest_x:
+                largest_x = end_point[0]
+            if end_point[1] > largest_y:
+                largest_y = end_point[1]
+            if end_point[0] < smallest_x:
+                smallest_x = end_point[0]
+            if end_point[1] < smallest_y:
+                smallest_y = end_point[1]
+
+        x = (math.fabs(largest_x) - math.fabs(smallest_x))/2
+        y = (math.fabs(largest_y) - math.fabs(smallest_y))/2
+        z = height - pc_unit.inch(.01)
+        
+        width = math.fabs(smallest_y) + math.fabs(largest_y)
+        length = math.fabs(largest_x) + math.fabs(smallest_x)
+        if width == 0:
+            width = pc_unit.inch(-48)
+        if length == 0:
+            length = pc_unit.inch(-48)
+
+        bpy.ops.object.light_add(type = 'AREA')
+        obj_lamp = context.active_object
+        obj_lamp.location.x = x
+        obj_lamp.location.y = y
+        obj_lamp.location.z = z
+        obj_lamp.data.shape = 'RECTANGLE'
+        obj_lamp.data.size = length + pc_unit.inch(20)
+        obj_lamp.data.size_y = math.fabs(width) + pc_unit.inch(20)
+        obj_lamp.data.energy = 120
+        obj_lamp["PROMPT_ID"] = "home_builder.light_prompts"
+        return {'FINISHED'}
+
+
+
+class home_builder_OT_light_prompts(bpy.types.Operator):
+    bl_idname = "home_builder.light_prompts"
+    bl_label = "Light Prompts"
+    
+    def check(self, context):
+        return True
+
+    def invoke(self,context,event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=350)
+        
+    def draw(self, context):
+        layout = self.layout
+        obj = context.object
+        light = obj.data
+        box = layout.box()
+        row = box.row()
+        row.prop(light, "type",expand=True)
+        row = box.row()
+        row.label(text="Color")
+        row.prop(light, "color",text="")
+        row = box.row()
+        row.label(text="Energy")
+        row.prop(light, "energy",text="")
+        row = box.row()
+        row.label(text="Specular")
+        row.prop(light, "specular_factor", text="")
+        row = box.row()
+        row.prop(light, "use_custom_distance", text="Use Custom Distance")
+        if light.use_custom_distance:
+            row.prop(light,"cutoff_distance",text="Distance")
+
+        if light.type in {'POINT', 'SPOT', 'SUN'}:
+            row = box.row()
+            row.label(text="Radius")            
+            row.prop(light, "shadow_soft_size", text="")
+        elif light.type == 'AREA':
+            box = layout.box()
+            row = box.row()
+            row.label(text="Shape:")
+            row.prop(light, "shape",expand=True)
+
+            sub = box.column(align=True)
+
+            if light.shape in {'SQUARE', 'DISK'}:
+                row = sub.row(align=True)
+                row.label(text="Size:")     
+                row.prop(light, "size",text="")
+            elif light.shape in {'RECTANGLE', 'ELLIPSE'}:
+                row = sub.row(align=True)
+                row.label(text="Size:")
+
+                row.prop(light, "size", text="X")
+                row.prop(light, "size_y", text="Y")
+        
+        if light.type == 'SPOT':
+            box = layout.box()
+            row = box.row()        
+            row.label(text="Spot Size:")    
+            row.prop(light, "spot_size", text="")
+            row = box.row()        
+            row.label(text="Spot Blend:")                
+            row.prop(light, "spot_blend", text="", slider=True)
+
+            box.prop(light, "show_cone")            
+
+        box = layout.box()
+        box.prop(light, "use_shadow", text="Use Shadows")
+        box.active = light.use_shadow
+
+        col = box.column()
+        row = col.row(align=True)
+        row.label(text="Clip:")
+        row.prop(light, "shadow_buffer_clip_start", text="Start")
+        if light.type == 'SUN':
+            row.prop(light, "shadow_buffer_clip_end", text="End")
+
+        # row = col.row(align=True)
+        # row.label(text="Softness:")
+        # row.prop(light, "shadow_buffer_soft", text="")
+
+        # col.separator()
+
+        # row = col.row(align=True)
+        # row.label(text="Bias:")
+        # row.prop(light, "shadow_buffer_bias", text="")
+        # row = col.row(align=True)
+        # row.label(text="Bleed Bias:")        
+        # row.prop(light, "shadow_buffer_bleed_bias", text="")        
+        # row = col.row(align=True)
+        # row.label(text="Exponent:")        
+        # row.prop(light, "shadow_buffer_exp", text="")
+
+        # col.separator()
+
+        # col.prop(light, "use_contact_shadow", text="Use Contact Shadows")
+        # if light.use_shadow and light.use_contact_shadow:
+        #     col = box.column()
+        #     row = col.row(align=True)
+        #     row.label(text="Distance:")  
+        #     row.prop(light, "contact_shadow_distance", text="")
+        #     row = col.row(align=True)
+        #     row.label(text="Softness:")  
+        #     row.prop(light, "contact_shadow_soft_size", text="")
+        #     row = col.row(align=True)
+        #     row.label(text="Bias:")          
+        #     row.prop(light, "contact_shadow_bias", text="")
+        #     row = col.row(align=True)
+        #     row.label(text="Thickness:")          
+        #     row.prop(light, "contact_shadow_thickness", text="")
+
+        # if light.type == 'SUN' and light.use_shadow:
+        #     box = layout.box()
+        #     box.label(text="Sun Shadow Settings")
+        #     row = box.row(align=True)
+        #     row.label(text="Cascade Count:")                
+        #     row.prop(light, "shadow_cascade_count", text="")
+        #     row = box.row(align=True)
+        #     row.label(text="Fade:")                 
+        #     row.prop(light, "shadow_cascade_fade", text="")
+
+        #     row = box.row(align=True)
+        #     row.label(text="Max Distance:")      
+        #     row.prop(light, "shadow_cascade_max_distance", text="")
+        #     row = box.row(align=True)
+        #     row.label(text="Distribution:")                  
+        #     row.prop(light, "shadow_cascade_exponent", text="")
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
+class home_builder_OT_floor_prompts(bpy.types.Operator):
+    bl_idname = "home_builder.floor_prompts"
+    bl_label = "Floor Prompts"
+    
+    mapping_node = None
+
+    def check(self, context):
+        return True
+
+    def invoke(self,context,event):
+        self.mapping_node = None
+        floor = context.object
+        for slot in floor.material_slots:
+            mat = slot.material
+            if mat:
+                for node in mat.node_tree.nodes:
+                    if node.type == 'MAPPING':
+                        self.mapping_node = node
+
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=150)
+        
+    def draw(self, context):
+        layout = self.layout
+        box = layout.box()
+        col = box.column()
+        if self.mapping_node:
+            col.label(text="Texture Mapping")
+            col.prop(self.mapping_node.inputs[1],'default_value',text="Location")
+            col.prop(self.mapping_node.inputs[2],'default_value',text="Rotation")
+            col.prop(self.mapping_node.inputs[3],'default_value',text="Scale")
+        else:
+            col.label(text="No Material Found")
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
 class HOMEBUILDER_MT_wall_menu(bpy.types.Menu):
     bl_label = "Wall Commands"
 
@@ -522,6 +836,10 @@ class HOMEBUILDER_MT_wall_menu(bpy.types.Menu):
 classes = (
     home_builder_OT_wall_prompts,
     home_builder_OT_draw_multiple_walls,
+    home_builder_OT_draw_floor_plane,
+    home_builder_OT_add_room_light,
+    home_builder_OT_light_prompts,
+    home_builder_OT_floor_prompts,
     HOMEBUILDER_MT_wall_menu
 )
 

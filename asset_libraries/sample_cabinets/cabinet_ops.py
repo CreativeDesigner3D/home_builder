@@ -26,11 +26,6 @@ class hb_sample_cabinets_OT_active_cabinet_library(bpy.types.Operator):
     asset_name: StringProperty(name="Asset Name")
 
     def execute(self, context):
-        workspace = context.workspace
-        wm = context.window_manager
-        asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]
-        cabinet = eval("cabinet_library." + asset.file_data.name.replace(" ","_") + "()")
-        cabinet.draw()      
         return {'FINISHED'}
 
 
