@@ -126,11 +126,6 @@ def load_library(dummy):
 class Home_Builder_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    assets_filepath: bpy.props.StringProperty(
-        name="Assets Filepath",
-        subtype='FILE_PATH',
-    )
-
     auto_check_update: bpy.props.BoolProperty(
         name="Auto-check for Update",
         description="If enabled, auto-check for updates using an interval",
@@ -165,7 +160,6 @@ class Home_Builder_AddonPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, "assets_filepath")
         addon_updater_ops.update_settings_ui(self, context)
 
 def register():
