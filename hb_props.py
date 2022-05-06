@@ -23,11 +23,14 @@ def update_library_tab(self,context):
     prefs = context.preferences
     asset_lib = prefs.filepaths.asset_libraries.get('home_builder_library')
     library = hb_utils.get_active_library(context)
-    asset_lib.path = library.library_path
+    if library:
+        asset_lib.path = library.library_path
 
-    for workspace in bpy.data.workspaces:
-        workspace.asset_library_ref = "home_builder_library"
-    bpy.ops.asset.library_refresh()
+        for workspace in bpy.data.workspaces:
+            workspace.asset_library_ref = "home_builder_library"
+        
+        if bpy.ops.asset.library_refresh.poll():
+            bpy.ops.asset.library_refresh()
 
 
 class Material_Pointer(PropertyGroup):
