@@ -4,7 +4,6 @@ import time
 import math
 import inspect
 from pc_lib import pc_utils, pc_unit
-from . import hb_placement_utils
 from . import hb_utils
 from .walls import wall_library
 

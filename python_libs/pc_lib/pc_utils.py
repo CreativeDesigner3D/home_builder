@@ -7,8 +7,6 @@ import math, random
 import bmesh
 import inspect
 
-
-
 def get_wm_props(window_manager):
     return window_manager.pyclone
 
@@ -350,20 +348,6 @@ def get_selection_point(context, region, event, ray_max=10000.0, objects=None, f
                         best_norm = normal
 
     return best_hit, best_obj, best_norm    
-
-def get_drivers(obj):
-    """ This gets all the drivers on an object
-    """
-    drivers = []
-    if obj.animation_data:
-        for driver in obj.animation_data.drivers:
-            drivers.append(driver)
-
-    if obj.data and obj.data.animation_data:
-        for driver in obj.data.animation_data.drivers:
-            drivers.append(driver)
-
-    return drivers
 
 def get_bp_by_tag(obj,tag):  
     if not obj:
