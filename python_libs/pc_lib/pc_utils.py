@@ -357,6 +357,34 @@ def get_bp_by_tag(obj,tag):
     elif obj.parent:
         return get_bp_by_tag(obj.parent,tag)   
 
+def update_id_props(obj,parent_obj):
+    if "PROMPT_ID" in parent_obj:
+        obj["PROMPT_ID"] = parent_obj["PROMPT_ID"]
+    if "MENU_ID" in parent_obj:
+        obj["MENU_ID"] = parent_obj["MENU_ID"]   
+
+def event_is_place_asset(event):
+    if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+        return True
+    elif event.type == 'NUMPAD_ENTER' and event.value == 'PRESS':
+        return True
+    elif event.type == 'RET' and event.value == 'PRESS':
+        return True
+    else:
+        return False
+
+def event_is_cancel_command(event):
+    if event.type in {'RIGHTMOUSE', 'ESC'}:
+        return True
+    else:
+        return False
+
+def event_is_pass_through(event):
+    if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+        return True
+    else:
+        return False
+
 def get_object(path):
     if os.path.exists(path):
 

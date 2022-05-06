@@ -87,6 +87,8 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row.scale_y = 1.3                 
                 row.menu('HOME_BUILDER_MT_door_window_library',text=library.name)                
                 self.draw_library(col,context,library)
+                if library.library_menu_ui != '':
+                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')                
      
         if hb_scene.library_tabs == 'DECORATIONS':
             col.separator()
