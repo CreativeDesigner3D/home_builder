@@ -109,8 +109,6 @@ def draw_driver(layout,obj,driver):
         props.data_path = driver.data_path
         props.array_index = driver.array_index
 
-
-
     draw_driver_variables(box,obj,driver)   
 
 def draw_driver_variables(layout,obj,driver):
@@ -149,30 +147,3 @@ def draw_driver_variables(layout,obj,driver):
                 row.label(text="Value: " + str(value))
             elif type(value).__name__ == 'bool':
                 row.label(text="Value: " + str(value))  
-
-def update_file_browser_path(context,path):
-    for area in context.screen.areas:
-        if area.type == 'FILE_BROWSER':
-            for space in area.spaces:
-                if space.type == 'FILE_BROWSER':
-                    params = space.params
-                    params.directory = str.encode(path)
-                    if not context.screen.show_fullscreen:
-                        params.use_filter = True
-                        params.display_type = 'THUMBNAIL'
-                        params.use_filter_movie = False
-                        params.use_filter_script = False
-                        params.use_filter_sound = False
-                        params.use_filter_text = False
-                        params.use_filter_font = False
-                        params.use_filter_folder = False
-                        params.use_filter_blender = False
-                        params.use_filter_image = True    
-
-def get_file_browser_path(context):
-    for area in context.screen.areas:
-        if area.type == 'FILE_BROWSER':
-            for space in area.spaces:
-                if space.type == 'FILE_BROWSER':
-                    params = space.params     
-                    return os.path.join(params.directory.decode('utf-8'),params.filename)                  
