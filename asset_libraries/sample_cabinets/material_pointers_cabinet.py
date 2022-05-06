@@ -33,10 +33,11 @@ def assign_materials_to_object(obj):
     scene_props = bpy.context.scene.home_builder  
     pointers = scene_props.material_pointers  
     for index, pointer in enumerate(obj.pyclone.pointers):
-        p = pointers[pointer.pointer_name]
-        if index + 1 <= len(obj.material_slots):
-            slot = obj.material_slots[index]
-            slot.material = get_material(p.library_path,p.material_name)
+        if pointer.pointer_name in pointers:
+            p = pointers[pointer.pointer_name]
+            if index + 1 <= len(obj.material_slots):
+                slot = obj.material_slots[index]
+                slot.material = get_material(p.library_path,p.material_name)
 
 def assign_materials_to_assembly(assembly):
     for child in assembly.obj_bp.children:
@@ -77,4 +78,38 @@ def assign_design_base_assembly_pointers(assembly):
                 if pointer.name == 'Front':
                     pointer.pointer_name = "Cabinet Exposed Surfaces"                       
                 if pointer.name == 'Back':
-                    pointer.pointer_name = "Cabinet Exposed Surfaces"                         
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"                   
+
+def assign_door_pointers(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            for pointer in child.pyclone.pointers:
+                if pointer.name == 'Top':
+                    pointer.pointer_name = "Cabinet Door Surfaces"
+                if pointer.name == 'Bottom':
+                    pointer.pointer_name = "Cabinet Door Surfaces"
+                if pointer.name == 'L1':
+                    pointer.pointer_name = "Cabinet Door Edges"
+                if pointer.name == 'L2':
+                    pointer.pointer_name = "Cabinet Door Edges"
+                if pointer.name == 'W1':
+                    pointer.pointer_name = "Cabinet Door Edges"
+                if pointer.name == 'W2':
+                    pointer.pointer_name = "Cabinet Door Edges"
+
+def assign_cabinet_shelf_pointers(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            for pointer in child.pyclone.pointers:
+                if pointer.name == 'Top':
+                    pointer.pointer_name = "Cabinet Interior Surfaces"
+                if pointer.name == 'Bottom':
+                    pointer.pointer_name = "Cabinet Interior Surfaces"
+                if pointer.name == 'L1':
+                    pointer.pointer_name = "Cabinet Interior Edges"
+                if pointer.name == 'L2':
+                    pointer.pointer_name = "Cabinet Interior Edges"
+                if pointer.name == 'W1':
+                    pointer.pointer_name = "Cabinet Interior Edges"
+                if pointer.name == 'W2':
+                    pointer.pointer_name = "Cabinet Interior Edges"                                                   

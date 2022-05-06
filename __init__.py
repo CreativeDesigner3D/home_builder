@@ -25,6 +25,7 @@ from .pyclone_ops import pc_prompts
 from .walls import wall_ops
 from .pyclone_ui import pc_view3d_ui_sidebar_assemblies
 from .pyclone_ui import pc_view3d_ui_menu
+from .pyclone_ui import pc_lists
 
 from bpy.app.handlers import persistent
 
@@ -179,6 +180,7 @@ def register():
     hb_ui.register()
     hb_ops.register()
     wall_ops.register()
+    pc_lists.register()
     hb_menus.register()
     bpy.app.handlers.load_post.append(load_driver_functions)
     bpy.app.handlers.load_post.append(load_library)
@@ -198,6 +200,7 @@ def unregister():
     hb_ui.unregister()
     hb_ops.unregister()
     wall_ops.unregister()
+    pc_lists.unregister()
     hb_menus.unregister()
     bpy.app.handlers.load_post.append(load_driver_functions)    
     bpy.app.handlers.load_post.remove(load_library)

@@ -1,4 +1,5 @@
 import os
+from . import props_cabinet
 from . import drop_ops_cabinet
 from . import prompt_ops_cabinet
 from . import library_cabinet
@@ -70,13 +71,14 @@ CABINET_POINTERS["Cabinet Materials"] = material_pointers_cabinet.CABINET_POINTE
 MATERIAL_POINTERS = [CABINET_POINTERS]
 
 def register():
+    props_cabinet.register()
     drop_ops_cabinet.register()
     ops_cabinet.register()
     prompt_ops_cabinet.register()
     ui_cabinet.register()
 
 def unregister():
-    print("CALLING UNREGISTER")
+    props_cabinet.unregister()
     drop_ops_cabinet.unregister()
     ops_cabinet.unregister()
     prompt_ops_cabinet.unregister()

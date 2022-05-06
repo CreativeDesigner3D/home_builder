@@ -218,10 +218,10 @@ class Prompt(PropertyGroup):
                 props.prompt_name = self.name   
                 col = layout.column()
                 col.template_list("PC_UL_combobox"," ", self, "combobox_items", self, "combobox_index",
-                                rows=len(self.combobox_items)/self.combobox_columns,type='GRID',columns=self.combobox_columns)
+                                rows=int(len(self.combobox_items)/self.combobox_columns),type='GRID',columns=self.combobox_columns)
             else:
                 row.template_list("PC_UL_combobox"," ", self, "combobox_items", self, "combobox_index",
-                                rows=len(self.combobox_items)/self.combobox_columns,type='GRID',columns=self.combobox_columns)
+                                rows=int(len(self.combobox_items)/self.combobox_columns),type='GRID',columns=self.combobox_columns)
 
         if self.prompt_type == 'TEXT':
             row.prop(self,"text_value",text="")

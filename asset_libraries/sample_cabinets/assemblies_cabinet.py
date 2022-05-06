@@ -41,6 +41,6 @@ def add_door_assembly(assembly):
     part.obj_y.empty_display_size = .001
     part.obj_z.empty_display_size = .001
     part.obj_prompts.empty_display_size = .001    
-    material_pointers_cabinet.assign_design_base_assembly_pointers(part)
+    material_pointers_cabinet.assign_door_pointers(part)
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part       
