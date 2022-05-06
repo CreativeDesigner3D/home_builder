@@ -16,20 +16,8 @@ from bpy.props import (
         FloatProperty,
         )
 import os
-from ..pc_lib import pc_types, pc_utils
+from pc_lib import pc_types, pc_utils
 from .. import pyclone_utils 
-
-class pc_general_OT_change_file_browser_path(bpy.types.Operator):
-    bl_idname = "pc_general.change_file_browser_path"
-    bl_label = "Change File Browser Path"
-    bl_description = "Changes the file browser path"
-    bl_options = {'UNDO'}
-
-    file_path: StringProperty(name='File Path')
-
-    def execute(self, context):
-        pyclone_utils.update_file_browser_path(context,self.file_path)
-        return {'FINISHED'}
 
 class pc_general_OT_prompts(bpy.types.Operator):
     bl_idname = "pc_general.prompts"
@@ -137,7 +125,6 @@ class pc_general_OT_show_render_settings(Operator):
         return {'FINISHED'}
 
 classes = (
-    pc_general_OT_change_file_browser_path,
     pc_general_OT_prompts,
     pc_general_OT_show_render_settings,
 )

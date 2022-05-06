@@ -13,11 +13,12 @@ from bpy.props import (
         CollectionProperty,
         EnumProperty,
         )
-from . import cabinet_library
+from . import library_cabinet
 
 class Cabinet_Library_Item(bpy.types.PropertyGroup):
     library_type: StringProperty(name="Library Type")
     is_checked: BoolProperty(name="Is Checked")
+
 
 class hb_sample_cabinets_OT_active_cabinet_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.active_cabinet_library"
@@ -26,24 +27,6 @@ class hb_sample_cabinets_OT_active_cabinet_library(bpy.types.Operator):
     asset_name: StringProperty(name="Asset Name")
 
     def execute(self, context):
-        return {'FINISHED'}
-
-
-class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.drop_cabinet_library"
-    bl_label = "Drop Cabinet Library"
-
-    product = None
-
-    def draw_cabinet(self,context):
-        workspace = context.workspace
-        wm = context.window_manager
-        asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]
-        self.product = eval("cabinet_library." + asset.file_data.name.replace(" ","_") + "()")
-        self.product.draw()
-
-    def execute(self, context):
-        self.draw_cabinet(context)
         return {'FINISHED'}
 
 
@@ -70,7 +53,7 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
         return True
 
     def get_library_items(self):
-        for mod_name, mod in inspect.getmembers(cabinet_library):
+        for mod_name, mod in inspect.getmembers(library_cabinet):
             if "__" not in mod_name:
                 item = self.library_items.add()
                 item.name = mod_name.replace("_"," ")
@@ -143,7 +126,6 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
 classes = (
     Cabinet_Library_Item,
     hb_sample_cabinets_OT_active_cabinet_library,
-    hb_sample_cabinets_OT_drop_cabinet_library,
     hb_sample_cabinets_OT_build_library,
 )
 

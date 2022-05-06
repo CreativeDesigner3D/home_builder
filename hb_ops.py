@@ -3,7 +3,7 @@ import os
 import time
 import math
 import inspect
-from .pc_lib import pc_utils, pc_unit
+from pc_lib import pc_utils, pc_unit
 from . import hb_placement_utils
 from . import hb_utils
 from .walls import wall_library
@@ -238,6 +238,38 @@ class home_builder_OT_disconnect_constraint(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_unit_settings(bpy.types.Operator):
+    bl_idname = "home_builder.unit_settings"
+    bl_label = "Change Units"
+    bl_description = "This will show the unit settings"
+    bl_options = {'UNDO'}
+    
+    def check(self, context):
+        return True
+
+    def invoke(self,context,event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=200)
+        
+    def draw(self, context):
+        layout = self.layout
+        unit = context.scene.unit_settings
+
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        layout.prop(unit, "system")
+
+        col = layout.column()
+        col.prop(unit, "system_rotation", text="Rotation")
+        subcol = col.column()
+        subcol.enabled = unit.system != 'NONE'
+        subcol.prop(unit, "length_unit", text="Length")
+        subcol.prop(unit, "temperature_unit", text="Temperature")
+
+    def execute(self, context):
+        return {'FINISHED'}
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_todo,
@@ -246,6 +278,7 @@ classes = (
     home_builder_OT_assign_material_to_pointer,
     home_builder_OT_update_materials_for_pointer,
     home_builder_OT_disconnect_constraint,
+    home_builder_OT_unit_settings,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

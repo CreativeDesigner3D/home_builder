@@ -15,7 +15,7 @@ from bpy.props import (
         )
 
 from .. import pyclone_utils
-from ..pc_lib import pc_utils, pc_types
+from pc_lib import pc_utils, pc_types
 
 class VIEW3D_PT_pc_object_prompts(Panel):
     bl_space_type = "VIEW_3D"

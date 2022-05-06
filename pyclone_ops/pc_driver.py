@@ -16,7 +16,7 @@ from bpy.props import (StringProperty,
                        CollectionProperty)
 
 from .. import pyclone_utils
-from ..pc_lib import pc_unit, pc_utils, pc_types
+from pc_lib import pc_unit, pc_utils, pc_types
 
 
 class PC_prompt_collection(PropertyGroup):

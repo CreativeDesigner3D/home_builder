@@ -1,9 +1,10 @@
 import os
-from . import cabinet_prompt_ops
-from . import cabinet_library
-from . import cabinet_ui
-from . import cabinet_ops
-from . import cabinet_material_pointers
+from . import drop_ops_cabinet
+from . import prompt_ops_cabinet
+from . import library_cabinet
+from . import ui_cabinet
+from . import ops_cabinet
+from . import material_pointers_cabinet
 
 CABINET_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Sample Cabinets")
 APPLIANCE_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Appliances")
@@ -64,11 +65,19 @@ LIBRARIES = [CABINETS,
              WOOD_FINISHED]
 
 CABINET_POINTERS = {}
-CABINET_POINTERS["Cabinet Materials"] = cabinet_material_pointers.CABINET_POINTERS
+CABINET_POINTERS["Cabinet Materials"] = material_pointers_cabinet.CABINET_POINTERS
 
 MATERIAL_POINTERS = [CABINET_POINTERS]
 
 def register():
-    cabinet_ops.register()
-    cabinet_prompt_ops.register()
-    cabinet_ui.register()
+    drop_ops_cabinet.register()
+    ops_cabinet.register()
+    prompt_ops_cabinet.register()
+    ui_cabinet.register()
+
+def unregister():
+    print("CALLING UNREGISTER")
+    drop_ops_cabinet.unregister()
+    ops_cabinet.unregister()
+    prompt_ops_cabinet.unregister()
+    ui_cabinet.unregister()    

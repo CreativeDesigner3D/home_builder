@@ -17,7 +17,7 @@ from bpy.props import (
         )
 import os, math, sys
 from .. import pyclone_utils
-from ..pc_lib import pc_types, pc_utils, pc_unit
+from pc_lib import pc_types, pc_utils, pc_unit
 
 try:
     import reportlab

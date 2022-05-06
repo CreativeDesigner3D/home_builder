@@ -8,11 +8,22 @@ import bmesh
 import inspect
 
 
+
 def get_wm_props(window_manager):
     return window_manager.pyclone
 
 def get_scene_props(scene):
     return scene.pyclone
+
+def get_hb_object_props(scene):
+    return scene.home_builder
+
+def get_3d_view_region(context):
+    for area in context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for region in area.regions:
+                if region.data:
+                    return region   
 
 def get_object_icon(obj):
     ''' 
@@ -53,7 +64,6 @@ def get_object_icon(obj):
     if obj.type == 'LIGHT_PROBE':
         return 'OUTLINER_OB_LIGHTPROBE'
 
-
 def object_has_driver(obj):
     """ If the object has a driver this function will return True otherwise False
     """
@@ -61,13 +71,11 @@ def object_has_driver(obj):
         if len(obj.animation_data.drivers) > 0:
             return True
 
-
 def get_assembly_bp(obj):
     if "IS_ASSEMBLY_BP" in obj:
         return obj
     elif obj.parent:
         return get_assembly_bp(obj.parent)
-
 
 def hook_vertex_group_to_object(obj_mesh, vertex_group, obj_hook):
     """ This function adds a hook modifier to the verties 
@@ -92,7 +100,6 @@ def hook_vertex_group_to_object(obj_mesh, vertex_group, obj_hook):
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.pc_object.toggle_edit_mode(obj_name=obj_mesh.name)
 
-
 def apply_hook_modifiers(context, obj):
     """ This function applies all of the hook modifers on an object
     """
@@ -102,7 +109,6 @@ def apply_hook_modifiers(context, obj):
     for mod in obj.modifiers:
         if mod.type == 'HOOK':
             bpy.ops.object.modifier_apply(modifier=mod.name)
-
 
 def delete_obj_list(obj_list):
     ''' 
@@ -129,7 +135,6 @@ def delete_obj_list(obj_list):
     for obj in obj_list:
         bpy.data.objects.remove(obj, do_unlink=True)
 
-
 def select_obj_list(obj_list):
     '''
     This function selects every object in the list
@@ -139,7 +144,6 @@ def select_obj_list(obj_list):
             obj.hide_select = False
             obj.hide_viewport = False
             obj.select_set(True)
-
 
 def delete_object_and_children(obj_bp):
     '''
@@ -157,7 +161,6 @@ def delete_object_and_children(obj_bp):
             obj_list.append(child)
     delete_obj_list(obj_list)
 
-
 def select_object_and_children(obj_bp):
     '''
     Selects an object and all it's children
@@ -173,7 +176,6 @@ def select_object_and_children(obj_bp):
         else:
             obj_list.append(child)
     select_obj_list(obj_list)
-
 
 def create_cube_mesh(name, size):
     verts = [(0.0, 0.0, 0.0),
@@ -195,7 +197,6 @@ def create_cube_mesh(name, size):
              ]
 
     return create_object_from_verts_and_faces(verts, faces, name)
-
 
 def create_object_from_verts_and_faces(verts, faces, name):
     """
@@ -225,12 +226,10 @@ def create_object_from_verts_and_faces(verts, faces, name):
 
     return obj_new
 
-
 def calc_distance(point1, point2):
     """ This gets the distance between two points (X,Y,Z)
     """
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 + (point1[2] - point2[2]) ** 2)
-
 
 def floor_raycast(context, mx, my):
     '''
@@ -281,87 +280,12 @@ def floor_raycast(context, mx, my):
 
     return has_hit, snapped_location, snapped_normal, snapped_rotation, face_index, object, matrix
 
-
-# def get_selection_point_old(context, rv3d, event, ray_max=10000.0, objects=None, floor=None, exclude_objects=[]):
-#     """Gets the point to place an object based on selection"""
-#     # get the context arguments
-#     scene = context.scene
-#     region = context.region
-#     # rv3d = context.region_data
-#     coord = event.mouse_region_x, event.mouse_region_y
-#     # get the ray from the viewport and mouse
-#     view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
-#     ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
-#     ray_target = ray_origin + view_vector
-
-#     def visible_objects_and_duplis():
-#         """Loop over (object, matrix) pairs (mesh only)"""
-
-#         for obj in context.visible_objects:
-
-#             if objects:
-#                 if obj in objects and obj not in exclude_objects:
-#                     yield (obj, obj.matrix_world.copy())
-
-#             else:
-#                 if obj not in exclude_objects:
-#                     if floor is not None and obj == floor:
-#                         yield (obj, obj.matrix_world.copy())
-
-#                     if obj.type in {'MESH','CURVE'} and obj.hide_select == False:
-#                         yield (obj, obj.matrix_world.copy())
-
-#     def obj_ray_cast(obj, matrix):
-#         """Wrapper for ray casting that moves the ray into object space"""
-#         try:
-#             # get the ray relative to the object
-#             matrix_inv = matrix.inverted()
-#             ray_origin_obj = matrix_inv @ ray_origin
-#             ray_target_obj = matrix_inv @ ray_target
-#             ray_direction_obj = ray_target_obj - ray_origin_obj
-
-#             # cast the ray
-#             success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
-#             if success:
-#                 return location, normal, face_index
-#             else:
-#                 return None, None, None
-#         except:
-#             print("ERROR IN obj_ray_cast", obj)
-#             return None, None, None
-
-#     best_length_squared = ray_max * ray_max
-#     best_obj = None
-#     best_hit = (0,0,0)
-#     best_norm = Vector((0, 0, 0))
-
-#     for obj, matrix in visible_objects_and_duplis():
-#         if obj.type in {'MESH','CURVE'}:
-#             if obj.data:
-
-#                 hit, normal, face_index = obj_ray_cast(obj, matrix)
-#                 if hit is not None:
-#                     hit_world = matrix @ hit
-#                     length_squared = (hit_world - ray_origin).length_squared
-#                     if length_squared < best_length_squared:
-#                         best_hit = hit_world
-#                         best_length_squared = length_squared
-#                         best_obj = obj
-#                         best_norm = normal
-
-#     return best_hit, best_obj, best_norm
-
-def get_selection_point(context, event,exclude_objects=[]):
+def get_selection_point(context, region, event, ray_max=10000.0, objects=None, floor=None, exclude_objects=[]):
     """Run this function on left mouse, execute the ray cast"""
     # get the context arguments
     scene = context.scene
-    region = context.region
     rv3d = region.data
     coord = event.mouse_x - region.x, event.mouse_y - region.y   
-
-    # rv3d = region.region_data
-    # coord = event.mouse_x - region.x, event.mouse_y - region.y    
-    # coord = event.mouse_region_x, event.mouse_region_y
 
     # get the ray from the viewport and mouse
     view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
@@ -372,58 +296,60 @@ def get_selection_point(context, event,exclude_objects=[]):
     def visible_objects_and_duplis():
         """Loop over (object, matrix) pairs (mesh only)"""
 
-        depsgraph = context.evaluated_depsgraph_get()
-        for dup in depsgraph.object_instances:
-            if dup.is_instance:  # Real dupli instance
-                obj = dup.instance_object
-                yield (obj, dup.matrix_world.copy())
-            else:  # Usual object
-                obj = dup.object
-                yield (obj, obj.matrix_world.copy())
+        for obj in context.visible_objects:
+
+            if objects:
+                if obj in objects and obj not in exclude_objects:
+                    yield (obj, obj.matrix_world.copy())
+
+            else:
+                if obj not in exclude_objects:
+                    if floor is not None and obj == floor:
+                        yield (obj, obj.matrix_world.copy())
+
+                    if obj.type in {'MESH','CURVE'} and obj.hide_select == False:
+                        yield (obj, obj.matrix_world.copy())
 
     def obj_ray_cast(obj, matrix):
         """Wrapper for ray casting that moves the ray into object space"""
 
-        # get the ray relative to the object
-        matrix_inv = matrix.inverted()
-        ray_origin_obj = matrix_inv @ ray_origin
-        ray_target_obj = matrix_inv @ ray_target
-        ray_direction_obj = ray_target_obj - ray_origin_obj
+        try:
+            # get the ray relative to the object
+            matrix_inv = matrix.inverted()
+            ray_origin_obj = matrix_inv @ ray_origin
+            ray_target_obj = matrix_inv @ ray_target
+            ray_direction_obj = ray_target_obj - ray_origin_obj
 
-        # cast the ray
-        success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
-
-        if success:
-            return location, normal, face_index
-        else:
+            # cast the ray
+            success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
+            if success:
+                return location, normal, face_index
+            else:
+                return None, None, None
+        except:
+            print("ERROR IN obj_ray_cast", obj)
             return None, None, None
 
-    # cast rays and find the closest object
-    best_length_squared = -1.0
+    best_length_squared = ray_max * ray_max
     best_obj = None
+    best_hit = (0,0,0)
+    best_norm = Vector((0, 0, 0))
 
     for obj, matrix in visible_objects_and_duplis():
-        if obj.type == 'MESH':
-            hit, normal, face_index = obj_ray_cast(obj, matrix)
-            if hit is not None:
-                hit_world = matrix @ hit
-                # scene.cursor.location = hit_world
-                length_squared = (hit_world - ray_origin).length_squared
-                if best_obj is None or length_squared < best_length_squared:
-                    best_length_squared = length_squared
-                    best_obj = obj
-                # print('HIT WORlD',hit_world)
-                return hit_world, best_obj, normal
-    return (0,0,0), None, 0
+        if obj.type in {'MESH','CURVE'}:
+            if obj.data:
 
-    # now we have the object under the mouse cursor,
-    # we could do lots of stuff but for the example just select.
-    if best_obj is not None:
-        # for selection etc. we need the original object,
-        # evaluated objects are not in viewlayer
-        best_original = best_obj.original
-        best_original.select_set(True)
-        context.view_layer.objects.active = best_original
+                hit, normal, face_index = obj_ray_cast(obj, matrix)
+                if hit is not None:
+                    hit_world = matrix @ hit
+                    length_squared = (hit_world - ray_origin).length_squared
+                    if length_squared < best_length_squared:
+                        best_hit = hit_world
+                        best_length_squared = length_squared
+                        best_obj = obj
+                        best_norm = normal
+
+    return best_hit, best_obj, best_norm    
 
 def get_drivers(obj):
     """ This gets all the drivers on an object
@@ -439,43 +365,34 @@ def get_drivers(obj):
 
     return drivers
 
+def get_bp_by_tag(obj,tag):  
+    if not obj:
+        return None    
+    if tag in obj:
+        return obj
+    elif obj.parent:
+        return get_bp_by_tag(obj.parent,tag)   
 
-def update_file_browser_path(context, path):
-    """ This updates the filebrowser path
-    """
-    for area in context.screen.areas:
-        if area.type == 'FILE_BROWSER':
-            for space in area.spaces:
-                if space.type == 'FILE_BROWSER':
-                    params = space.params
-                    params.directory = str.encode(path)
-                    if not context.screen.show_fullscreen:
-                        params.use_filter = True
-                        params.display_type = 'THUMBNAIL'
-                        params.use_filter_movie = False
-                        params.use_filter_script = False
-                        params.use_filter_sound = False
-                        params.use_filter_text = False
-                        params.use_filter_font = False
-                        params.use_filter_folder = False
-                        params.use_filter_blender = False
-                        params.use_filter_image = True
+def get_object(path):
+    if os.path.exists(path):
 
+        with bpy.data.libraries.load(path) as (data_from, data_to):
+            data_to.objects = data_from.objects 
+        
+        for obj in data_to.objects:
+            return obj    
 
-def register_library(name, activate_id, drop_id, namespace, icon):
-    """ This registers a library with PyClone
-    """
-    pyclone = get_wm_props(bpy.context.window_manager)
-    if name not in pyclone.libraries:
-        pyclone.add_library(name=name,
-                            activate_id=activate_id,
-                            drop_id=drop_id,
-                            namespace=namespace,
-                            icon=icon)
+def get_connected_left_wall_bp(current_wall):
+    for con in current_wall.obj_bp.constraints:
+        if con.type == 'COPY_LOCATION':
+            target = con.target
+            wall_bp = get_bp_by_tag(target,'IS_WALL_BP')
+            if wall_bp:
+                return wall_bp
 
-
-def unregister_library(name):
-    """ This unregisters a library with PyClone
-    """
-    pyclone = get_wm_props(bpy.context.window_manager)
-    pyclone.remove_library(name)
+def get_connected_right_wall_bp(current_wall):
+    props = get_hb_object_props(current_wall.obj_x)
+    if props.connected_object:
+        wall_bp = get_bp_by_tag(props.connected_object,'IS_WALL_BP')
+        if wall_bp:
+            return wall_bp                

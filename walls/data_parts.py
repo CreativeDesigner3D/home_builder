@@ -1,6 +1,6 @@
 import bpy
 import math
-from ..pc_lib import pc_types, pc_unit, pc_utils
+from pc_lib import pc_types, pc_unit, pc_utils
 import time
 
 class Cube(pc_types.Assembly):

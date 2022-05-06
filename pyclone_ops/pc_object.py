@@ -15,7 +15,7 @@ from bpy.props import (StringProperty,
                        EnumProperty,
                        CollectionProperty)
 
-from ..pc_lib import pc_unit, pc_utils, pc_types
+from pc_lib import pc_unit, pc_utils, pc_types
 
 class pc_object_OT_select_object(Operator):
     bl_idname = "pc_object.select_object"

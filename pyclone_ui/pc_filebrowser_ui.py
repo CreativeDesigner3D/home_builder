@@ -20,7 +20,7 @@
 import bpy
 from bpy.types import Header, Panel, Menu, UIList
 from .. import pyclone_utils
-from ..pc_lib import pc_utils
+from pc_lib import pc_utils
 
 class FILEBROWSER_PT_library_tabs(Panel):
     bl_space_type = 'FILE_BROWSER'

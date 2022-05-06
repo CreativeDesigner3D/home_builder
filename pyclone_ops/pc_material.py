@@ -8,7 +8,7 @@ from bpy.props import (StringProperty,
                        EnumProperty,
                        CollectionProperty)
 
-from ..pc_lib import pc_unit, pc_utils, pc_types
+from pc_lib import pc_unit, pc_utils, pc_types
 
 class pc_material_OT_add_material_slot(bpy.types.Operator):
     bl_idname = "pc_material.add_material_slot"

@@ -3,6 +3,10 @@ import time
 import os
 import sys
 import inspect
+
+PATH = os.path.join(os.path.dirname(__file__),"python_libs")
+sys.path.append(PATH)
+
 from . import addon_updater_ops
 from . import pyclone_utils
 from . import pyclone_props
@@ -10,6 +14,7 @@ from . import hb_ui
 from . import hb_ops
 from . import hb_props
 from . import hb_utils
+from . import hb_menus
 from .pyclone_ops import pc_assembly
 from .pyclone_ops import pc_driver
 from .pyclone_ops import pc_general
@@ -22,11 +27,7 @@ from .walls import wall_ops
 from .pyclone_ui import pc_view3d_ui_sidebar_assemblies
 from .pyclone_ui import pc_view3d_ui_menu
 
-
 from bpy.app.handlers import persistent
-
-PATH = os.path.join(os.path.dirname(__file__),"python_libs")
-sys.path.append(PATH)
 
 bl_info = {
     "name": "Home Builder",
@@ -66,7 +67,7 @@ def load_library(dummy):
     """
     prefs = bpy.context.preferences
     asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
-    
+
     if not asset_lib:
         bpy.ops.preferences.asset_library_add()
         asset_lib = prefs.filepaths.asset_libraries[-1]
@@ -95,10 +96,13 @@ def load_library(dummy):
                     sys.path.append(path)
                     mod = __import__(folder)
                     if hasattr(mod,'register'):
-                        mod.register()
+                        try:
+                            mod.register()
+                        except:
+                            print("MOD ALREADY REGISTERED")
                         if hasattr(mod,"LIBRARIES"):
                             libs = list(mod.LIBRARIES)
-                            for lib in libs:          
+                            for lib in libs:
                                 asset_lib = wm_props.asset_libraries.add()
                                 asset_lib.name = lib["library_name"]
                                 asset_lib.library_type = lib["library_type"]
@@ -183,6 +187,7 @@ def register():
     hb_ui.register()
     hb_ops.register()
     wall_ops.register()
+    hb_menus.register()
     bpy.app.handlers.load_post.append(load_driver_functions)
     bpy.app.handlers.load_post.append(load_library)
 
@@ -202,6 +207,7 @@ def unregister():
     hb_ui.unregister()
     hb_ops.unregister()
     wall_ops.unregister()
+    hb_menus.unregister()
     bpy.app.handlers.load_post.append(load_driver_functions)    
     bpy.app.handlers.load_post.remove(load_library)
 

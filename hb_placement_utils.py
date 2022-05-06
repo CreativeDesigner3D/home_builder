@@ -3,7 +3,7 @@ import bpy
 # from . import home_builder_enums
 import math
 from mathutils import Vector
-from .pc_lib import pc_unit, pc_utils, pc_types
+from pc_lib import pc_unit, pc_utils, pc_types
 # from .cabinets import data_cabinets
 # from .closets import data_closets
 

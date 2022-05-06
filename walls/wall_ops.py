@@ -3,7 +3,7 @@ import os
 import math
 import time
 import inspect
-from ..pc_lib import pc_utils, pc_types, pc_unit
+from pc_lib import pc_utils, pc_types, pc_unit
 from .. import hb_utils
 # from .. import home_builder_pointers
 from . import wall_library
@@ -17,6 +17,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
     obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
     
+    region = None
+
     drawing_plane = None
 
     current_wall = None
@@ -34,6 +36,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
     obj_wall_meshes = []
 
+    wall_counter = 1
+
     def reset_properties(self):
         self.drawing_plane = None
         self.current_wall = None
@@ -46,17 +50,13 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.obj_wall_meshes = []        
 
     def execute(self, context):
+        self.region = pc_utils.get_3d_view_region(context)
         self.reset_properties()   
-        # self.get_class_name()
         self.create_drawing_plane(context)
         self.create_wall()
         context.window_manager.modal_handler_add(self)
         context.area.tag_redraw()
         return {'RUNNING_MODAL'}
-
-    def get_class_name(self):
-        name, ext = os.path.splitext(os.path.basename(self.filepath))
-        self.class_name = name
 
     def create_wall(self):
         props = hb_utils.get_scene_props(bpy.context.scene)
@@ -78,6 +78,11 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.current_wall.obj_x.location.x = 0
         self.current_wall.obj_y.location.y = props.wall_thickness
         self.current_wall.obj_z.location.z = props.wall_height
+        self.current_wall.obj_bp.hide_viewport = False
+        self.current_wall.obj_x.hide_viewport = False
+        self.current_wall.obj_y.hide_viewport = False
+        self.current_wall.obj_z.hide_viewport = False
+        self.current_wall.obj_prompts.hide_viewport = False
         self.set_child_properties(self.current_wall.obj_bp)
 
         self.dim = pc_types.Dimension()
@@ -170,7 +175,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.mouse_x = event.mouse_x
         self.mouse_y = event.mouse_y
 
-        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,event,exclude_objects=self.exclude_objects)
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
 
         self.position_object(selected_point,selected_obj)
         self.set_end_angles()            
@@ -333,7 +338,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         for child in self.current_wall.obj_bp.children:
             obj_list.append(child)
         pc_utils.delete_obj_list(obj_list)
-        bpy.ops.view3d.view_all(center=False)
+        # bpy.ops.view3d.view_all(center=False)
+
         return {'FINISHED'}
 
 
@@ -391,7 +397,7 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
             self.previous_wall = pc_types.Assembly(obj_bp)    
 
     def invoke(self,context,event):
-        wall_bp = hb_utils.get_wall_bp(context.object)
+        wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
         self.next_wall = None
         self.previous_wall = None
         self.current_wall = pc_types.Assembly(wall_bp)   
@@ -816,7 +822,7 @@ class HOMEBUILDER_MT_wall_menu(bpy.types.Menu):
         obj_bp = pc_utils.get_assembly_bp(context.object)
         wall_bp = None
 
-        wall_bp = hb_utils.get_wall_bp(context.object)  
+        wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')  
         if wall_bp:
 
             layout.operator_context = 'INVOKE_DEFAULT'

@@ -1,6 +1,6 @@
 import bpy
 import os
-from .pc_lib import pc_utils, pc_types
+from pc_lib import pc_utils, pc_types
 
 addon_version = ()
 

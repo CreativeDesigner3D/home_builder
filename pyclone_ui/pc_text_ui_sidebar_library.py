@@ -15,7 +15,7 @@ from bpy.props import (
         )
 import os
 from .. import pyclone_utils
-from ..pc_lib import pc_utils, pc_types
+from pc_lib import pc_utils, pc_types
 
 class TEXT_PT_pc_text(Panel):
     bl_space_type = "TEXT_EDITOR"

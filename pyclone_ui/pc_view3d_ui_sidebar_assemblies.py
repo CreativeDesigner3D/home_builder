@@ -1,6 +1,6 @@
 import bpy
 import math
-from ..pc_lib import pc_types, pc_utils, pc_unit
+from pc_lib import pc_types, pc_utils, pc_unit
 from .. import pyclone_utils
 
 def draw_object_transform(context,layout,obj):

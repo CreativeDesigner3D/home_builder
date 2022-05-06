@@ -1,6 +1,6 @@
 import bpy
 import os
-from .pc_lib import pc_unit
+from pc_lib import pc_unit
 from . import hb_utils
 from bpy.types import (
         Operator,

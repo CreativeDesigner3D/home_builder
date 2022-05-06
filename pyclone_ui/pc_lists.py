@@ -1,6 +1,6 @@
 import bpy
 from bpy.types import UIList
-from ..pc_lib import pc_unit
+from pc_lib import pc_unit
 
 class PC_UL_combobox(UIList):
     

@@ -29,7 +29,7 @@ class Assembly:
         if filepath:
             self.coll = bpy.context.view_layer.active_layer_collection.collection
 
-            with bpy.data.libraries.load(filepath, False, False) as (data_from, data_to):
+            with bpy.data.libraries.load(filepath) as (data_from, data_to):
                 data_to.objects = data_from.objects
 
             for obj in data_to.objects:
@@ -501,7 +501,7 @@ class Title_Block(Assembly):
 
         PATH = os.path.join(os.path.dirname(__file__),'assets','Title Blocks',title_block_name + ".blend")
 
-        with bpy.data.libraries.load(PATH, False, False) as (data_from, data_to):
+        with bpy.data.libraries.load(PATH) as (data_from, data_to):
             data_to.objects = data_from.objects
 
         for obj in data_to.objects:
@@ -602,7 +602,7 @@ class Annotation(Assembly):
     def create_annotation(self,layout_view=None):
         PATH = os.path.join(os.path.dirname(__file__),'assets',"Annotation_Arrow.blend")
 
-        with bpy.data.libraries.load(PATH, False, False) as (data_from, data_to):
+        with bpy.data.libraries.load(PATH) as (data_from, data_to):
             data_to.objects = data_from.objects
 
         if layout_view:
@@ -670,7 +670,7 @@ class Dimension(Assembly):
     def create_dimension(self,layout_view=None):
         PATH = os.path.join(os.path.dirname(__file__),'assets',"Dimension_Arrow.blend")
 
-        with bpy.data.libraries.load(PATH, link=False, relative=False) as (data_from, data_to):
+        with bpy.data.libraries.load(PATH) as (data_from, data_to):
             data_to.objects = data_from.objects
 
         if layout_view:
@@ -714,10 +714,6 @@ class Dimension(Assembly):
         if self.obj_bp.parent:
             div_factor = self.obj_bp.parent.scale.x
 
-        self.obj_bp.hide_viewport = False
-        self.obj_x.hide_viewport = False
-        self.obj_y.hide_viewport = False
-        self.obj_z.hide_viewport = False
         text_width = self.get_prompt("Text Width")
         text_width.set_value((self.obj_text.dimensions.x/div_factor) + .05)
         for child in self.obj_bp.children:

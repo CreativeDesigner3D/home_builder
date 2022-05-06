@@ -165,6 +165,13 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                     row.menu(library.library_menu_ui,text="",icon='SETTINGS')
                 self.draw_library(col,context,library)
 
+class HOME_BUILDER_MT_home_builder_menu(bpy.types.Menu):
+    bl_label = "Home Builder"
+
+    def draw(self, _context):
+        layout = self.layout
+        layout.operator('home_builder.unit_settings',text="Change Units",icon='SETTINGS')
+
 class HOME_BUILDER_MT_door_window_library(bpy.types.Menu):
     bl_label = "Door Window Libraries"
 
@@ -283,6 +290,7 @@ classes = (
     HOME_BUILDER_MT_parts_library,
     HOME_BUILDER_MT_materials_library,
     HOME_BUILDER_MT_materials_pointers,
+    HOME_BUILDER_MT_home_builder_menu,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        
