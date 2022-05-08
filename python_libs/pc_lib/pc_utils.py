@@ -394,6 +394,21 @@ def get_object(path):
         for obj in data_to.objects:
             return obj    
 
+def get_material(library_path,material_name):
+    if material_name in bpy.data.materials:
+        return bpy.data.materials[material_name]
+
+    if os.path.exists(library_path):
+
+        with bpy.data.libraries.load(library_path) as (data_from, data_to):
+            for mat in data_from.materials:
+                if mat == material_name:
+                    data_to.materials = [mat]
+                    break    
+        
+        for mat in data_to.materials:
+            return mat
+
 def get_connected_left_wall_bp(current_wall):
     for con in current_wall.obj_bp.constraints:
         if con.type == 'COPY_LOCATION':

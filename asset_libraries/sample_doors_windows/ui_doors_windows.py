@@ -29,6 +29,13 @@ class HOME_BUILDER_PT_door_window_parts(bpy.types.Panel):
         row.template_icon_view(props,"entry_door_frame",show_labels=True)   
         row.template_icon_view(props,"entry_door_handle",show_labels=True)   
 
+        row = layout.row()
+        row.prop(props,'window_frame_category',text="")
+        row.prop(props,'window_insert_category',text="")
+
+        row = layout.row()
+        row.template_icon_view(props,"window_frame",show_labels=True)   
+        row.template_icon_view(props,"window_insert",show_labels=True)  
 
 classes = (
     HOME_BUILDER_MT_doors_windows_settings,

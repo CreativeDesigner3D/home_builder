@@ -1,5 +1,7 @@
+import bpy
 import os
 import xml.etree.ElementTree as ET
+from . import pc_utils
 
 class Pointer_XML:
     
@@ -113,6 +115,33 @@ def update_props_from_xml_file(filepath,pointers):
             pointer.name = p_dict
             pointer.category = pointer_dict[p_dict][0]
             pointer.item_name = pointer_dict[p_dict][1]
+
+def assign_materials_to_object(obj):
+    scene_props = bpy.context.scene.home_builder  
+    pointers = scene_props.material_pointers  
+    for index, pointer in enumerate(obj.pyclone.pointers):
+        if pointer.pointer_name in pointers:
+            p = pointers[pointer.pointer_name]
+            if index + 1 <= len(obj.material_slots):
+                slot = obj.material_slots[index]
+                slot.material = pc_utils.get_material(p.library_path,p.material_name)
+
+def assign_pointer_to_object(obj,pointer_name):
+    if len(obj.pyclone.pointers) == 0:
+        bpy.ops.pc_material.add_material_slot(object_name=obj.name)    
+    for index, pointer in enumerate(obj.pyclone.pointers):  
+        pointer.pointer_name = pointer_name  
+    assign_materials_to_object(obj)  
+
+def assign_materials_to_assembly(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            assign_materials_to_object(child)
+
+def assign_pointer_to_assembly(assembly,pointer_name):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            assign_pointer_to_object(child,pointer_name)
 
 def get_folder_enum_previews(path,key):
     """ Returns: ImagePreviewCollection

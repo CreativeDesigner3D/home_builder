@@ -41,6 +41,24 @@ class HB_Door_Window_Scene_Props(PropertyGroup):
     entry_door_handle: bpy.props.EnumProperty(name="Entry Door Handle",
         items=enum_doors_windows.enum_entry_door_handle_names)
 
+    entry_door_handle_category: bpy.props.EnumProperty(name="Entry Door Handle Category",
+        items=enum_doors_windows.enum_entry_door_handle_categories,
+        update=enum_doors_windows.update_entry_door_handle_category)
+    entry_door_handle: bpy.props.EnumProperty(name="Entry Door Handle",
+        items=enum_doors_windows.enum_entry_door_handle_names)
+
+    window_frame_category: bpy.props.EnumProperty(name="Window Frame Category",
+        items=enum_doors_windows.enum_window_frame_categories,
+        update=enum_doors_windows.update_window_frame_category)
+    window_frame: bpy.props.EnumProperty(name="Window Frame",
+        items=enum_doors_windows.enum_window_frame_names)
+
+    window_insert_category: bpy.props.EnumProperty(name="Window Insert Category",
+        items=enum_doors_windows.enum_window_insert_categories,
+        update=enum_doors_windows.update_window_insert_category)
+    window_insert: bpy.props.EnumProperty(name="Window Insert",
+        items=enum_doors_windows.enum_window_insert_names)
+
     #ENTRY DOORS
     single_door_width: bpy.props.FloatProperty(name="Single Door Width",
                                                description="Is the width of single entry doors",
@@ -67,7 +85,7 @@ class HB_Door_Window_Scene_Props(PropertyGroup):
                                            description="This is the height of windows",
                                            default=pc_unit.inch(40),
                                            unit='LENGTH')
-                                           
+
     @classmethod
     def register(cls):
         bpy.types.Scene.hb_doors_windows = PointerProperty(

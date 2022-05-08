@@ -1,7 +1,7 @@
 import bpy
 from os import path
 import math
-from pc_lib import pc_types, pc_unit, pc_utils
+from pc_lib import pc_types, pc_unit, pc_utils, pc_pointer_utils
 from . import material_pointers_doors_windows as mat_pointers
 from . import utils_doors_windows
 from . import paths_doors_windows
@@ -64,6 +64,42 @@ def get_door_frame(category,assembly_name):
     else:
         return path.join(root_path, category, assembly_name + ".blend")  
 
+def get_door_handle(category,assembly_name):
+    root_path = paths_doors_windows.get_entry_door_handle_path()
+    if assembly_name == "":
+        props = utils_doors_windows.get_scene_props(bpy.context.scene)
+        return path.join(root_path, props.entry_door_handle_category, props.entry_door_handle + ".blend")  
+    else:
+        return path.join(root_path, category, assembly_name + ".blend")  
+
+def get_door_panel(category,assembly_name):
+    root_path = paths_doors_windows.get_entry_door_panel_path()
+    if assembly_name == "":
+        props = utils_doors_windows.get_scene_props(bpy.context.scene)
+        return path.join(root_path, props.entry_door_panel_category, props.entry_door_panel + ".blend")  
+    else:
+        return path.join(root_path, category, assembly_name + ".blend")  
+
+def get_default_door_jamb():
+    root_path = paths_doors_windows.get_entry_door_jamb_path()
+    return path.join(root_path,"_Sample","Door Jamb.blend") 
+
+def get_window_frame(category,assembly_name):
+    root_path = paths_doors_windows.get_window_frame_path()
+    if assembly_name == "":
+        props = utils_doors_windows.get_scene_props(bpy.context.scene)
+        return path.join(root_path, props.window_insert_category, props.window_frame + ".blend")  
+    else:
+        return path.join(root_path, category, assembly_name + ".blend")  
+
+def get_window_insert(category,assembly_name):
+    root_path = paths_doors_windows.get_window_insert_path()
+    if assembly_name == "":
+        props = utils_doors_windows.get_scene_props(bpy.context.scene)
+        return path.join(root_path, props.entry_door_panel_category, props.window_insert + ".blend")  
+    else:
+        return path.join(root_path, category, assembly_name + ".blend")  
+
 class Door(pc_types.Assembly):
 
     width = pc_unit.inch(36)
@@ -85,8 +121,8 @@ class Door(pc_types.Assembly):
         door_frame.dim_x('width',[width])
         door_frame.dim_y('depth',[depth])
         door_frame.dim_z('height',[height])  
-        # home_builder_pointers.assign_pointer_to_assembly(door_frame,"Entry Door Frame")
-        # home_builder_utils.update_assembly_id_props(door_frame,self)
+        pc_pointer_utils.assign_pointer_to_assembly(door_frame,"Entry Door Frame")
+        pc_utils.update_id_props(door_frame.obj_bp,self.obj_bp)
 
         door_frame_width = door_frame.get_prompt("Door Frame Width").get_value()
 
@@ -104,7 +140,7 @@ class Door(pc_types.Assembly):
         door_handle_center.empty_display_size = .001
         door_handle_center.pyclone.loc_y('door_thickness/2',[door_thickness])
 
-        door_handle_obj = home_builder_utils.get_object(get_door_handle(door_handle_category,door_handle_name))
+        door_handle_obj = pc_utils.get_object(get_door_handle(door_handle_category,door_handle_name))
         door_handle_obj["IS_ENTRY_DOOR_HANDLE"] = True
         door_panel.add_object(door_handle_obj)
         
@@ -118,8 +154,8 @@ class Door(pc_types.Assembly):
             door_handle_obj.pyclone.loc_x('door_panel_width+handle_location_from_edge',[door_panel_width,handle_location_from_edge])
             door_handle_obj.pyclone.hide('IF(OR(entry_door_swing==0,turn_off_handles),True,False)',[entry_door_swing,turn_off_handles])
             door_handle_obj.scale.z = -1
-        # home_builder_pointers.assign_pointer_to_object(door_handle_obj,"Entry Door Handle")  
-        # home_builder_utils.update_id_props(door_handle_obj,self.obj_bp)
+        pc_pointer_utils.assign_pointer_to_object(door_handle_obj,"Entry Door Handle")  
+        pc_utils.update_id_props(door_handle_obj,self.obj_bp)
         
         mirror = door_handle_obj.modifiers.new('Mirror','MIRROR')
         mirror.mirror_object = door_handle_center
@@ -154,7 +190,7 @@ class Door(pc_types.Assembly):
         door_jamb.dim_x('width-door_frame_reveal*2',[width,door_frame_reveal])
         door_jamb.dim_y('depth',[depth])
         door_jamb.dim_z('height-door_frame_reveal',[height,door_frame_reveal])  
-        # home_builder_pointers.assign_pointer_to_assembly(door_jamb,"Entry Door Frame")
+        pc_pointer_utils.assign_pointer_to_assembly(door_jamb,"Entry Door Frame")
         door_frame_width = door_jamb.get_prompt("Door Frame Width")
         door_frame_width.set_formula('door_frame_width_parent',[door_frame_width_parent])
 
@@ -191,12 +227,12 @@ class Swing_Door(Door):
         l_door_panel.dim_x('IF(entry_door_swing==2,(width-(door_frame_width*2)-(door_reveal*3)-(door_frame_reveal*2))/2,width-(door_frame_width*2)-(door_reveal*2)-(door_frame_reveal*2))',[width,entry_door_swing,door_frame_width,door_reveal,door_frame_reveal])
         l_door_panel.dim_y('door_thickness',[door_thickness])
         l_door_panel.dim_z('height-door_frame_width-door_reveal-door_frame_reveal',[height,door_frame_width,door_reveal,door_frame_reveal])       
-        # home_builder_pointers.assign_materials_to_assembly(l_door_panel)
+        pc_pointer_utils.assign_materials_to_assembly(l_door_panel)
         hide = l_door_panel.get_prompt("Hide")
         hide.set_formula('IF(OR(entry_door_swing==1,turn_off_door_panels),True,False)',[entry_door_swing,turn_off_door_panels]) 
 
         self.add_door_handle(l_door_panel,door_handle_category,door_handle_name)
-        # home_builder_utils.update_assembly_id_props(l_door_panel,self)
+        pc_utils.update_id_props(l_door_panel.obj_bp,self.obj_bp)
 
         #RIGHT DOOR
         r_door_panel = pc_types.Assembly(self.add_assembly_from_file(get_door_panel(door_panel_category,door_panel_name)))
@@ -215,12 +251,12 @@ class Swing_Door(Door):
         r_door_panel.dim_x('IF(entry_door_swing==2,(width-(door_frame_width*2)-(door_reveal*3)-(door_frame_reveal*2))/2,width-(door_frame_width*2)-(door_reveal*2)-(door_frame_reveal*2))*-1',[width,entry_door_swing,door_frame_width,door_reveal,door_frame_reveal])
         r_door_panel.dim_y('door_thickness',[door_thickness])
         r_door_panel.dim_z('height-door_frame_width-door_reveal-door_frame_reveal',[height,door_frame_width,door_reveal,door_frame_reveal])      
-        # home_builder_pointers.assign_materials_to_assembly(r_door_panel)
+        pc_pointer_utils.assign_materials_to_assembly(r_door_panel)
         hide = r_door_panel.get_prompt("Hide")
         hide.set_formula('IF(OR(entry_door_swing==0,turn_off_door_panels),True,False)',[entry_door_swing,turn_off_door_panels]) 
 
         self.add_door_handle(r_door_panel,door_handle_category,door_handle_name)
-        # home_builder_utils.update_assembly_id_props(r_door_panel,self)
+        pc_utils.update_id_props(r_door_panel.obj_bp,self.obj_bp)
 
     def draw_assembly(self):
         self.create_assembly("Door")
@@ -247,8 +283,9 @@ class Swing_Door(Door):
         self.obj_y.location.y = self.depth
         self.obj_z.location.z = self.height
 
-        # self.add_hole_and_jamb()
+        self.add_hole_and_jamb()
         self.add_frame()
+        self.add_doors()
         self.set_prompts()
 
 
@@ -274,7 +311,7 @@ class Standard_Window(pc_types.Assembly):
         window_frame.dim_x('width',[width])
         window_frame.dim_y('depth',[depth])
         window_frame.dim_z('height',[height])  
-        # home_builder_pointers.assign_pointer_to_assembly(window_frame,"Entry Door Frame")
+        pc_pointer_utils.assign_pointer_to_assembly(window_frame,"Entry Door Frame")
 
         left_window_frame_width = window_frame.get_prompt("Left Window Frame Width").get_value()
         right_window_frame_width = window_frame.get_prompt("Right Window Frame Width").get_value()
@@ -286,7 +323,7 @@ class Standard_Window(pc_types.Assembly):
         self.get_prompt("Top Window Frame Width").set_value(top_window_frame_width)
         self.get_prompt("Bottom Window Frame Width").set_value(bottom_window_frame_width)
 
-        # home_builder_utils.update_assembly_id_props(window_frame,self)
+        pc_utils.update_id_props(window_frame.obj_bp,self.obj_bp)
         self.add_array_modifier(window_frame)
 
     def add_window_insert(self,category="",assembly_name=""):
@@ -308,9 +345,9 @@ class Standard_Window(pc_types.Assembly):
         window_insert.dim_x('width-left_window_frame_width-right_window_frame_width',[width,left_window_frame_width,right_window_frame_width])
         window_insert.dim_y('depth',[depth])
         window_insert.dim_z('height-top_window_frame_width-bottom_window_frame_width',[height,top_window_frame_width,bottom_window_frame_width])
-        # home_builder_pointers.assign_materials_to_assembly(window_insert)
+        pc_pointer_utils.assign_materials_to_assembly(window_insert)
 
-        # home_builder_utils.update_assembly_id_props(window_insert,self)
+        pc_utils.update_id_props(window_insert.obj_bp,self.obj_bp)
         self.add_array_modifier(window_insert)
 
     def add_array_modifier(self,assembly):
