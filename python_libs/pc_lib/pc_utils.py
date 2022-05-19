@@ -363,6 +363,23 @@ def update_id_props(obj,parent_obj):
     if "MENU_ID" in parent_obj:
         obj["MENU_ID"] = parent_obj["MENU_ID"]   
 
+def update_assembly_id_props(assembly,parent_assembly):
+    for child in assembly.obj_bp.children:
+        update_id_props(child,parent_assembly.obj_bp)
+
+def flip_normals(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            for polygon in child.data.polygons:
+                polygon.flip()
+            child.data.update()
+
+def add_bevel(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            bevel = child.modifiers.new('Bevel','BEVEL')    
+            bevel.width = .0005
+            
 def event_is_place_asset(event):
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
         return True
