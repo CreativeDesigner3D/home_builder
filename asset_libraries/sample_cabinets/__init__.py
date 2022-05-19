@@ -34,7 +34,7 @@ CLOSET_STARTERS = {"library_name": "Closet Starters",
                    "library_path": CLOSET_STARTER_LIBRARY_PATH,
                    "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
                    "library_activate_id": "hb_sample_cabinets.active_cabinet_library",
-                   "libary_drop_id": "hb_sample_cabinets.drop_cabinet_library"}
+                   "libary_drop_id": "hb_sample_cabinets.drop_closet_starter"}
 
 CLOSET_INSERTS = {"library_name": "Closet Inserts",
                   "library_type": "INSERTS",

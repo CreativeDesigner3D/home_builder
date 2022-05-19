@@ -77,6 +77,25 @@ def assign_design_carcass_pointers(assembly):
                 if pointer.name == 'Back':
                     pointer.pointer_name = "Cabinet Exposed Surfaces"    
 
+def assign_double_sided_pointers(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            for pointer in child.pyclone.pointers:
+                if pointer.name == 'Top':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"
+                if pointer.name == 'Bottom':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"
+                if pointer.name == 'L1':
+                    pointer.pointer_name = "Cabinet Exposed Edges"
+                if pointer.name == 'L2':
+                    pointer.pointer_name = "Cabinet Exposed Edges"
+                if pointer.name == 'W1':
+                    pointer.pointer_name = "Cabinet Exposed Edges"
+                if pointer.name == 'W2':
+                    pointer.pointer_name = "Cabinet Exposed Edges"      
+                if pointer.name == 'Notch':
+                    pointer.pointer_name = "Cabinet Exposed Edges"   
+                    
 def assign_carcass_part_pointers(assembly):
     for child in assembly.obj_bp.children:
         if child.type == 'MESH':

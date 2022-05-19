@@ -17,6 +17,7 @@ from bpy.props import (
         EnumProperty,
         )
 import inspect
+from . import const_cabinets as const
 from pc_lib import pc_types, pc_unit, pc_utils
 
 class HB_Cabinet_Scene_Props(PropertyGroup):    
@@ -215,6 +216,80 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                                        default=pc_unit.inch(1.5),
                                                        unit='LENGTH')       
 
+    #CLOSET OPTIONS
+    use_fixed_closet_heights: bpy.props.BoolProperty(name="Use Fixed Closet Heights",
+                                           description="Check this option to use the 32mm system and force panel heights to change in 32mm increments.",
+                                           default=True) 
+
+    add_bottom_filler_shelf: bpy.props.BoolProperty(name="Add Bottom Filler Shelf",
+                                           description="Check this option to add a bottom shelf when turning on filler panels.",
+                                           default=False) 
+
+    default_closet_hanging_height: bpy.props.EnumProperty(name="Default Closet Hanging Height",
+                                                     items=const.PANEL_HEIGHTS,
+                                                     default = '2131')
+
+    tall_closet_panel_height: bpy.props.EnumProperty(name="Tall Closet Panel Height",
+                                                     items=const.PANEL_HEIGHTS,
+                                                     default = '2131')
+
+    hanging_closet_panel_height: bpy.props.EnumProperty(name="Hanging Closet Panel Height",
+                                                     items=const.PANEL_HEIGHTS,
+                                                     default = '1267')
+
+    base_closet_panel_height: bpy.props.EnumProperty(name="Base Closet Panel Height",
+                                                     items=const.PANEL_HEIGHTS,
+                                                     default = '819')
+
+    default_base_closet_depth: bpy.props.FloatProperty(name="Default Base Closet Depth",
+                                                 description="Default depth for base closets",
+                                                 default=pc_unit.inch(14.0),
+                                                 unit='LENGTH')
+
+    opening_height_to_fill_doors: bpy.props.FloatProperty(name="Opening Height to Fill Doors",
+                                                 description="The maximum opening height to automatically fill opening when placing closet doors.",
+                                                 default=pc_unit.inch(35.0),
+                                                 unit='LENGTH')
+
+    default_hanging_closet_depth: bpy.props.FloatProperty(name="Default hanging Closet Depth",
+                                                 description="Default depth for Hanging closets",
+                                                 default=pc_unit.inch(14.0),
+                                                 unit='LENGTH')
+
+    default_tall_closet_depth: bpy.props.FloatProperty(name="Default Tall Closet Depth",
+                                                 description="Default depth for tall closets",
+                                                 default=pc_unit.inch(14.0),
+                                                 unit='LENGTH')
+
+    closet_corner_spacing: bpy.props.FloatProperty(name="Closet Corner Spacing",
+                                                 description="Offset for closets when meeting in corner",
+                                                 default=pc_unit.inch(12.0),
+                                                 unit='LENGTH')
+
+    show_closet_panel_drilling: bpy.props.BoolProperty(name="Show Panel Drilling",
+                                                       description="Check this option if you want drilling to show on the closet panels",
+                                                       default=False)      
+
+    adj_shelf_setback: bpy.props.FloatProperty(name="Adjustable Shelf Setback",
+                                                 description="Default setback for adjustable shelves",
+                                                 default=0,
+                                                 unit='LENGTH')
+
+    fixed_shelf_setback: bpy.props.FloatProperty(name="Fixed Shelf Setback",
+                                                 description="Default setback for fixed shelves",
+                                                 default=0,
+                                                 unit='LENGTH')
+
+    shelf_clip_gap: bpy.props.FloatProperty(name="Shelf Clip Gap",
+                                                 description="Amount to deduct from shelf width for adjustable shelf clips",
+                                                 default=0,
+                                                 unit='LENGTH')
+
+    extend_panel_amount: bpy.props.FloatProperty(name="Extend Panel Amount",
+                                                 description="The amount to extend the panels to countertop",
+                                                 default=0,
+                                                 unit='LENGTH')
+
     @classmethod
     def register(cls):
         bpy.types.Scene.hb_cabinet = PointerProperty(
@@ -227,8 +302,29 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     def unregister(cls):
         del bpy.types.Scene.hb_cabinet               
 
+
+class HB_Cabinet_Object_Props(PropertyGroup):
+
+    ebw1: bpy.props.BoolProperty(name="Edgeband Width 1",default=False)
+    ebw2: bpy.props.BoolProperty(name="Edgeband Width 2",default=False)
+    ebl1: bpy.props.BoolProperty(name="Edgeband Length 1",default=False)
+    ebl2: bpy.props.BoolProperty(name="Edgeband Length 2",default=False)
+
+    @classmethod
+    def register(cls):
+        bpy.types.Object.hb_cabinet = PointerProperty(
+            name="Home Builder Props",
+            description="Home Builder Props",
+            type=cls,
+        )
+        
+    @classmethod
+    def unregister(cls):
+        del bpy.types.Object.hb_cabinet
+
 classes = (
     HB_Cabinet_Scene_Props,
+    HB_Cabinet_Object_Props,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)                                                                                             

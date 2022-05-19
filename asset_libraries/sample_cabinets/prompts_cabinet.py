@@ -128,3 +128,11 @@ def add_interior_shelf_prompts(assembly):
 
 def add_thickness_prompts(assembly):
     assembly.add_prompt("Material Thickness",'DISTANCE',pc_unit.inch(.75)) 
+
+def add_closet_toe_kick_prompts(assembly):
+    assembly.add_prompt("Closet Kick Height",'DISTANCE',pc_unit.millimeter(96)) 
+    assembly.add_prompt("Closet Kick Setback",'DISTANCE',pc_unit.inch(1.625)) 
+
+def add_closet_thickness_prompts(assembly):
+    assembly.add_prompt("Shelf Thickness",'DISTANCE',pc_unit.inch(.75))
+    assembly.add_prompt("Panel Thickness",'DISTANCE',pc_unit.inch(.75))    

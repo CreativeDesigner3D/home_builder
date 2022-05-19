@@ -3,6 +3,7 @@ import os
 import math
 from . import library_cabinet
 from . import library_appliance
+from . import library_closet_starters
 from . import utils_placement
 from pc_lib import pc_utils, pc_types, pc_unit
 from mathutils import Vector
@@ -558,14 +559,263 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         self.set_placed_properties(self.cabinet.obj_bp) 
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
-        if is_recursive:
-            bpy.ops.home_builder.place_cabinet(filepath=self.filepath)
+        # if is_recursive:
+        #     bpy.ops.home_builder.place_cabinet(filepath=self.filepath)
         return {'FINISHED'}        
 
+
+class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.drop_closet_starter"
+    bl_label = "Drop Closet Starter"
+    bl_options = {'UNDO'}
+    
+    filepath: bpy.props.StringProperty(name="Filepath",default="Error")
+
+    obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
+
+    mouse_x = 0
+    mouse_y = 0
+
+    closet = None
+    selected_cabinet = None
+
+    calculators = []
+
+    drawing_plane = None
+    placement_obj = None
+
+    next_wall = None
+    current_wall = None
+    previous_wall = None
+
+    starting_point = ()
+    placement = ''
+
+    assembly = None
+    obj = None
+    exclude_objects = []
+
+    class_name = ""
+
+    region = None
+
+    def reset_selection(self):
+        self.current_wall = None
+        self.selected_cabinet = None    
+        self.next_wall = None
+        self.previous_wall = None  
+        self.placement = ''
+        # self.placement_obj = None
+
+    def reset_properties(self):
+        self.cabinet = None
+        self.selected_cabinet = None
+        self.calculators = []
+        self.drawing_plane = None
+        self.next_wall = None
+        self.current_wall = None
+        self.previous_wall = None
+        self.starting_point = ()
+        self.placement = ''
+        self.assembly = None
+        self.obj = None
+        self.exclude_objects = []
+        self.class_name = ""
+
+    def execute(self, context):
+        self.region = pc_utils.get_3d_view_region(context)
+        self.reset_properties()
+        self.create_drawing_plane(context)
+        self.get_closet(context)
+        self.placement_obj = utils_placement.create_placement_obj(context)
+        context.window_manager.modal_handler_add(self)
+        context.area.tag_redraw()
+        return {'RUNNING_MODAL'}
+
+    def get_closet(self,context):
+        # directory, file = os.path.split(self.filepath)
+        # filename, ext = os.path.splitext(file)
+        workspace = context.workspace
+        wm = context.window_manager
+
+        asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]
+        self.closet = eval("library_closet_starters." + asset.file_data.name.replace(" ","_") + "()")
+        # self.closet = eval("library_closet_starters." + filename.replace(" ","_") + "()")
+
+        if hasattr(self.closet,'pre_draw'):
+            self.closet.pre_draw()
+        else:
+            self.closet.draw()
+
+        # self.closet.set_name(filename)
+        self.set_child_properties(self.closet.obj_bp)
+
+    def set_child_properties(self,obj):
+        if "IS_DRAWERS_BP" in obj and obj["IS_DRAWERS_BP"]:
+            assembly = pc_types.Assembly(obj)
+            calculator = assembly.get_calculator('Front Height Calculator')
+            if calculator:
+                calculator.calculate()
+                self.calculators.append(calculator)
+
+        if "IS_VERTICAL_SPLITTER_BP" in obj and obj["IS_VERTICAL_SPLITTER_BP"]:
+            assembly = pc_types.Assembly(obj)
+            calculator = assembly.get_calculator('Opening Height Calculator')
+            if calculator:
+                calculator.calculate()
+                self.calculators.append(calculator)
+
+        pc_utils.update_id_props(obj,self.closet.obj_bp)
+        # home_builder_utils.assign_current_material_index(obj)
+        if obj.type == 'EMPTY':
+            obj.hide_viewport = True    
+        if obj.type == 'MESH':
+            obj.display_type = 'WIRE'            
+        if obj.name != self.drawing_plane.name:
+            self.exclude_objects.append(obj)    
+        for child in obj.children:
+            self.set_child_properties(child)
+
+    def set_placed_properties(self,obj):
+        if obj.type == 'MESH' and 'IS_OPENING_MESH' not in obj:
+            obj.display_type = 'TEXTURED'          
+        for child in obj.children:
+            self.set_placed_properties(child) 
+
+    def create_drawing_plane(self,context):
+        bpy.ops.mesh.primitive_plane_add()
+        plane = context.active_object
+        plane.location = (0,0,0)
+        self.drawing_plane = context.active_object
+        self.drawing_plane.display_type = 'WIRE'
+        self.drawing_plane.dimensions = (100,100,1)
+
+    def confirm_placement(self,context, override_height):
+        if self.current_wall:
+            self.closet.opening_qty = max(int(math.ceil(self.closet.obj_x.location.x / pc_unit.inch(38))),1)
+
+        if self.placement == 'LEFT':
+            self.closet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.closet.obj_x
+            constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint.target = constraint_obj
+            constraint.use_x = True
+            constraint.use_y = True
+            constraint.use_z = False
+
+        if self.placement == 'RIGHT':
+            self.closet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.selected_cabinet.obj_x
+            constraint = self.closet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint.target = constraint_obj
+            constraint.use_x = True
+            constraint.use_y = True
+            constraint.use_z = False
+
+        self.delete_reference_object()
+
+        if hasattr(self.closet,'pre_draw'):
+            self.closet.draw()
+
+        if override_height != 0:
+            for i in range(1,9):
+                opening_height_prompt = self.closet.get_prompt("Opening " + str(i) + " Height")
+                if opening_height_prompt:
+                    for index, height in enumerate(const.PANEL_HEIGHTS):
+                        if not override_height >= float(height[0])/1000:
+                            opening_height_prompt.set_value(float(const.PANEL_HEIGHTS[index - 1][0])/1000)
+                            break
+
+        self.set_child_properties(self.closet.obj_bp)
+        for cal in self.calculators:
+            cal.calculate()
+        self.refresh_data(False)
+
+    def modal(self, context, event):
+        
+        bpy.ops.object.select_all(action='DESELECT')
+
+        context.view_layer.update()
+        #EMPTY MUST BE VISIBLE TO CALCULATE CORRECT SIZE FOR HEIGHT COLLISION
+        self.closet.obj_z.empty_display_size = .001
+        self.closet.obj_z.hide_viewport = False
+
+        for calculator in self.calculators:
+            calculator.calculate()
+
+        self.mouse_x = event.mouse_x
+        self.mouse_y = event.mouse_y
+        self.reset_selection()
+
+        ## selected_normal added in to pass this info on from ray cast to position_cabinet
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
+
+        ## cursor_z added to allow for multi level placement
+        cursor_z = context.scene.cursor.location.z
+
+        self.placement, self.selected_cabinet, self.current_wall, override_height = utils_placement.position_closet(self.closet,
+                                                                                                    selected_point,
+                                                                                                    selected_obj,
+                                                                                                    cursor_z,
+                                                                                                    selected_normal,
+                                                                                                    self.placement_obj,
+                                                                                                    0)
+
+        if pc_utils.event_is_place_asset(event):
+            self.confirm_placement(context,override_height)
+
+            return self.finish(context,event.shift)
+            
+        if pc_utils.event_is_cancel_command(event):
+            return self.cancel_drop(context)
+
+        if pc_utils.event_is_pass_through(event):
+            return {'PASS_THROUGH'}
+
+        return {'RUNNING_MODAL'}
+
+    def cancel_drop(self,context):
+        pc_utils.delete_object_and_children(self.closet.obj_bp)
+        pc_utils.delete_object_and_children(self.drawing_plane)
+        if self.placement_obj:
+            pc_utils.delete_object_and_children(self.placement_obj)        
+        return {'CANCELLED'}
+
+    def refresh_data(self,hide=True):
+        ''' For some reason matrix world doesn't evaluate correctly
+            when placing cabinets next to this if object is hidden
+            For now set x, y, z object to not be hidden.
+        '''
+        self.closet.obj_x.hide_viewport = hide
+        self.closet.obj_y.hide_viewport = hide
+        self.closet.obj_z.hide_viewport = hide
+        self.closet.obj_x.empty_display_size = .001
+        self.closet.obj_y.empty_display_size = .001
+        self.closet.obj_z.empty_display_size = .001
+ 
+    def delete_reference_object(self):
+        for obj in self.closet.obj_bp.children:
+            if "IS_REFERENCE" in obj:
+                pc_utils.delete_object_and_children(obj)
+        if self.placement_obj:
+            pc_utils.delete_object_and_children(self.placement_obj)
+
+    def finish(self,context,is_recursive):
+        context.window.cursor_set('DEFAULT')
+        if self.drawing_plane:
+            pc_utils.delete_obj_list([self.drawing_plane])
+        self.set_placed_properties(self.closet.obj_bp) 
+        bpy.ops.object.select_all(action='DESELECT')
+        context.area.tag_redraw()
+        ## keep placing until event_is_cancel_command
+        # if is_recursive:
+        #     bpy.ops.home_builder.place_closet(filepath=self.filepath)
+        return {'FINISHED'}
 
 classes = (
     hb_sample_cabinets_OT_drop_cabinet_library,
     hb_sample_cabinets_OT_drop_appliance,
+    hb_sample_cabinets_OT_drop_closet_starter,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)

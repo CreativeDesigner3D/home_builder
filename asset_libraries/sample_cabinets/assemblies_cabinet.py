@@ -60,6 +60,72 @@ def add_carcass_part_assembly(assembly):
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part           
 
+def add_closet_part(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_CUTPART_BP'] = True
+    assembly.add_assembly(part)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_double_sided_pointers(part)
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part
+
+def add_shelf_holes(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Shelf Holes.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    assembly.add_assembly(part)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001   
+    material_pointers_cabinet.assign_pointer_to_assembly(part,"Shelf Holes")
+    return part    
+
+def add_corner_notch_countertop_part(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Corner Notch Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    assembly.add_assembly(part)
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_pointer_to_assembly(part,"Countertop Surface")
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part    
+
+def add_corner_notch_part(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Corner Notch Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_CUTPART_BP'] = True
+    assembly.add_assembly(part)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_double_sided_pointers(part)
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part 
+
+def add_corner_radius_part(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Corner Radius Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_CUTPART_BP'] = True
+    assembly.add_assembly(part)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_double_sided_pointers(part)
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part        
+
 def add_countertop_part(assembly):
     part_path = path.join(paths_cabinet.get_assembly_path(),"Part.blend")
     part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
@@ -68,3 +134,21 @@ def add_countertop_part(assembly):
     material_pointers_cabinet.assign_pointer_to_assembly(part,"Countertop Surface")
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part    
+
+def add_closet_opening(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Opening.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_OPENING_BP'] = True
+    assembly.add_assembly(part)
+    part.add_prompt("Left Depth",'DISTANCE',0)
+    part.add_prompt("Right Depth",'DISTANCE',0)
+    part.add_prompt("Back Inset",'DISTANCE',0)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001  
+    for child in part.obj_bp.children:
+        if child.type == 'MESH':
+            child['IS_OPENING_MESH'] = True
+    return part       

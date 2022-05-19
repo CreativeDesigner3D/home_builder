@@ -143,6 +143,11 @@ def select_obj_list(obj_list):
             obj.hide_viewport = False
             obj.select_set(True)
 
+def select_children(obj):
+    obj.select_set(True)
+    for child in obj.children:
+        select_children(child)
+        
 def delete_object_and_children(obj_bp):
     '''
     Deletes a object and all it's children
@@ -379,7 +384,7 @@ def add_bevel(assembly):
         if child.type == 'MESH':
             bevel = child.modifiers.new('Bevel','BEVEL')    
             bevel.width = .0005
-            
+
 def event_is_place_asset(event):
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
         return True
@@ -440,3 +445,8 @@ def get_connected_right_wall_bp(current_wall):
         wall_bp = get_bp_by_tag(props.connected_object,'IS_WALL_BP')
         if wall_bp:
             return wall_bp                
+
+def delete_driver_variables(drivers):
+    for driver in drivers:
+        for var in driver.driver.variables:
+            driver.driver.variables.remove(var)               

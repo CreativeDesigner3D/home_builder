@@ -99,6 +99,11 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             self.draw_library(col,context,library)
 
         if hb_scene.library_tabs == 'CABINETS':
+            col = main_box.column(align=True)
+            row = col.row(align=True)
+            row.scale_y = 1.3
+            row.prop_enum(hb_scene, "cabinet_tabs", 'CATALOGS',icon='ASSET_MANAGER') 
+            row.prop_enum(hb_scene, "cabinet_tabs", 'CUSTOM',icon='TOOL_SETTINGS')       
             col.separator()
             row = col.row(align=True)
             row.scale_y = 1.3                 
@@ -137,9 +142,9 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             col = main_box.column(align=True)
             row = col.row(align=True)
             row.scale_y = 1.3
-            row.prop_enum(hb_scene, "build_tabs", 'STARTERS') 
-            row.prop_enum(hb_scene, "build_tabs", 'INSERTS')                  
-            row.prop_enum(hb_scene, "build_tabs", 'PARTS') 
+            row.prop_enum(hb_scene, "build_tabs", 'STARTERS',icon='MOD_LINEART') 
+            row.prop_enum(hb_scene, "build_tabs", 'INSERTS',icon='CON_SAMEVOL')                  
+            row.prop_enum(hb_scene, "build_tabs", 'PARTS',icon='SNAP_FACE') 
 
             if hb_scene.build_tabs == 'STARTERS':
                 col.separator()

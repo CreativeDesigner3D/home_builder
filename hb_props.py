@@ -92,6 +92,12 @@ class Home_Builder_Scene_Props(PropertyGroup):
                           default='WALLS',
                           update=update_library_tab)
 
+    cabinet_tabs: EnumProperty(name="Cabinet Tabs",
+                          items=[('CATALOGS',"Catalogs","Show the Cabinet Catalogs"),
+                                 ('CUSTOM',"Custom","Show the Custom Cabinets")],
+                          default='CATALOGS',
+                          update=update_library_tab)
+
     build_tabs: EnumProperty(name="Build Tabs",
                           items=[('STARTERS',"Starters","Show the Closet Starters"),
                                  ('INSERTS',"Inserts","Show the Closet Inserts"),

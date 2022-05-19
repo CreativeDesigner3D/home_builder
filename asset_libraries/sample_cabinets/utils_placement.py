@@ -3,6 +3,7 @@ import bpy
 import math
 from mathutils import Vector
 from pc_lib import pc_types, pc_unit, pc_utils
+from . import utils_cabinet
 from . import const_cabinets as const
 
 def event_is_place_asset(event):
@@ -247,6 +248,96 @@ def position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,sele
 
     return "OBJECT"
 
+def position_corner_unit_on_wall(cabinet,wall,placement_obj,mouse_location,selected_normal):
+    placement = 'WALL'
+    
+    cabinet.obj_bp.parent = wall.obj_bp
+    cabinet.obj_bp.matrix_world[0][3] = mouse_location[0]
+    cabinet.obj_bp.matrix_world[1][3] = mouse_location[1]
+    placement_obj.parent = wall.obj_bp
+    placement_obj.matrix_world[0][3] = mouse_location[0]
+    placement_obj.matrix_world[1][3] = mouse_location[1] 
+    cabinet.obj_bp.location.y = 0   
+
+    wall_length = wall.obj_x.location.x
+    cabinet_width = cabinet.obj_x.location.x
+    x_loc = cabinet.obj_bp.location.x
+
+    #SNAP TO LEFT
+    if x_loc < .25:
+        placement = "WALL_LEFT"
+        cabinet.obj_bp.rotation_euler.z = math.radians(0)
+        cabinet.obj_bp.location.x = 0
+
+    #SNAP TO RIGHT
+    if x_loc > wall_length - cabinet_width:
+        placement = "WALL_RIGHT"
+        cabinet.obj_bp.rotation_euler.z = math.radians(-90)
+        cabinet.obj_bp.location.x = wall_length
+
+    #TODO: GET NEXT PRODUCT AND UPDATE LOCATION AND SIZE
+
+    # if selected_normal.y == 1:
+    #     #BACK SIDE OF WALL
+    #     cabinet.obj_bp.rotation_euler.z = math.radians(180)
+    # else:
+    #     cabinet.obj_bp.rotation_euler.z = 0
+
+    return placement
+
+def position_closet_on_wall(closet,wall,placement_obj,mouse_location):
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    left_spacing = 0
+    right_spacing = 0
+    closet.obj_bp.parent = wall.obj_bp
+    closet.obj_bp.location = (0,0,0)        
+    closet.obj_x.location.x = wall.obj_x.location.x
+    pc_utils.select_children(closet.obj_bp)              
+    # left_x_loc, left_product, left_wall = get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='LEFT')
+    # right_x_loc, right_product, right_wall = get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='RIGHT')
+    # if left_wall:
+    #     if left_wall.obj_bp.name == wall.obj_bp.name:
+    #         left_spacing = 0
+    #     else:
+    #         if left_product and 'IS_INSIDE_CORNER_BP' not in left_product.obj_bp:
+    #             left_spacing = props.closet_corner_spacing
+
+    # if right_wall:
+    #     if right_wall.obj_bp.name == wall.obj_bp.name:
+    #         right_spacing = 0
+    #     else:
+    #         if right_product and 'IS_INSIDE_CORNER_BP' not in right_product.obj_bp:
+    #             right_spacing = props.closet_corner_spacing
+
+    # closet.obj_bp.location.x = left_x_loc + left_spacing
+    # closet.obj_x.location.x -= left_x_loc + left_spacing + right_spacing + right_x_loc
+    return 'WALL'
+
+def position_closet_on_countertop(closet,countertop,placement_obj,mouse_location):
+    wall = None
+    wall_bp = pc_utils.get_bp_by_tag(countertop.obj_bp,const.WALL_TAG)
+    if wall_bp:
+        wall = pc_types.Assembly(wall_bp)
+
+    sel_ctop_width = countertop.obj_x.location.x
+    ctop_thickness = countertop.obj_z.location.z
+    sel_ctop_world_x = countertop.obj_bp.matrix_world[0][3]
+    sel_ctop_world_y = countertop.obj_bp.matrix_world[1][3]
+    sel_ctop_world_z = countertop.obj_bp.matrix_world[2][3]
+
+    if wall:
+        closet.obj_bp.parent = wall.obj_bp
+    pc_utils.select_children(closet.obj_bp)      
+    pc_utils.select_children(countertop.obj_bp)     
+    closet.obj_bp.matrix_world[0][3] = sel_ctop_world_x
+    closet.obj_bp.matrix_world[1][3] = sel_ctop_world_y
+    closet.obj_x.location.x = sel_ctop_width 
+    closet.obj_bp.rotation_euler.z = countertop.obj_bp.rotation_euler.z
+    hanging_height = closet.obj_z.matrix_world[2][3]
+    target_height = hanging_height - (sel_ctop_world_z + ctop_thickness)
+
+    return 'COUNTERTOP', target_height
+
 def position_cabinet_on_wall(cabinet,wall,placement_obj,mouse_location,selected_normal):
     placement = 'WALL'
     
@@ -312,3 +403,68 @@ def position_cabinet(cabinet,mouse_location,selected_obj,cursor_z,selected_norma
         placement = "NONE"
 
     return placement, sel_cabinet, sel_wall    
+
+def position_closet(cabinet,mouse_location,selected_obj,cursor_z,selected_normal,placement_obj,height_above_floor):
+    cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.CABINET_TAG)
+    window_bp = pc_utils.get_bp_by_tag(selected_obj,const.WINDOW_TAG)
+    door_bp = pc_utils.get_bp_by_tag(selected_obj,const.ENTRY_DOOR_TAG)
+    countertop_bp = pc_utils.get_bp_by_tag(selected_obj,const.COUNTERTOP_TAG)
+    
+    placement = ""
+    sel_cabinet = None
+    sel_wall = None
+    override_height = 0
+
+    if not cabinet_bp:
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_APPLIANCE_TAG)
+
+    wall_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_TAG)
+
+    if window_bp:
+        sel_assembly = pc_types.Assembly(window_bp)
+        placement = position_cabinet_next_to_door_window(cabinet,mouse_location,sel_assembly)
+    elif door_bp:
+        sel_assembly = pc_types.Assembly(door_bp)
+        placement = position_cabinet_next_to_door_window(cabinet,mouse_location,sel_assembly)
+    elif countertop_bp:
+        sel_ctop = pc_types.Assembly(countertop_bp)
+        placement, override_height = position_closet_on_countertop(cabinet,sel_ctop,mouse_location,placement_obj)        
+    elif cabinet_bp:
+        sel_cabinet = types_cabinet.Cabinet(cabinet_bp)
+        placement = position_cabinet_next_to_cabinet(cabinet,sel_cabinet,mouse_location,placement_obj)
+    elif wall_bp:
+        sel_wall = pc_types.Assembly(wall_bp)
+        placement = position_closet_on_wall(cabinet,sel_wall,placement_obj,mouse_location)
+    else:
+        placement = position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,selected_normal,height_above_floor)
+    return placement, sel_cabinet, sel_wall, override_height
+
+def position_corner_unit(cabinet,mouse_location,selected_obj,cursor_z,selected_normal,placement_obj,height_above_floor):
+    cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.CABINET_TAG)
+    window_bp = pc_utils.get_bp_by_tag(selected_obj,const.WINDOW_TAG)
+    door_bp = pc_utils.get_bp_by_tag(selected_obj,const.ENTRY_DOOR_TAG)
+    placement = ""
+    sel_cabinet = None
+    sel_wall = None
+
+    if not cabinet_bp:
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_APPLIANCE_TAG)
+
+    wall_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_TAG)
+
+    if window_bp:
+        sel_assembly = pc_types.Assembly(window_bp)
+        placement = position_cabinet_next_to_door_window(cabinet,mouse_location,sel_assembly)
+    elif door_bp:
+        sel_assembly = pc_types.Assembly(door_bp)
+        placement = position_cabinet_next_to_door_window(cabinet,mouse_location,sel_assembly)
+    elif cabinet_bp:
+        sel_cabinet = types_cabinet.Cabinet(cabinet_bp)
+        placement = position_cabinet_next_to_cabinet(cabinet,sel_cabinet,mouse_location,placement_obj)
+    elif wall_bp:
+        sel_wall = pc_types.Assembly(wall_bp)
+        placement = position_corner_unit_on_wall(cabinet,sel_wall,placement_obj,mouse_location,selected_normal)
+    else:
+        placement = position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,selected_normal,height_above_floor)
+
+    return placement, sel_cabinet, sel_wall        
