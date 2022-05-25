@@ -38,14 +38,9 @@ class home_builder_OT_place_decoration(bpy.types.Operator):
 
     def get_object(self,context):
         wm_props = context.window_manager.home_builder
-        sel_library = None
-        for library in wm_props.asset_libraries:
-            if library.name == wm_props.active_decorations_library_name:
-                sel_library = library
-        workspace = context.workspace
-        wm = context.window_manager
-        asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]     
-        path = os.path.join(sel_library.library_path,'assets',asset.file_data.name + ".blend")
+        library = wm_props.get_active_library(context)
+        asset = wm_props.get_active_asset(context)   
+        path = os.path.join(library.library_path,'assets',asset.file_data.name + ".blend")
         
         with bpy.data.libraries.load(path) as (data_from, data_to):
                 data_to.objects = data_from.objects

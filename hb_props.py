@@ -47,7 +47,6 @@ class Asset_Library(PropertyGroup):
     activate_id: StringProperty(name="Activate ID")
     drop_id: StringProperty(name="Drop ID")
     enabled: BoolProperty(name="Enabled",default=True)
-    material_pointers: CollectionProperty(name="Material Pointers",type=Material_Pointer)
 
 
 class Home_Builder_Object_Props(PropertyGroup):
@@ -161,6 +160,13 @@ class Home_Builder_Window_Manager_Props(PropertyGroup):
 
     def load_asset_libraries(self):
         print("LOADING ASSET LIBRARIES")
+
+    def get_active_library(self,context):
+        return hb_utils.get_active_library(context)
+
+    def get_active_asset(self,context):
+        workspace = context.workspace.home_builder
+        return self.home_builder_library_assets[workspace.home_builder_library_index]
 
     @classmethod
     def register(cls):

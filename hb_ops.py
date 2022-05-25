@@ -145,8 +145,7 @@ class home_builder_OT_show_library_material_pointers(bpy.types.Operator):
 
     def draw(self, context):
         wm_props = context.window_manager.home_builder
-        workspace_props = context.workspace.home_builder
-        asset = wm_props.home_builder_library_assets[workspace_props.home_builder_library_index]
+        asset = wm_props.get_active_asset(context)
 
         layout = self.layout
         scene_props = context.scene.home_builder
@@ -159,7 +158,6 @@ class home_builder_OT_show_library_material_pointers(bpy.types.Operator):
             if pointer.library_name == self.library_name:
                 row = col.row()
                 props = row.operator('home_builder.assign_material_to_pointer',text=pointer.name)
-                props.library_name = self.library_name
                 props.pointer_name = pointer.name     
                 row.label(text=pointer.category_name + " - " + pointer.material_name,icon='MATERIAL')             
         
@@ -172,17 +170,17 @@ class home_builder_OT_assign_material_to_pointer(bpy.types.Operator):
     pointer_name: bpy.props.StringProperty(name="Pointer Name")
 
     def execute(self, context):  
-        library = hb_utils.get_active_library(context)
         wm_props = context.window_manager.home_builder
-        workspace_props = context.workspace.home_builder
-        asset = wm_props.home_builder_library_assets[workspace_props.home_builder_library_index]
+        library = wm_props.get_active_library(context)
+        asset = wm_props.get_active_asset(context)
+
         scene_props = context.scene.home_builder
         for pointer in scene_props.material_pointers:
-            if pointer.library_name == self.library_name and pointer.name == self.pointer_name:
+            if pointer.name == self.pointer_name:
                 pointer.material_name = asset.file_data.name
                 pointer.category_name = library.name
-                pointer.library_path = os.path.join(library.library_path,"library.blend")
-                bpy.ops.home_builder.update_materials_for_pointer(pointer_name=self.pointer_name)
+                pointer.library_path = os.path.join(library.library_path)
+                bpy.ops.home_builder.update_materials_for_pointer(pointer_name=self.pointer_name)                
         return {'FINISHED'}
 
 

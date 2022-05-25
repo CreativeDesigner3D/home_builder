@@ -13,7 +13,10 @@ def get_wm_props(window_manager):
 def get_scene_props(scene):
     return scene.pyclone
 
-def get_hb_object_props(scene):
+def get_hb_object_props(obj):
+    return obj.home_builder
+
+def get_hb_scene_props(scene):
     return scene.home_builder
 
 def get_3d_view_region(context):

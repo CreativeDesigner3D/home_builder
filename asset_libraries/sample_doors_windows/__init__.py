@@ -14,7 +14,8 @@ DOOR_AND_WINDOWS = {"library_name": "Sample Doors and Windows",
             
 DOOR_WINDOW_MATERIALS = {"library_name": "Door and Window Materials",
                          "library_type": "MATERIALS",
-                         "library_path": material_pointers_doors_windows.MATERIAL_PATH}
+                         "library_path": material_pointers_doors_windows.MATERIAL_PATH,
+                         "libary_drop_id": "home_builder.drop_material"}
 
 LIBRARIES = [DOOR_AND_WINDOWS,
              DOOR_WINDOW_MATERIALS]

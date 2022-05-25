@@ -15,6 +15,7 @@ from . import hb_ops
 from . import hb_props
 from . import hb_utils
 from . import hb_menus
+from . import hb_drop_ops
 from .pyclone_ops import pc_assembly
 from .pyclone_ops import pc_driver
 from .pyclone_ops import pc_general
@@ -182,6 +183,7 @@ def register():
     wall_ops.register()
     pc_lists.register()
     hb_menus.register()
+    hb_drop_ops.register()
     bpy.app.handlers.load_post.append(load_driver_functions)
     bpy.app.handlers.load_post.append(load_library)
 
@@ -202,6 +204,7 @@ def unregister():
     wall_ops.unregister()
     pc_lists.unregister()
     hb_menus.unregister()
+    hb_drop_ops.unregister()
     bpy.app.handlers.load_post.append(load_driver_functions)    
     bpy.app.handlers.load_post.remove(load_library)
 
