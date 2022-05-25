@@ -1,4 +1,5 @@
 import bpy
+from . import utils_cabinet
 
 class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
     bl_label = "Cabinet Libraries"
@@ -18,12 +19,69 @@ class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_label = "Cabinet Sizes"
     bl_region_type = 'HEADER'
-    bl_ui_units_x = 32
+    bl_ui_units_x = 20
 
     def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+
         layout = self.layout
-        layout.label(text="Cabinet Sizes")
+
+        box = layout.box()
+        box.label(text="Standard Cabinet Sizes:")
+
+        row = box.row(align=True)
+        row.label(text="Base:")
+        row.prop(props,'base_cabinet_height',text="Height")
+        row.prop(props,'base_cabinet_depth',text="Depth")
+
+        row = box.row(align=True)
+        row.label(text="Tall:")    
+        row.prop(props,'tall_cabinet_height',text="Height")    
+        row.prop(props,'tall_cabinet_depth',text="Depth")
         
+        row = box.row(align=True)
+        row.label(text="Upper:")    
+        row.prop(props,'upper_cabinet_height',text="Height")        
+        row.prop(props,'upper_cabinet_depth',text="Depth")
+        
+        row = box.row(align=True)
+        row.label(text="Sink:")       
+        row.prop(props,'sink_cabinet_height',text="Height")     
+        row.prop(props,'sink_cabinet_depth',text="Depth")
+        
+        row = box.row(align=True)
+        row.label(text="Suspended:")
+        row.prop(props,'suspended_cabinet_height',text="Height")
+        row.prop(props,'suspended_cabinet_depth',text="Depth")
+        
+        row = box.row(align=True)
+        row.label(text="Width:")  
+        row.prop(props,'width_1_door',text="1 Door")
+        row.prop(props,'width_2_door',text="2 Door")
+        row.prop(props,'width_drawer',text="Drawer")
+
+        row = box.row(align=True)
+        row.label(text="Blind Widths:")  
+        row.prop(props,'base_width_blind',text="Base")
+        row.prop(props,'tall_width_blind',text="Tall")
+        row.prop(props,'upper_width_blind',text="Upper")
+        
+        row = box.row(align=True)
+        row.label(text="Inside Corner Widths:")     
+        row.prop(props,'base_inside_corner_size',text="Base")
+        row.prop(props,'tall_inside_corner_size',text="Tall")             
+        
+        row = box.row(align=True)
+        row.label(text="Stacked Heights:")     
+        row.prop(props,'upper_stacked_cabinet_height',text="Upper")
+        row.prop(props,'stacked_top_cabinet_height',text="Top")  
+
+        box = layout.box()
+        box.label(text="Upper Cabinet Placement:")
+        row = box.row(align=True)
+        row.label(text="Height Above Floor:")    
+        row.prop(props,'upper_stacked_cabinet_height',text="To Top of Cabinet")         
+
 
 class HOME_BUILDER_PT_cabinet_materials(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
