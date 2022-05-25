@@ -40,15 +40,13 @@ CLOSET_INSERTS = {"library_name": "Closet Inserts",
                   "library_type": "INSERTS",
                   "library_path": CLOSET_INSERT_LIBRARY_PATH,
                   "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                  "library_activate_id": "hb_sample_cabinets.active_cabinet_library",
-                  "libary_drop_id": "hb_sample_cabinets.drop_cabinet_library"}
+                  "libary_drop_id": "hb_sample_cabinets.place_closet_insert"}
 
 CLOSET_PARTS = {"library_name": "Closet Parts",
                 "library_type": "PARTS",
                 "library_path": CLOSET_PART_LIBRARY_PATH,
                 "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                "library_activate_id": "hb_sample_cabinets.active_cabinet_library",
-                "libary_drop_id": "hb_sample_cabinets.drop_cabinet_library"}
+                "libary_drop_id": "hb_sample_cabinets.place_closet_part"}
 
 WOOD_FINISHED = {"library_name": "Wood Finished",
                  "library_type": "MATERIALS",
