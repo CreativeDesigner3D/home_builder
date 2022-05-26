@@ -211,10 +211,31 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                                        default=pc_unit.inch(1.0),
                                                        unit='LENGTH')     
 
+    #MATERIAL THICKNESS
     countertop_thickness: bpy.props.FloatProperty(name="Countertop Thickness",
-                                                       description="This is the thickness of countertops.",
-                                                       default=pc_unit.inch(1.5),
-                                                       unit='LENGTH')       
+                                                  description="This is the thickness of countertops.",
+                                                  default=pc_unit.inch(1.5),
+                                                  unit='LENGTH')       
+
+    cabinet_part_thickness: bpy.props.FloatProperty(name="Cabinet Part Thickness",
+                                                    description="This is the thickness of cabinet carcass part.",
+                                                    default=pc_unit.inch(.75),
+                                                    unit='LENGTH')  
+
+    cabinet_front_thickness: bpy.props.FloatProperty(name="Cabinet Front Thickness",
+                                                     description="This is the thickness of cabinet door and drawer fronts.",
+                                                     default=pc_unit.inch(.75),
+                                                     unit='LENGTH')  
+
+    closet_shelf_thickness: bpy.props.FloatProperty(name="Closet Shelf Thickness",
+                                                    description="This is the thickness of closet shelf thickness.",
+                                                    default=pc_unit.inch(.75),
+                                                    unit='LENGTH')  
+
+    closet_panel_thickness: bpy.props.FloatProperty(name="Closet Panel Thickness",
+                                                    description="This is the thickness of closet panels.",
+                                                    default=pc_unit.inch(.75),
+                                                    unit='LENGTH')  
 
     #CLOSET OPTIONS
     use_fixed_closet_heights: bpy.props.BoolProperty(name="Use Fixed Closet Heights",
@@ -224,6 +245,16 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     add_bottom_filler_shelf: bpy.props.BoolProperty(name="Add Bottom Filler Shelf",
                                            description="Check this option to add a bottom shelf when turning on filler panels.",
                                            default=False) 
+
+    closet_toe_kick_height: bpy.props.FloatProperty(name="Closet Toe Kick Height",
+                                             description="This is the default height of the toe kick.",
+                                             default=pc_unit.millimeter(96),
+                                             unit='LENGTH')
+
+    closet_toe_kick_setback: bpy.props.FloatProperty(name="Closet Toe Kick Setback",
+                                             description="This is the default setback of the toe kick.",
+                                             default=pc_unit.inch(1.625),
+                                             unit='LENGTH')
 
     default_closet_hanging_height: bpy.props.EnumProperty(name="Default Closet Hanging Height",
                                                      items=const.PANEL_HEIGHTS,

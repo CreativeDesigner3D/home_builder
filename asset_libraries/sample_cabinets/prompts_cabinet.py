@@ -14,7 +14,8 @@ def add_filler_prompts(assembly):
     assembly.add_prompt("Right Adjustment Width",'DISTANCE',pc_unit.inch(0))
 
 def add_front_prompts(assembly):
-    assembly.add_prompt("Front Thickness",'DISTANCE',pc_unit.inch(.75))
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Front Thickness",'DISTANCE',props.cabinet_front_thickness)
     assembly.add_prompt("Turn Off Pulls",'CHECKBOX',False)
 
 def add_sink_prompts(assembly):
@@ -78,19 +79,21 @@ def add_drawer_pull_prompts(assembly):
     assembly.add_prompt("Drawer Pull Vertical Location",'DISTANCE',props.pull_vertical_location_drawers)
 
 def add_countertop_prompts(assembly):
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
     assembly.add_prompt("Add Backsplash",'CHECKBOX',True)
     assembly.add_prompt("Add Left Backsplash",'CHECKBOX',False)
     assembly.add_prompt("Add Right Backsplash",'CHECKBOX',False)
     assembly.add_prompt("Side Splash Setback",'DISTANCE',pc_unit.inch(2.75))
-    assembly.add_prompt("Deck Thickness",'DISTANCE',pc_unit.inch(1.5))
+    assembly.add_prompt("Deck Thickness",'DISTANCE',props.countertop_thickness)
     assembly.add_prompt("Splash Thickness",'DISTANCE',pc_unit.inch(.75))    
 
 def add_countertop_overhang_prompts(assembly):
     pass
 
 def add_base_assembly_prompts(assembly):
-    assembly.add_prompt("Toe Kick Height",'DISTANCE',pc_unit.inch(4))
-    assembly.add_prompt("Toe Kick Setback",'DISTANCE',pc_unit.inch(3.25))
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Toe Kick Height",'DISTANCE',props.toe_kick_height)
+    assembly.add_prompt("Toe Kick Setback",'DISTANCE',props.toe_kick_setback)
     assembly.add_prompt("Boolean Overhang",'DISTANCE',pc_unit.inch(1))  
 
 def add_carcass_prompts(assembly):
@@ -112,7 +115,8 @@ def add_cabinet_lighting_prompts(assembly):
     assembly.add_prompt("Lighting Inset From Sides",'DISTANCE',pc_unit.inch(.75)) 
 
 def add_splitter_prompts(assembly):
-    assembly.add_prompt("Thickness",'DISTANCE',pc_unit.inch(.75))
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Thickness",'DISTANCE',props.closet_shelf_thickness)
     assembly.add_prompt("Left Thickness",'DISTANCE',pc_unit.inch(.75))
     assembly.add_prompt("Right Thickness",'DISTANCE',pc_unit.inch(.75))
     assembly.add_prompt("Top Thickness",'DISTANCE',pc_unit.inch(.75))
@@ -127,12 +131,15 @@ def add_interior_shelf_prompts(assembly):
     # assembly.add_prompt("Material Thickness",'DISTANCE',pc_unit.inch(.75)) 
 
 def add_thickness_prompts(assembly):
-    assembly.add_prompt("Material Thickness",'DISTANCE',pc_unit.inch(.75)) 
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Material Thickness",'DISTANCE',props.cabinet_part_thickness) 
 
 def add_closet_toe_kick_prompts(assembly):
-    assembly.add_prompt("Closet Kick Height",'DISTANCE',pc_unit.millimeter(96)) 
-    assembly.add_prompt("Closet Kick Setback",'DISTANCE',pc_unit.inch(1.625)) 
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Closet Kick Height",'DISTANCE',props.closet_toe_kick_height) 
+    assembly.add_prompt("Closet Kick Setback",'DISTANCE',props.closet_toe_kick_setback) 
 
 def add_closet_thickness_prompts(assembly):
-    assembly.add_prompt("Shelf Thickness",'DISTANCE',pc_unit.inch(.75))
-    assembly.add_prompt("Panel Thickness",'DISTANCE',pc_unit.inch(.75))    
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Shelf Thickness",'DISTANCE',props.closet_shelf_thickness)
+    assembly.add_prompt("Panel Thickness",'DISTANCE',props.closet_panel_thickness)    

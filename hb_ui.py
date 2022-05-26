@@ -128,6 +128,8 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row = col.row(align=True)
             row.scale_y = 1.3                 
             row.menu('HOME_BUILDER_MT_fixtures_library',text=library.name)
+            if library.library_menu_ui != '':
+                row.menu(library.library_menu_ui,text="",icon='SETTINGS')            
             self.draw_library(col,context,library)
 
         if hb_scene.library_tabs == 'MATERIALS':
@@ -150,7 +152,9 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 col.separator()
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_starters_library',text=library.name)  
+                row.menu('HOME_BUILDER_MT_starters_library',text=library.name) 
+                if library.library_menu_ui != '':
+                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')                 
                 self.draw_library(col,context,library)
 
             if hb_scene.build_tabs == 'INSERTS':

@@ -139,41 +139,32 @@ class HOME_BUILDER_PT_cabinet_materials(bpy.types.Panel):
     bl_region_type = 'HEADER'
     bl_ui_units_x = 16
 
-    def draw_library(self,layout,context,library):
-        workspace = context.workspace
-        wm = context.window_manager        
-        activate_id = "home_builder.todo"
-        drop_id = "home_builder.todo"
-        if library.activate_id != "":
-            activate_id = library.activate_id
-        if library.drop_id != "":
-            drop_id = library.drop_id
-
-        activate_op_props, drag_op_props = layout.template_asset_view(
-            "home_builder_library",
-            workspace,
-            "asset_library_ref",
-            wm.home_builder,
-            "home_builder_library_assets",
-            workspace.home_builder,
-            "home_builder_library_index",
-            # filter_id_types={"filter_object"},
-            display_options={'NO_LIBRARY'},
-            # display_options={'NO_FILTER','NO_LIBRARY'},
-            activate_operator=activate_id,
-            drag_operator=drop_id,            
-        )
-
     def draw(self, context):
-        wm = context.window_manager        
-        wm_props = wm.home_builder      
-        lib = wm_props.asset_libraries["Wood Finished"]  
-        layout = self.layout
-        layout.label(text="Cabinet Material Library")
-        # for material_pointer in lib.material_pointers:
-        #     layout.label(text=material_pointer.name + " - " + material_pointer.library_path + " - " + material_pointer.material_name)
+        props = utils_cabinet.get_scene_props(context.scene)
 
-        self.draw_library(layout,context,lib)
+        layout = self.layout
+        box = layout.box()
+
+        row = box.row()
+        row.label(text="Countertop Thickness")
+        row.prop(props,'countertop_thickness',text="")  
+
+        row = box.row()
+        row.label(text="Cabinet Carcass Thickness")
+        row.prop(props,'cabinet_part_thickness',text="") 
+
+        row = box.row()
+        row.label(text="Cabinet Front Thickness")
+        row.prop(props,'cabinet_front_thickness',text="") 
+
+        row = box.row()
+        row.label(text="Closet Shelf Thickness")
+        row.prop(props,'closet_shelf_thickness',text="") 
+
+        row = box.row()
+        row.label(text="Closet Panel Thickness")
+        row.prop(props,'closet_panel_thickness',text="") 
+
 
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
