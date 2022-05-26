@@ -7,7 +7,7 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Sizes",icon='DRIVER_DISTANCE')
-        layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Construction",icon='MODIFIER_DATA')
+        layout.popover(panel="HOME_BUILDER_PT_cabinet_construction",text="Cabinet Construction",icon='MODIFIER_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_materials",text="Cabinet Materials",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Fronts",icon='SNAP_FACE')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Moldings",icon='IPO_CONSTANT')
@@ -83,6 +83,56 @@ class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
         row.prop(props,'upper_stacked_cabinet_height',text="To Top of Cabinet")         
 
 
+class HOME_BUILDER_PT_cabinet_construction(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_label = "Cabinet Construction"
+    bl_region_type = 'HEADER'
+    bl_ui_units_x = 20
+
+    def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+
+        layout = self.layout
+
+        box = layout.box()
+        box.label(text="Cabinet Base Assembly:")
+        row = box.row(align=True)
+        row.label(text="Base Assembly Size:")       
+        row.prop(props,'toe_kick_height',text="Height")       
+        row.prop(props,'toe_kick_setback',text="Setback")       
+
+        box = layout.box()
+        box.label(text="Cabinet Countertop:")
+        row = box.row(align=True)
+        row.label(text="Overhang:")       
+        row.prop(props,'countertop_front_overhang',text="Front")       
+        row.prop(props,'countertop_rear_overhang',text="Rear")      
+        row.prop(props,'countertop_front_overhang',text="Side")  
+
+        box = layout.box()
+        box.label(text="Cabinet Handles:")
+        row = box.row(align=True)
+        row.label(text="Center Pulls on Drawers:")        
+        row.prop(props,'center_pulls_on_drawer_front',text="")        
+        if not props.center_pulls_on_drawer_front:
+            row = box.row(align=True)
+            row.label(text="Drawer Pull Vertical Location:")        
+            row.prop(props,'pull_vertical_location_drawers',text="From Top of Drawer")       
+
+        row = box.row(align=True)
+        row.label(text="Horizontal Location:")        
+        row.prop(props,'pull_dim_from_edge',text="")       
+        row = box.row(align=True)
+        row.label(text="Base Vertical Location:")        
+        row.prop(props,'pull_vertical_location_base',text="From Top of Door")                   
+        row = box.row(align=True)
+        row.label(text="Tall Vertical Location:")        
+        row.prop(props,'pull_vertical_location_tall',text="From Bottom of Door")   
+        row = box.row(align=True)
+        row.label(text="Upper Vertical Location:")        
+        row.prop(props,'pull_vertical_location_upper',text="From Bottom of Door")           
+
+
 class HOME_BUILDER_PT_cabinet_materials(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_label = "Cabinet Materials"
@@ -128,6 +178,7 @@ class HOME_BUILDER_PT_cabinet_materials(bpy.types.Panel):
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_PT_cabinet_sizes,
+    HOME_BUILDER_PT_cabinet_construction,
     HOME_BUILDER_PT_cabinet_materials,
 )
 

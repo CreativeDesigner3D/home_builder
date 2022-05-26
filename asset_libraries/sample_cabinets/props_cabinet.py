@@ -185,7 +185,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
 
     toe_kick_setback: bpy.props.FloatProperty(name="Toe Kick Setback",
                                              description="This is the default setback of the toe kick.",
-                                             default=pc_unit.inch(4.0),
+                                             default=pc_unit.inch(2.5),
                                              unit='LENGTH')
 
     add_backsplash: bpy.props.BoolProperty(name="Add Backsplash",
