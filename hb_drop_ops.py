@@ -1,6 +1,6 @@
 import bpy
 import os
-from pc_lib import pc_utils
+from pc_lib import pc_utils, pc_placement_utils
 
 class home_builder_OT_drop_material(bpy.types.Operator):
     bl_idname = "home_builder.drop_material"
@@ -39,7 +39,7 @@ class home_builder_OT_drop_material(bpy.types.Operator):
             selected_obj.select_set(True)
             context.view_layer.objects.active = selected_obj
         
-            if pc_utils.event_is_place_asset(event):
+            if pc_placement_utils.event_is_place_asset(event):
                 if hasattr(selected_obj.data,'uv_layers') and len(selected_obj.data.uv_layers) == 0:
                     bpy.ops.object.editmode_toggle()
                     bpy.ops.mesh.select_all(action='SELECT') 
@@ -59,10 +59,10 @@ class home_builder_OT_drop_material(bpy.types.Operator):
                         
                 return self.finish(context)
 
-        if pc_utils.event_is_cancel_command(event):
+        if pc_placement_utils.event_is_cancel_command(event):
             return self.cancel_drop(context)
         
-        if pc_utils.event_is_pass_through(event):
+        if pc_placement_utils.event_is_pass_through(event):
             return {'PASS_THROUGH'}        
         
         return {'RUNNING_MODAL'}

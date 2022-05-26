@@ -245,14 +245,14 @@ class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
         if event.type == 'RIGHT_ARROW' and event.value == 'PRESS':
             self.cabinet.obj_bp.rotation_euler.z += math.radians(90)   
 
-        if utils_placement.event_is_place_asset(event):
+        if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context)
             return self.finish(context,event.shift)
             
-        if utils_placement.event_is_cancel_command(event):
+        if pc_placement_utils.event_is_cancel_command(event):
             return self.cancel_drop(context)
 
-        if utils_placement.event_is_pass_through(event):
+        if pc_placement_utils.event_is_pass_through(event):
             return {'PASS_THROUGH'}
 
         return {'RUNNING_MODAL'}
@@ -523,14 +523,14 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         if event.type == 'RIGHT_ARROW' and event.value == 'PRESS':
             self.cabinet.obj_bp.rotation_euler.z += math.radians(90)   
 
-        if utils_placement.event_is_place_asset(event):
+        if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context)
             return self.finish(context,event.shift)
             
-        if utils_placement.event_is_cancel_command(event):
+        if pc_placement_utils.event_is_cancel_command(event):
             return self.cancel_drop(context)
 
-        if utils_placement.event_is_pass_through(event):
+        if pc_placement_utils.event_is_pass_through(event):
             return {'PASS_THROUGH'}
 
         return {'RUNNING_MODAL'}
@@ -765,15 +765,15 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
                                                                                                     self.placement_obj,
                                                                                                     0)
 
-        if pc_utils.event_is_place_asset(event):
+        if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context,override_height)
 
             return self.finish(context,event.shift)
             
-        if pc_utils.event_is_cancel_command(event):
+        if pc_placement_utils.event_is_cancel_command(event):
             return self.cancel_drop(context)
 
-        if pc_utils.event_is_pass_through(event):
+        if pc_placement_utils.event_is_pass_through(event):
             return {'PASS_THROUGH'}
 
         return {'RUNNING_MODAL'}

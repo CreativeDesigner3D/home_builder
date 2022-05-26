@@ -1,7 +1,7 @@
 import bpy
 import os
 from . import library_doors_windows
-from pc_lib import pc_types,pc_utils,pc_unit
+from pc_lib import pc_types,pc_utils,pc_unit,pc_placement_utils
 
 class home_builder_OT_place_door_window(bpy.types.Operator):
     bl_idname = "home_builder.place_door_window"
@@ -126,7 +126,7 @@ class home_builder_OT_place_door_window(bpy.types.Operator):
 
         self.position_object(selected_point,selected_obj)
 
-        if pc_utils.event_is_place_asset(event):
+        if pc_placement_utils.event_is_place_asset(event):
             self.add_boolean_modifier(selected_obj)
             self.confirm_placement()
             # if hasattr(self.assembly,'add_doors'):
@@ -134,10 +134,10 @@ class home_builder_OT_place_door_window(bpy.types.Operator):
             self.set_placed_properties(self.assembly.obj_bp)
             return self.finish(context,event.shift)
 
-        if pc_utils.event_is_cancel_command(event):
+        if pc_placement_utils.event_is_cancel_command(event):
             return self.cancel_drop(context)
 
-        if pc_utils.event_is_pass_through(event):
+        if pc_placement_utils.event_is_pass_through(event):
             return {'PASS_THROUGH'} 
 
         return {'RUNNING_MODAL'} 
