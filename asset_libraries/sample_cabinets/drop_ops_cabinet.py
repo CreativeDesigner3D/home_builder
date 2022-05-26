@@ -375,31 +375,16 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         self.set_child_properties(self.cabinet.obj_bp)
 
     def set_child_properties(self,obj):
-        pass
-        # if "IS_DRAWERS_BP" in obj and obj["IS_DRAWERS_BP"]:
-        #     assembly = pc_types.Assembly(obj)
-        #     calculator = assembly.get_calculator('Front Height Calculator')
-        #     if calculator:
-        #         calculator.calculate()
-        #         self.calculators.append(calculator)
-
-        # if "IS_VERTICAL_SPLITTER_BP" in obj and obj["IS_VERTICAL_SPLITTER_BP"]:
-        #     assembly = pc_types.Assembly(obj)
-        #     calculator = assembly.get_calculator('Opening Height Calculator')
-        #     if calculator:
-        #         calculator.calculate()
-        #         self.calculators.append(calculator)
-
         # # home_builder_utils.update_id_props(obj,self.cabinet.obj_bp)
         # # home_builder_utils.assign_current_material_index(obj)
-        # if obj.type == 'EMPTY':
-        #     obj.hide_viewport = True    
-        # if obj.type == 'MESH':
-        #     obj.display_type = 'WIRE'            
-        # if obj.name != self.drawing_plane.name:
-        #     self.exclude_objects.append(obj)    
-        # for child in obj.children:
-        #     self.set_child_properties(child)
+        if obj.type == 'EMPTY':
+            obj.hide_viewport = True    
+        if obj.type == 'MESH':
+            obj.display_type = 'WIRE'            
+        if obj.name != self.drawing_plane.name:
+            self.exclude_objects.append(obj)    
+        for child in obj.children:
+            self.set_child_properties(child)
 
     def set_placed_properties(self,obj):
         if obj.type == 'MESH':
@@ -637,14 +622,9 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def get_closet(self,context):
-        # directory, file = os.path.split(self.filepath)
-        # filename, ext = os.path.splitext(file)
-        # workspace = context.workspace
         wm_props = context.window_manager.home_builder
-
         asset = wm_props.get_active_asset(context)
         self.closet = eval("library_closet_starters." + asset.file_data.name.replace(" ","_") + "()")
-        # self.closet = eval("library_closet_starters." + filename.replace(" ","_") + "()")
 
         if hasattr(self.closet,'pre_draw'):
             self.closet.pre_draw()
