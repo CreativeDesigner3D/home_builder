@@ -14,6 +14,7 @@ from bpy.props import (
         EnumProperty,
         )
 from . import library_cabinet
+from . import utils_cabinet
 
 class Cabinet_Library_Item(bpy.types.PropertyGroup):
     library_type: StringProperty(name="Library Type")
@@ -27,6 +28,48 @@ class hb_sample_cabinets_OT_active_cabinet_library(bpy.types.Operator):
     asset_name: StringProperty(name="Asset Name")
 
     def execute(self, context):
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_assign_handle_pointer(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.assign_handle_pointer"
+    bl_label = "Assign Handle Pointer"
+
+    pointer_name: StringProperty(name="Pointer Name")
+
+    def execute(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+        pointer = eval("props." + self.pointer_name)
+        pointer.category_name = props.cabinet_handle_category
+        pointer.item_name = props.cabinet_handle
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_assign_door_pointer(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.assign_door_pointer"
+    bl_label = "Assign Door Pointer"
+
+    pointer_name: StringProperty(name="Pointer Name")
+
+    def execute(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+        pointer = eval("props." + self.pointer_name)
+        pointer.category_name = props.cabinet_door_category
+        pointer.item_name = props.cabinet_door
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_assign_molding_pointer(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.assign_molding_pointer"
+    bl_label = "Assign Molding Pointer"
+
+    pointer_name: StringProperty(name="Pointer Name")
+
+    def execute(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+        pointer = eval("props." + self.pointer_name)
+        pointer.category_name = props.molding_category
+        pointer.item_name = props.molding
         return {'FINISHED'}
 
 
@@ -126,6 +169,9 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
 classes = (
     Cabinet_Library_Item,
     hb_sample_cabinets_OT_active_cabinet_library,
+    hb_sample_cabinets_OT_assign_handle_pointer,
+    hb_sample_cabinets_OT_assign_door_pointer,
+    hb_sample_cabinets_OT_assign_molding_pointer,
     hb_sample_cabinets_OT_build_library,
 )
 

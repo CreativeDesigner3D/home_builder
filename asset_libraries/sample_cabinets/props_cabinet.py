@@ -18,9 +18,48 @@ from bpy.props import (
         )
 import inspect
 from . import const_cabinets as const
+from . import enum_cabinets
 from pc_lib import pc_types, pc_unit, pc_utils
 
+class Pointer(PropertyGroup):
+    category_name: StringProperty(name="Category Name")
+    item_name: StringProperty(name="Item Name")
+
 class HB_Cabinet_Scene_Props(PropertyGroup):    
+
+    cabinet_handle_category: bpy.props.EnumProperty(name="Cabinet Handle Category",
+        items=enum_cabinets.enum_cabinet_handle_categories,
+        update=enum_cabinets.update_cabinet_handle_category)
+    cabinet_handle: bpy.props.EnumProperty(name="Cabinet Handle",
+        items=enum_cabinets.enum_cabinet_handle_names)
+
+    cabinet_door_category: bpy.props.EnumProperty(name="Cabinet Door Category",
+        items=enum_cabinets.enum_cabinet_door_categories,
+        update=enum_cabinets.update_cabinet_door_category)
+    cabinet_door: bpy.props.EnumProperty(name="Cabinet Door",
+        items=enum_cabinets.enum_cabinet_door_names)
+
+    molding_category: bpy.props.EnumProperty(name="Molding Category",
+        items=enum_cabinets.enum_molding_categories,
+        update=enum_cabinets.update_molding_category)
+    molding: bpy.props.EnumProperty(name="Molding",
+        items=enum_cabinets.enum_molding_names)
+
+    base_handle: PointerProperty(name="Base Handle",type=Pointer)
+    tall_handle: PointerProperty(name="Tall Handle",type=Pointer)
+    upper_handle: PointerProperty(name="Upper Handle",type=Pointer)
+    drawer_handle: PointerProperty(name="Drawer Handle",type=Pointer)
+
+    base_door: PointerProperty(name="Base Door",type=Pointer)
+    tall_door: PointerProperty(name="Tall Door",type=Pointer)
+    upper_door: PointerProperty(name="Upper Door",type=Pointer)
+    drawer_front: PointerProperty(name="Drawer Front",type=Pointer)
+
+    base_molding: PointerProperty(name="Base Molding",type=Pointer)
+    crown_molding: PointerProperty(name="Crown Molding",type=Pointer)
+    light_rail_molding: PointerProperty(name="Light Rail Molding",type=Pointer)
+    wall_crown_molding: PointerProperty(name="Wall Crown Molding",type=Pointer)
+
     base_cabinet_depth: FloatProperty(name="Base Cabinet Depth",
                                                  description="Default depth for base cabinets",
                                                  default=pc_unit.inch(23.0),
@@ -354,6 +393,7 @@ class HB_Cabinet_Object_Props(PropertyGroup):
         del bpy.types.Object.hb_cabinet
 
 classes = (
+    Pointer,
     HB_Cabinet_Scene_Props,
     HB_Cabinet_Object_Props,
 )

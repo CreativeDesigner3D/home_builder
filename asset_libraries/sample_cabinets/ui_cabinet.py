@@ -8,9 +8,10 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
         layout = self.layout
         layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Sizes",icon='DRIVER_DISTANCE')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_construction",text="Cabinet Construction",icon='MODIFIER_DATA')
-        layout.popover(panel="HOME_BUILDER_PT_cabinet_materials",text="Cabinet Materials",icon='MATERIAL_DATA')
-        layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Fronts",icon='SNAP_FACE')
-        layout.popover(panel="HOME_BUILDER_PT_cabinet_sizes",text="Cabinet Moldings",icon='IPO_CONSTANT')
+        layout.popover(panel="HOME_BUILDER_PT_cabinet_material_thickness",text="Cabinet Material Thickness",icon='MATERIAL_DATA')
+        layout.popover(panel="HOME_BUILDER_PT_cabinet_hardware",text="Cabinet Hardware",icon='MATERIAL_DATA')
+        layout.popover(panel="HOME_BUILDER_PT_cabinet_fronts",text="Cabinet Fronts",icon='SNAP_FACE')
+        layout.popover(panel="HOME_BUILDER_PT_cabinet_moldings",text="Cabinet Moldings",icon='IPO_CONSTANT')
         layout.separator()
         layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
 
@@ -133,9 +134,9 @@ class HOME_BUILDER_PT_cabinet_construction(bpy.types.Panel):
         row.prop(props,'pull_vertical_location_upper',text="From Bottom of Door")           
 
 
-class HOME_BUILDER_PT_cabinet_materials(bpy.types.Panel):
+class HOME_BUILDER_PT_cabinet_material_thickness(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
-    bl_label = "Cabinet Materials"
+    bl_label = "Cabinet Material Thickness"
     bl_region_type = 'HEADER'
     bl_ui_units_x = 16
 
@@ -166,11 +167,127 @@ class HOME_BUILDER_PT_cabinet_materials(bpy.types.Panel):
         row.prop(props,'closet_panel_thickness',text="") 
 
 
+class HOME_BUILDER_PT_cabinet_hardware(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_label = "Cabinet Hardware"
+    bl_region_type = 'HEADER'
+    bl_ui_units_x = 16
+
+    def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+
+        layout = self.layout
+
+        box = layout.box()
+        box.label(text="Cabinet Handle Library")
+        row = box.row()
+        row.prop(props,'cabinet_handle_category',text="")    
+
+        row = box.row()
+        row.template_icon_view(props,"cabinet_handle",show_labels=True)   
+
+        box = layout.box()
+        box.label(text="Cabinet Library Pointers")   
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_handle"
+        row.label(text="Base Handle: " + props.base_handle.category_name + " - " + props.base_handle.item_name)  
+                       
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "tall_handle"
+        row.label(text="Tall Handle: " + props.tall_handle.category_name + " - " + props.tall_handle.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "upper_handle"
+        row.label(text="Upper Handle: " + props.upper_handle.category_name + " - " + props.upper_handle.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_handle"
+        row.label(text="Drawer Handle: " + props.drawer_handle.category_name + " - " + props.drawer_handle.item_name)                                         
+
+
+class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_label = "Cabinet Fronts"
+    bl_region_type = 'HEADER'
+    bl_ui_units_x = 16
+
+    def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+
+        layout = self.layout
+
+        box = layout.box()
+        box.label(text="Cabinet Front Library")
+        row = box.row()
+        row.prop(props,'cabinet_door_category',text="")    
+
+        row = box.row()
+        row.template_icon_view(props,"cabinet_door",show_labels=True)   
+
+        box = layout.box()
+        box.label(text="Cabinet Front Pointers")   
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_door"
+        row.label(text="Base Door: " + props.base_door.category_name + " - " + props.base_door.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "tall_door"
+        row.label(text="Tall Door: " + props.tall_door.category_name + " - " + props.tall_door.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "upper_door"
+        row.label(text="Upper Door: " + props.upper_door.category_name + " - " + props.upper_door.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_front"
+        row.label(text="Drawer Front: " + props.drawer_front.category_name + " - " + props.drawer_front.item_name)       
+
+
+class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_label = "Cabinet Moldings"
+    bl_region_type = 'HEADER'
+    bl_ui_units_x = 16
+
+    def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+
+        layout = self.layout
+
+        box = layout.box()
+        box.label(text="Molding Library")
+        row = box.row()
+        row.prop(props,'molding_category',text="")    
+
+        row = box.row()
+        row.template_icon_view(props,"molding",show_labels=True)   
+
+        box = layout.box()
+        box.label(text="Molding Pointers")   
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_molding"
+        row.label(text="Base Molding: " + props.base_molding.category_name + " - " + props.base_molding.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "crown_molding"
+        row.label(text="Crown Molding: " + props.crown_molding.category_name + " - " + props.crown_molding.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "light_rail_molding"
+        row.label(text="Light Rail Molding: " + props.light_rail_molding.category_name + " - " + props.light_rail_molding.item_name)  
+
+        row = box.row()
+        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "wall_crown_molding"
+        row.label(text="Wall Crown Molding: " + props.wall_crown_molding.category_name + " - " + props.wall_crown_molding.item_name)   
+
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_PT_cabinet_sizes,
     HOME_BUILDER_PT_cabinet_construction,
-    HOME_BUILDER_PT_cabinet_materials,
+    HOME_BUILDER_PT_cabinet_material_thickness,
+    HOME_BUILDER_PT_cabinet_hardware,
+    HOME_BUILDER_PT_cabinet_fronts,
+    HOME_BUILDER_PT_cabinet_moldings,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)          
