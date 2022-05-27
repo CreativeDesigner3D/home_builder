@@ -91,12 +91,17 @@ class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def get_cabinet(self,context):
-        workspace = context.workspace
-        wm = context.window_manager
-        asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]
+        scene_props = utils_cabinet.get_scene_props(context.scene)
+        wm_props = context.window_manager.home_builder
+        asset = wm_props.get_active_asset(context)
         self.cabinet = eval("library_cabinet." + asset.file_data.name.replace(" ","_") + "()")
         self.cabinet.draw()
+        self.cabinet.set_name(asset.file_data.name.replace(" ","_"))
         self.set_child_properties(self.cabinet.obj_bp)
+
+        cabinet_type = self.cabinet.get_prompt("Cabinet Type")
+        if cabinet_type.get_value() == 'Upper':
+            self.height_above_floor = scene_props.height_above_floor - self.cabinet.obj_z.location.z
 
     def set_child_properties(self,obj):
         if "IS_DRAWERS_BP" in obj and obj["IS_DRAWERS_BP"]:

@@ -32,6 +32,13 @@ def update_library_tab(self,context):
         if bpy.ops.asset.library_refresh.poll():
             bpy.ops.asset.library_refresh()
 
+        #TODO FIGURE OUT HOW TO FIX WHEN INDEX IS GREATER THAN LENGTH
+        workspace = context.workspace.home_builder
+        wm_props = context.window_manager.home_builder
+        print('INDEX',workspace.home_builder_library_index,'LENGTH',len(wm_props.home_builder_library_assets))
+        if workspace.home_builder_library_index > len(wm_props.home_builder_library_assets):
+            print("INDEX GREATER THAN LENGTH")
+
 
 class Material_Pointer(PropertyGroup):
     library_path: StringProperty(name="Library Path")
@@ -123,11 +130,7 @@ class Home_Builder_Scene_Props(PropertyGroup):
 
 
 class Home_Builder_Workspace_Props(PropertyGroup):  
-    cabinet_library_index: bpy.props.IntProperty()
-    appliance_library_index: bpy.props.IntProperty()
     home_builder_library_index: bpy.props.IntProperty()
-
-    home_builder_library_ref: bpy.props.StringProperty(name="HB",default="home_builder_library")
 
     @classmethod
     def register(cls):
@@ -144,8 +147,6 @@ class Home_Builder_Workspace_Props(PropertyGroup):
 
 class Home_Builder_Window_Manager_Props(PropertyGroup):
     home_builder_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
-    cabinet_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
-    appliance_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
     asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
 
     active_entry_door_window_library_name: bpy.props.StringProperty(name="Active Entry Door Window Library Name")

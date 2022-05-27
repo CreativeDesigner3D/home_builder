@@ -6,6 +6,8 @@ from . import assemblies_cabinet
 from . import paths_cabinet
 from . import const_cabinets as const
 from . import prompts_cabinet
+from . import utils_cabinet
+from . import material_pointers_cabinet
 
 class Cabinet_Exterior(pc_types.Assembly):
     carcass_type = '' #Base, Tall, Upper
@@ -51,7 +53,7 @@ class Cabinet_Exterior(pc_types.Assembly):
         if not pull_length:
             return #DON'T ADD PULLS TO APPLIED ENDS
 
-        pull_path = os.path.join(assemblies_cabinet.get_pull_path(),pointer.category,pointer.item_name + ".blend")
+        pull_path = paths_cabinet.get_handle_path_by_pointer(pointer)
         pull_obj = pc_utils.get_object(pull_path) 
         front.add_object(pull_obj)
 
@@ -71,13 +73,13 @@ class Cabinet_Exterior(pc_types.Assembly):
 
         #FORMULAS
         pull_obj.pyclone.loc_z('front_thickness',[front_thickness])
-        if pointer.name == 'Base Cabinet Pulls':
+        if self.carcass_type == 'Base':
             pull_obj.pyclone.loc_x('door_length-base_pull_vertical_location-(pull_length_var/2)',
             [door_length,base_pull_vertical_location,tall_pull_vertical_location,upper_pull_vertical_location,pull_length_var])  
-        if pointer.name == 'Tall Cabinet Pulls':
+        if self.carcass_type == 'Tall':
             pull_obj.pyclone.loc_x('tall_pull_vertical_location-(pull_length_var/2)',
             [door_length,base_pull_vertical_location,tall_pull_vertical_location,upper_pull_vertical_location,pull_length_var])  
-        if pointer.name == 'Upper Cabinet Pulls':
+        if self.carcass_type == 'Upper':
             pull_obj.pyclone.loc_x('upper_pull_vertical_location+(pull_length_var/2)',
             [door_length,base_pull_vertical_location,tall_pull_vertical_location,upper_pull_vertical_location,pull_length_var])     
         pull_obj.rotation_euler.x = math.radians(-90)
@@ -85,7 +87,7 @@ class Cabinet_Exterior(pc_types.Assembly):
         pull_obj.pyclone.hide('IF(OR(hide,turn_off_pulls),True,False)',[hide,turn_off_pulls])
 
         pull_obj['IS_CABINET_PULL'] = True
-        # home_builder_pointers.assign_pointer_to_object(pull_obj,"Cabinet Pull Finish")  
+        material_pointers_cabinet.assign_pointer_to_object(pull_obj,"Cabinet Pull Finish")  
         # home_builder_utils.get_object_props(pull_obj).pointer_name = pointer.name
 
     def draw_prompts(self,layout,context):
@@ -198,19 +200,19 @@ class Doors(Cabinet_Exterior):
         lo_var = lo.get_var("lo_var")
         ro_var = ro.get_var("ro_var")
 
-        # props = home_builder_utils.get_scene_props(bpy.context.scene)
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
 
         # front_pointer = None
-        # pull_pointer = None
-        # if self.carcass_type == 'Base':
-        #     front_pointer = props.cabinet_door_pointers["Base Cabinet Doors"]
-        #     pull_pointer = props.pull_pointers["Base Cabinet Pulls"]
-        # if self.carcass_type == 'Tall':
-        #     front_pointer = props.cabinet_door_pointers["Tall Cabinet Doors"]
-        #     pull_pointer = props.pull_pointers["Tall Cabinet Pulls"]
-        # if self.carcass_type == 'Upper':
-        #     front_pointer = props.cabinet_door_pointers["Upper Cabinet Doors"]
-        #     pull_pointer = props.pull_pointers["Upper Cabinet Pulls"]
+        pull_pointer = None
+        if self.carcass_type == 'Base':
+            # front_pointer = props.cabinet_door_pointers["Base Cabinet Doors"]
+            pull_pointer = props.base_handle
+        if self.carcass_type == 'Tall':
+            # front_pointer = props.cabinet_door_pointers["Tall Cabinet Doors"]
+            pull_pointer = props.tall_handle
+        if self.carcass_type == 'Upper':
+            # front_pointer = props.cabinet_door_pointers["Upper Cabinet Doors"]
+            pull_pointer = props.upper_handle
 
         #LEFT DOOR
         l_door = assemblies_cabinet.add_door_assembly(self)
@@ -225,7 +227,7 @@ class Doors(Cabinet_Exterior):
         l_door.dim_z('front_thickness',[front_thickness])
         hide = l_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==1,True,hide_doors)',[door_swing,hide_doors])
-        # self.add_door_pull(l_door,pull_pointer)
+        self.add_door_pull(l_door,pull_pointer)
 
         #RIGHT DOOR
         r_door = assemblies_cabinet.add_door_assembly(self)
@@ -240,6 +242,6 @@ class Doors(Cabinet_Exterior):
         r_door.dim_z('front_thickness',[front_thickness])
         hide = r_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==0,True,hide_doors)',[door_swing,hide_doors])
-        # self.add_door_pull(r_door,pull_pointer)
+        self.add_door_pull(r_door,pull_pointer)
 
         self.set_prompts()        
