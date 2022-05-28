@@ -31,7 +31,7 @@ class Design_Carcass(pc_types.Assembly):
         insert = self.add_assembly(insert)
         insert.loc_x('material_thickness',[material_thickness])
         insert.loc_y('depth',[depth])
-        if carcass_type.get_value() == "Upper": #UPPER CABINET
+        if carcass_type.get_value() == "Upper":
             insert.loc_z('material_thickness',[material_thickness])
             insert.dim_z('height-(material_thickness*2)',[height,material_thickness])
         else:
@@ -71,25 +71,36 @@ class Design_Carcass(pc_types.Assembly):
         tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
         carcass_type = self.get_prompt("Carcass Type")
         carcass_type.set_value(self.carcass_type)
-        
-        carcass = assemblies_cabinet.add_design_carcass(self)
-        carcass.set_name("Design Carcass")
-        carcass.dim_x('width',[width])
-        carcass.dim_y('depth',[depth])
-        carcass.dim_z('height-tkh',[height,tkh])
-        carcass.loc_z('tkh',[tkh])
 
-        base_assembly = assemblies_cabinet.add_base_assembly(self)
-        base_assembly.set_name("Base Assembly")
-        base_assembly.dim_x('width',[width])
-        base_assembly.dim_y('depth+tk_setback',[depth,tk_setback])
-        base_assembly.dim_z('tkh',[height,tkh])   
+        if carcass_type.get_value() == "Upper":
+            carcass = assemblies_cabinet.add_design_carcass(self)
+            carcass.set_name("Design Carcass")
+            carcass.dim_x('width',[width])
+            carcass.dim_y('depth',[depth])
+            carcass.dim_z('height',[height])
+            carcass.loc_z(value=0)
+        else:
+            carcass = assemblies_cabinet.add_design_carcass(self)
+            carcass.set_name("Design Carcass")
+            carcass.dim_x('width',[width])
+            carcass.dim_y('depth',[depth])
+            carcass.dim_z('height-tkh',[height,tkh])
+            carcass.loc_z('tkh',[tkh])
+
+            base_assembly = assemblies_cabinet.add_base_assembly(self)
+            base_assembly.set_name("Base Assembly")
+            base_assembly.dim_x('width',[width])
+            base_assembly.dim_y('depth+tk_setback',[depth,tk_setback])
+            base_assembly.dim_z('tkh',[height,tkh])   
+
 
 class Base_Design_Carcass(Design_Carcass):
     carcass_type = "Base"
 
+
 class Tall_Design_Carcass(Design_Carcass):
     carcass_type = "Tall"    
+
 
 class Upper_Design_Carcass(Design_Carcass):
     carcass_type = "Upper"       
