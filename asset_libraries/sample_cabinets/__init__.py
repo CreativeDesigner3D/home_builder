@@ -12,9 +12,6 @@ APPLIANCE_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Appli
 CLOSET_STARTER_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Starters")
 CLOSET_INSERT_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Inserts")
 CLOSET_PART_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Parts")
-# WOOD_FINISHED_PATH = os.path.join(os.path.dirname(__file__),'library',"Wood Finished")
-WOOD_UNFINISHED_PATH = os.path.join(os.path.dirname(__file__),'library',"Wood Unfinished")
-MELAMINE_PATH = os.path.join(os.path.dirname(__file__),'library',"Melamine")
 
 CABINETS = {"library_name": "Sample Cabinets",
             "library_type": "CABINETS",
@@ -48,18 +45,18 @@ CLOSET_PARTS = {"library_name": "Closet Parts",
                 "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
                 "libary_drop_id": "hb_sample_cabinets.place_closet_part"}
 
-WOOD_FINISHED = {"library_name": "Wood Finished",
-                 "library_type": "MATERIALS",
-                 "library_path": material_pointers_cabinet.WOOD_FINISHED_PATH,
-                 "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                 "libary_drop_id": "home_builder.drop_material"}
+SAMPLE_CABINET_MATERIALS = {"library_name": "Sample Cabinet Materials",
+                            "library_type": "MATERIALS",
+                            "library_path": material_pointers_cabinet.SAMPLE_CABINET_MATERIALS,
+                            "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
+                            "libary_drop_id": "home_builder.drop_material"}
 
 LIBRARIES = [CABINETS,
              APPLIANCES,
              CLOSET_STARTERS,
              CLOSET_INSERTS,
              CLOSET_PARTS,
-             WOOD_FINISHED]
+             SAMPLE_CABINET_MATERIALS]
 
 CABINET_POINTERS = {}
 CABINET_POINTERS["Cabinet Materials"] = material_pointers_cabinet.CABINET_POINTERS

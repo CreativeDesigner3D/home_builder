@@ -1,19 +1,19 @@
 import bpy
 import os
 
-WOOD_FINISHED_PATH = os.path.join(os.path.dirname(__file__),'library','Wood Finished','library.blend')   
+SAMPLE_CABINET_MATERIALS = os.path.join(os.path.dirname(__file__),'library','Sample Cabinet Materials','library.blend')   
 
 CABINET_POINTERS = []
-CABINET_POINTERS.append(("Cabinet Unfinished Surfaces",WOOD_FINISHED_PATH,"Candlelight"))
-CABINET_POINTERS.append(("Cabinet Unfinished Edges",WOOD_FINISHED_PATH,"Candlelight"))
-CABINET_POINTERS.append(("Cabinet Exposed Surfaces",WOOD_FINISHED_PATH,"Cayenne Maple"))
-CABINET_POINTERS.append(("Cabinet Exposed Edges",WOOD_FINISHED_PATH,"Cayenne Maple"))
-CABINET_POINTERS.append(("Cabinet Interior Surfaces",WOOD_FINISHED_PATH,"Candlelight"))
-CABINET_POINTERS.append(("Cabinet Interior Edges",WOOD_FINISHED_PATH,"Candlelight"))
-CABINET_POINTERS.append(("Cabinet Door Surfaces",WOOD_FINISHED_PATH,"Cayenne Maple"))
-CABINET_POINTERS.append(("Cabinet Door Edges",WOOD_FINISHED_PATH,"Cayenne Maple"))
-CABINET_POINTERS.append(("Cabinet Pull Finish",WOOD_FINISHED_PATH,"Candlelight"))
-CABINET_POINTERS.append(("Countertop Surface",WOOD_FINISHED_PATH,"Candlelight"))
+CABINET_POINTERS.append(("Cabinet Unfinished Surfaces",SAMPLE_CABINET_MATERIALS,"Particle Board"))
+CABINET_POINTERS.append(("Cabinet Unfinished Edges",SAMPLE_CABINET_MATERIALS,"Particle Board"))
+CABINET_POINTERS.append(("Cabinet Exposed Surfaces",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
+CABINET_POINTERS.append(("Cabinet Exposed Edges",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
+CABINET_POINTERS.append(("Cabinet Interior Surfaces",SAMPLE_CABINET_MATERIALS,"White Melamine"))
+CABINET_POINTERS.append(("Cabinet Interior Edges",SAMPLE_CABINET_MATERIALS,"White Melamine"))
+CABINET_POINTERS.append(("Cabinet Door Surfaces",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
+CABINET_POINTERS.append(("Cabinet Door Edges",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
+CABINET_POINTERS.append(("Cabinet Pull Finish",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
+CABINET_POINTERS.append(("Countertop Surface",SAMPLE_CABINET_MATERIALS,"Midnight Granite"))
 
 
 def get_material(library_path,material_name):
