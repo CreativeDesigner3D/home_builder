@@ -16,6 +16,7 @@ class Base_1_Door(types_cabinet.Standard_Cabinet):
         self.carcass.interior = None
         self.carcass.exterior = types_cabinet_exteriors.Doors()
         self.splitter = None
+        self.include_countertop = True
 
 
 class Base_2_Door(types_cabinet.Standard_Cabinet):
@@ -30,6 +31,7 @@ class Base_2_Door(types_cabinet.Standard_Cabinet):
         self.carcass.exterior = types_cabinet_exteriors.Doors()
         self.carcass.exterior.door_swing = 2
         self.splitter = None
+        self.include_countertop = True
 
 
 class Tall_1_Door(types_cabinet.Standard_Cabinet):

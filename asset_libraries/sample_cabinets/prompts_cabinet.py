@@ -80,15 +80,16 @@ def add_drawer_pull_prompts(assembly):
 
 def add_countertop_prompts(assembly):
     props = utils_cabinet.get_scene_props(bpy.context.scene)
+    assembly.add_prompt("Countertop Overhang Front",'DISTANCE',pc_unit.inch(1))
+    assembly.add_prompt("Countertop Overhang Back",'DISTANCE',pc_unit.inch(0))
+    assembly.add_prompt("Countertop Overhang Left",'DISTANCE',pc_unit.inch(0))
+    assembly.add_prompt("Countertop Overhang Right",'DISTANCE',pc_unit.inch(0))
     assembly.add_prompt("Add Backsplash",'CHECKBOX',True)
     assembly.add_prompt("Add Left Backsplash",'CHECKBOX',False)
     assembly.add_prompt("Add Right Backsplash",'CHECKBOX',False)
     assembly.add_prompt("Side Splash Setback",'DISTANCE',pc_unit.inch(2.75))
     assembly.add_prompt("Deck Thickness",'DISTANCE',props.countertop_thickness)
     assembly.add_prompt("Splash Thickness",'DISTANCE',pc_unit.inch(.75))    
-
-def add_countertop_overhang_prompts(assembly):
-    pass
 
 def add_base_assembly_prompts(assembly):
     props = utils_cabinet.get_scene_props(bpy.context.scene)

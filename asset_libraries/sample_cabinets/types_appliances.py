@@ -6,7 +6,7 @@ from . import utils_cabinet
 from . import prompts_cabinet
 from . import assemblies_cabinet
 from . import material_pointers_cabinet
-from . import types_cabinet
+from . import types_countertop
 
 class Dishwasher(pc_types.Assembly):
 
@@ -20,19 +20,16 @@ class Dishwasher(pc_types.Assembly):
                     self.countertop = pc_types.Assembly(child)       
 
     def add_countertop(self):
+        prompts_cabinet.add_countertop_prompts(self)
         width = self.obj_x.pyclone.get_var('location.x','width')
         depth = self.obj_y.pyclone.get_var('location.y','depth')
         height = self.obj_z.pyclone.get_var('location.z','height')    
-        ctop_front = self.add_prompt("Countertop Overhang Front",'DISTANCE',pc_unit.inch(1))
-        ctop_back = self.add_prompt("Countertop Overhang Back",'DISTANCE',pc_unit.inch(0))
-        ctop_left = self.add_prompt("Countertop Overhang Left",'DISTANCE',pc_unit.inch(0))
-        ctop_right = self.add_prompt("Countertop Overhang Right",'DISTANCE',pc_unit.inch(0))      
-        ctop_overhang_front = ctop_front.get_var('ctop_overhang_front')
-        ctop_overhang_back = ctop_back.get_var('ctop_overhang_back')
-        ctop_overhang_left = ctop_left.get_var('ctop_overhang_left')
-        ctop_overhang_right = ctop_right.get_var('ctop_overhang_right')
+        ctop_overhang_front = self.get_prompt("Countertop Overhang Front").get_var('ctop_overhang_front')
+        ctop_overhang_back = self.get_prompt("Countertop Overhang Back").get_var('ctop_overhang_back')
+        ctop_overhang_left = self.get_prompt("Countertop Overhang Left").get_var('ctop_overhang_left')
+        ctop_overhang_right = self.get_prompt("Countertop Overhang Right").get_var('ctop_overhang_right')
 
-        self.countertop = self.add_assembly(types_cabinet.Countertop())
+        self.countertop = self.add_assembly(types_countertop.Countertop())
         self.countertop.set_name('Countertop')
         self.countertop.loc_x('-ctop_overhang_left',[ctop_overhang_left])
         self.countertop.loc_y('ctop_overhang_back',[ctop_overhang_back])
