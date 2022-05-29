@@ -208,13 +208,6 @@ class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
             left_filler.set_value(pc_unit.inch(2))
             self.cabinet.add_left_filler() 
 
-        # if self.current_wall:
-        #     props = home_builder_utils.get_scene_props(context.scene)
-        #     cabinet_type = self.cabinet.get_prompt("Cabinet Type")
-        #     self.cabinet.obj_bp.location.z = 0
-        #     if cabinet_type and cabinet_type.get_value() == 'Upper':
-        #         self.cabinet.obj_bp.location.z += props.height_above_floor - self.cabinet.obj_z.location.z
-
     def modal(self, context, event):
         context.area.tag_redraw()
         bpy.ops.object.select_all(action='DESELECT')

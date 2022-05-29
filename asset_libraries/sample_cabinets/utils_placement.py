@@ -248,7 +248,7 @@ def position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,sele
 
     return "OBJECT"
 
-def position_corner_unit_on_wall(cabinet,wall,placement_obj,mouse_location,selected_normal):
+def position_corner_unit_on_wall(cabinet,wall,placement_obj,mouse_location,selected_normal,height_above_floor):
     placement = 'WALL'
     
     cabinet.obj_bp.parent = wall.obj_bp
@@ -282,7 +282,7 @@ def position_corner_unit_on_wall(cabinet,wall,placement_obj,mouse_location,selec
     #     cabinet.obj_bp.rotation_euler.z = math.radians(180)
     # else:
     #     cabinet.obj_bp.rotation_euler.z = 0
-
+    cabinet.obj_bp.location.z = height_above_floor
     return placement
 
 def position_closet_on_wall(closet,wall,placement_obj,mouse_location):
@@ -338,7 +338,7 @@ def position_closet_on_countertop(closet,countertop,placement_obj,mouse_location
 
     return 'COUNTERTOP', target_height
 
-def position_cabinet_on_wall(cabinet,wall,placement_obj,mouse_location,selected_normal):
+def position_cabinet_on_wall(cabinet,wall,placement_obj,mouse_location,selected_normal,height_above_floor):
     placement = 'WALL'
     
     cabinet.obj_bp.parent = wall.obj_bp
@@ -371,6 +371,8 @@ def position_cabinet_on_wall(cabinet,wall,placement_obj,mouse_location,selected_
     # else:
     #     cabinet.obj_bp.rotation_euler.z = 0
     cabinet.obj_bp.rotation_euler.z = 0
+    cabinet.obj_bp.location.z = height_above_floor
+
     return placement
 
 def position_cabinet(cabinet,mouse_location,selected_obj,cursor_z,selected_normal,placement_obj,height_above_floor):
@@ -396,7 +398,7 @@ def position_cabinet(cabinet,mouse_location,selected_obj,cursor_z,selected_norma
         placement = position_cabinet_next_to_cabinet(cabinet,sel_cabinet,mouse_location,placement_obj)
     elif wall_bp:
         sel_wall = pc_types.Assembly(wall_bp)
-        placement = position_cabinet_on_wall(cabinet,sel_wall,placement_obj,mouse_location,selected_normal)
+        placement = position_cabinet_on_wall(cabinet,sel_wall,placement_obj,mouse_location,selected_normal,height_above_floor)
     elif selected_obj:
         placement = position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,selected_normal,height_above_floor)
     else:
@@ -463,7 +465,7 @@ def position_corner_unit(cabinet,mouse_location,selected_obj,cursor_z,selected_n
         placement = position_cabinet_next_to_cabinet(cabinet,sel_cabinet,mouse_location,placement_obj)
     elif wall_bp:
         sel_wall = pc_types.Assembly(wall_bp)
-        placement = position_corner_unit_on_wall(cabinet,sel_wall,placement_obj,mouse_location,selected_normal)
+        placement = position_corner_unit_on_wall(cabinet,sel_wall,placement_obj,mouse_location,selected_normal,height_above_floor)
     else:
         placement = position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,selected_normal,height_above_floor)
 
