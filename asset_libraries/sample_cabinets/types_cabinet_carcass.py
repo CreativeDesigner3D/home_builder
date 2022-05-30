@@ -6,8 +6,9 @@ from . import prompts_cabinet
 
 class Design_Carcass(pc_types.Assembly):
 
+    exposed_interior = False
     carcass_type = ""
-    use_design_carcass = True
+
     left_side = None
     right_side = None
     back = None
@@ -63,7 +64,6 @@ class Design_Carcass(pc_types.Assembly):
         prompts_cabinet.add_carcass_prompts(self)
         prompts_cabinet.add_base_assembly_prompts(self)
 
-
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')  
@@ -73,14 +73,14 @@ class Design_Carcass(pc_types.Assembly):
         carcass_type.set_value(self.carcass_type)
 
         if carcass_type.get_value() == "Upper":
-            carcass = assemblies_cabinet.add_design_carcass(self)
+            carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
             carcass.set_name("Design Carcass")
             carcass.dim_x('width',[width])
             carcass.dim_y('depth',[depth])
             carcass.dim_z('height',[height])
             carcass.loc_z(value=0)
         else:
-            carcass = assemblies_cabinet.add_design_carcass(self)
+            carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
             carcass.set_name("Design Carcass")
             carcass.dim_x('width',[width])
             carcass.dim_y('depth',[depth])

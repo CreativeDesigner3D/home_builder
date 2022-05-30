@@ -27,6 +27,7 @@ class Pointer(PropertyGroup):
 
 class HB_Cabinet_Scene_Props(PropertyGroup):    
 
+    #ENUMS
     cabinet_handle_category: bpy.props.EnumProperty(name="Cabinet Handle Category",
         items=enum_cabinets.enum_cabinet_handle_categories,
         update=enum_cabinets.update_cabinet_handle_category)
@@ -45,6 +46,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     molding: bpy.props.EnumProperty(name="Molding",
         items=enum_cabinets.enum_molding_names)
 
+    #POINTERS
     base_handle: PointerProperty(name="Base Handle",type=Pointer)
     tall_handle: PointerProperty(name="Tall Handle",type=Pointer)
     upper_handle: PointerProperty(name="Upper Handle",type=Pointer)
@@ -60,6 +62,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     light_rail_molding: PointerProperty(name="Light Rail Molding",type=Pointer)
     wall_crown_molding: PointerProperty(name="Wall Crown Molding",type=Pointer)
 
+    #CABINET SIZES
     base_cabinet_depth: FloatProperty(name="Base Cabinet Depth",
                                                  description="Default depth for base cabinets",
                                                  default=pc_unit.inch(23.0),
@@ -174,6 +177,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                                 default=pc_unit.inch(12.0),
                                                 unit='LENGTH')
 
+    #CABINET HANDLES
     height_above_floor: FloatProperty(name="Height Above Floor",
                                                  description="Default height above floor for upper cabinets",
                                                  default=pc_unit.inch(84.0),
@@ -205,7 +209,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                                  unit='LENGTH')
 
     center_pulls_on_drawer_front: BoolProperty(name="Center Pulls on Drawer Front", 
-                                                        description="Check this center pulls on drawer fronts. Otherwise vertical location will be used.", 
+                                                        description="Check this to center pulls on drawer fronts. Otherwise vertical location will be used.", 
                                                         default=True)
 
     equal_drawer_stack_heights: BoolProperty(name="Equal Drawer Stack Heights", 
@@ -217,6 +221,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                                       default=pc_unit.inch(6.0),
                                                       unit='LENGTH')
 
+    #CABINET CONSTRUCTION
     toe_kick_height: bpy.props.FloatProperty(name="Toe Kick Height",
                                              description="This is the default height of the toe kick.",
                                              default=pc_unit.inch(4.0),
@@ -230,6 +235,10 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     add_backsplash: bpy.props.BoolProperty(name="Add Backsplash",
                                            description="Check this to include a countertop backsplash",
                                            default=True)
+
+    add_shelves_to_interior: BoolProperty(name="Add Shelves to Interior", 
+                                          description="Check this to add shelves to cabinet interiors", 
+                                          default=False)
 
     countertop_backsplash_height: bpy.props.FloatProperty(name="Coutnertop Backsplash Height",
                                                           description="Enter the Height for the Countertop Backsplash",

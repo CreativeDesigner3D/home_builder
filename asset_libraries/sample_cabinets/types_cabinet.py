@@ -44,6 +44,7 @@ class Cabinet(pc_types.Assembly):
         self.countertop.dim_x('width+ctop_overhang_left+ctop_overhang_right',[width,ctop_overhang_left,ctop_overhang_right])
         self.countertop.dim_y('depth-(ctop_overhang_front+ctop_overhang_back)',[depth,ctop_overhang_front,ctop_overhang_back])
 
+
 class Standard_Cabinet(Cabinet):
 
     width = pc_unit.inch(18)
@@ -93,3 +94,67 @@ class Standard_Cabinet(Cabinet):
 
         if self.include_countertop:
             self.add_countertop()
+
+
+class Stacked_Cabinet(Cabinet):
+
+    width = pc_unit.inch(18)
+    height = pc_unit.inch(34)
+    depth = pc_unit.inch(21)
+
+    carcass = None
+    
+    def __init__(self):
+        pass
+
+    def draw(self):
+        self.create_assembly("Cabinet")
+        self.obj_bp[const.CABINET_TAG] = True
+        self.carcasses = []
+
+        prompts_cabinet.add_cabinet_prompts(self)
+        prompts_cabinet.add_filler_prompts(self)
+        prompts_cabinet.add_stacked_cabinet_prompts(self)     
+
+        bottom_cabinet_height = self.get_prompt("Bottom Cabinet Height")
+        bottom_cabinet_height.set_value(self.bottom_cabinet_height)
+
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        left_adjment_width = self.get_prompt("Left Adjustment Width").get_var('left_adjment_width')
+        right_adjment_width = self.get_prompt("Right Adjustment Width").get_var('right_adjment_width')
+        bottom_cabinet_height = bottom_cabinet_height.get_var('bottom_cabinet_height')       
+
+        self.bottom_carcass = self.add_assembly(self.bottom_carcass)
+        self.bottom_carcass.set_name('Bottom Carcass')
+        self.bottom_carcass.loc_x('left_adjment_width',[left_adjment_width])
+        self.bottom_carcass.loc_y(value=0)
+        self.bottom_carcass.loc_z(value=0)
+        self.bottom_carcass.dim_x('width-left_adjment_width-right_adjment_width',[width,left_adjment_width,right_adjment_width])
+        self.bottom_carcass.dim_y('depth',[depth])
+        self.bottom_carcass.dim_z('bottom_cabinet_height',[bottom_cabinet_height])
+
+        self.top_carcass = self.add_assembly(self.top_carcass)
+        self.top_carcass.set_name('Upper Carcass')
+        self.top_carcass.loc_x('left_adjment_width',[left_adjment_width])
+        self.top_carcass.loc_y(value=0)
+        self.top_carcass.loc_z('bottom_cabinet_height',[bottom_cabinet_height])
+        self.top_carcass.dim_x('width-left_adjment_width-right_adjment_width',[width,left_adjment_width,right_adjment_width])
+        self.top_carcass.dim_y('depth',[depth])
+        self.top_carcass.dim_z('height-bottom_cabinet_height',[height,bottom_cabinet_height])
+
+        self.obj_x.location.x = self.width
+        self.obj_y.location.y = -self.depth
+        self.obj_z.location.z = self.height
+        # self.obj_bp.location.z = self.z_loc  
+
+        if self.top_carcass.exterior:
+            self.top_carcass.add_insert(self.top_carcass.exterior)
+        if self.top_carcass.interior:
+            self.top_carcass.add_insert(self.top_carcass.interior)              
+
+        if self.bottom_carcass.exterior:
+            self.bottom_carcass.add_insert(self.bottom_carcass.exterior)
+        if self.bottom_carcass.interior:
+            self.bottom_carcass.add_insert(self.bottom_carcass.interior)                                      

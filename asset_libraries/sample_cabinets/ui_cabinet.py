@@ -103,6 +103,12 @@ class HOME_BUILDER_PT_cabinet_construction(bpy.types.Panel):
         row.prop(props,'toe_kick_setback',text="Setback")       
 
         box = layout.box()
+        box.label(text="Cabinet Interior:")
+        row = box.row(align=True)
+        row.label(text="Add Shelves to Interiors:")    
+        row.prop(props,'add_shelves_to_interior',text="")  
+
+        box = layout.box()
         box.label(text="Cabinet Countertop:")
         row = box.row(align=True)
         row.label(text="Overhang:")       

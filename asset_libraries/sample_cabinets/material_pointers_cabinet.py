@@ -14,6 +14,7 @@ CABINET_POINTERS.append(("Cabinet Door Surfaces",SAMPLE_CABINET_MATERIALS,"Autum
 CABINET_POINTERS.append(("Cabinet Door Edges",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
 CABINET_POINTERS.append(("Cabinet Pull Finish",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
 CABINET_POINTERS.append(("Countertop Surface",SAMPLE_CABINET_MATERIALS,"Midnight Granite"))
+CABINET_POINTERS.append(("Shelf Holes",SAMPLE_CABINET_MATERIALS,"Black Melamine"))
 
 
 def get_material(library_path,material_name):
@@ -64,6 +65,25 @@ def assign_design_carcass_pointers(assembly):
             for pointer in child.pyclone.pointers:
                 if pointer.name == 'Interior':
                     pointer.pointer_name = "Cabinet Interior Surfaces"
+                if pointer.name == 'Edges':
+                    pointer.pointer_name = "Cabinet Exposed Edges"
+                if pointer.name == 'Top':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"
+                if pointer.name == 'Bottom':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"
+                if pointer.name == 'Left':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"     
+                if pointer.name == 'Right':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"    
+                if pointer.name == 'Back':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"    
+
+def assign_open_design_carcass_pointers(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            for pointer in child.pyclone.pointers:
+                if pointer.name == 'Interior':
+                    pointer.pointer_name = "Cabinet Exposed Surfaces"
                 if pointer.name == 'Edges':
                     pointer.pointer_name = "Cabinet Exposed Edges"
                 if pointer.name == 'Top':

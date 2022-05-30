@@ -3,7 +3,7 @@ from pc_lib import pc_types, pc_utils
 from . import paths_cabinet
 from . import material_pointers_cabinet
 
-def add_design_carcass(assembly):
+def add_design_carcass(assembly,exposed_interior=False):
     part_path = path.join(paths_cabinet.get_assembly_path(),"Design Carcass.blend")
     part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
     part.obj_bp['IS_DESIGN_CARCASS_BP'] = True
@@ -13,7 +13,10 @@ def add_design_carcass(assembly):
     part.obj_y.empty_display_size = .001
     part.obj_z.empty_display_size = .001
     part.obj_prompts.empty_display_size = .001    
-    material_pointers_cabinet.assign_design_carcass_pointers(part)
+    if exposed_interior:
+        material_pointers_cabinet.assign_open_design_carcass_pointers(part)
+    else:
+        material_pointers_cabinet.assign_design_carcass_pointers(part)
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part
 
@@ -142,6 +145,36 @@ def add_closet_array_part(assembly):
     assembly.add_assembly(part)    
     part.add_prompt("Left Depth",'DISTANCE',0)
     part.add_prompt("Right Depth",'DISTANCE',0)      
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_double_sided_pointers(part)
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part
+
+def add_interior_shelves_part(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Z Array Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_CUTPART_BP'] = True
+    assembly.add_assembly(part)        
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_cabinet_shelf_pointers(part)
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part
+
+def add_exposed_shelves_part(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Z Array Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_CUTPART_BP'] = True
+    assembly.add_assembly(part)        
     part.obj_bp.empty_display_size = .001
     part.obj_x.empty_display_size = .001
     part.obj_y.empty_display_size = .001
