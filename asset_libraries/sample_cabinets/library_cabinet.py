@@ -49,6 +49,7 @@ class Base_Open(types_cabinet.Standard_Cabinet):
         self.carcass.exposed_interior = True
         self.include_countertop = True
         
+
 class Base_Drawer(types_cabinet.Standard_Cabinet):
     
     def __init__(self):
@@ -60,6 +61,52 @@ class Base_Drawer(types_cabinet.Standard_Cabinet):
         self.carcass.interior = None
         self.carcass.exterior = types_cabinet_exteriors.Drawers()
         self.include_countertop = True        
+
+
+class Base_2_Door_2_Drawer(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_2_door
+        self.height = props.base_cabinet_height   
+        self.depth = props.base_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Base_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Door_Drawer()
+        self.carcass.exterior.door_swing = 2
+        self.carcass.exterior.two_drawers = True
+        self.include_countertop = True      
+
+
+class Base_2_Door_1_Drawer(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_2_door
+        self.height = props.base_cabinet_height   
+        self.depth = props.base_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Base_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Door_Drawer()
+        self.carcass.exterior.door_swing = 2
+        self.carcass.exterior.two_drawers = False
+        self.include_countertop = True      
+
+
+class Base_1_Door_1_Drawer(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_1_door
+        self.height = props.base_cabinet_height   
+        self.depth = props.base_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Base_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Door_Drawer()
+        self.carcass.exterior.door_swing = 0
+        self.carcass.exterior.two_drawers = False
+        self.include_countertop = True   
+
 
 class Tall_1_Door(types_cabinet.Standard_Cabinet):
     

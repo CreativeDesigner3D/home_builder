@@ -369,3 +369,159 @@ class Drawers(Cabinet_Exterior):
         front_height_calculator.set_total_distance('z+top_overlay+bottom_overlay-vertical_gap*' + str(self.drawer_qty-1),[z,top_overlay,bottom_overlay,vertical_gap])
 
         self.set_prompts()        
+
+
+class Door_Drawer(Cabinet_Exterior):
+
+    door_swing = 0 # Left = 0, Right = 1, Double = 2
+    two_drawers = False
+
+    # def set_pull_props(self,obj):
+    #     obj['IS_CABINET_PULL'] = True
+    #     home_builder_pointers.assign_pointer_to_object(obj,"Cabinet Pull Finish")  
+    #     if self.carcass_type == 'Base':
+    #         home_builder_utils.get_object_props(obj).pointer_name = "Base Cabinet Pulls"
+    #     if self.carcass_type == 'Tall':
+    #         home_builder_utils.get_object_props(obj).pointer_name = "Tall Cabinet Pulls"
+    #     if self.carcass_type == 'Upper':
+    #         home_builder_utils.get_object_props(obj).pointer_name = "Upper Cabinet Pulls"
+
+    def draw(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+
+        self.create_assembly("Door Drawer")
+        self.obj_bp["IS_DOORS_BP"] = True
+        self.obj_bp["IS_EXTERIOR_BP"] = True
+        # self.obj_bp["EXTERIOR_NAME"] = "DOORS"
+        
+        prompts_cabinet.add_carcass_prompts(self)
+        prompts_cabinet.add_cabinet_prompts(self)
+        prompts_cabinet.add_door_prompts(self)
+        prompts_cabinet.add_drawer_prompts(self)
+        prompts_cabinet.add_front_prompts(self)
+        prompts_cabinet.add_front_overlay_prompts(self)
+        prompts_cabinet.add_pull_prompts(self)
+        prompts_cabinet.add_thickness_prompts(self)
+        prompts_cabinet.add_drawer_pull_prompts(self)
+
+        self.add_prompt("Back Inset",'DISTANCE',0)
+        
+        door_swing_prompt = self.get_prompt("Door Swing")
+        door_swing_prompt.set_value(self.door_swing)
+
+        add_two_drawer_fronts = self.add_prompt("Add Two Drawer Fronts",'CHECKBOX',self.two_drawers)
+        add_two_drawer_fronts_var = add_two_drawer_fronts.get_var('add_two_drawer_fronts_var')
+
+        top_df_height = self.add_prompt("Top Drawer Front Height",'DISTANCE',pc_unit.inch(6))
+        top_df_height_var = top_df_height.get_var('top_df_height_var')
+
+        carcass_type = self.get_prompt("Carcass Type")
+        carcass_type.set_value(self.carcass_type)
+
+        door_swing_prompt = self.get_prompt("Door Swing")
+        door_swing_prompt.set_value(self.door_swing)
+
+        #VARS
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        z = self.obj_z.pyclone.get_var('location.z','z')        
+        vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
+        h_gap = self.get_prompt("Horizontal Gap").get_var('h_gap')
+        door_swing = door_swing_prompt.get_var('door_swing')
+        door_to_cabinet_gap = self.get_prompt("Door to Cabinet Gap").get_var('door_to_cabinet_gap')
+        front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
+        door_rotation = self.get_prompt("Door Rotation").get_var('door_rotation')
+        open_door = self.get_prompt("Open Door").get_var('open_door')
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        to_var = to.get_var("to_var")
+        bo_var = bo.get_var("bo_var")
+        lo_var = lo.get_var("lo_var")
+        ro_var = ro.get_var("ro_var")
+
+        # front_pointer = None
+        drawer_pull_pointer = props.drawer_handle
+        pull_pointer = None
+        if self.carcass_type == 'Base':
+            # front_pointer = props.cabinet_door_pointers["Base Cabinet Doors"]
+            pull_pointer = props.base_handle
+        if self.carcass_type == 'Tall':
+            # front_pointer = props.cabinet_door_pointers["Tall Cabinet Doors"]
+            pull_pointer = props.tall_handle
+        if self.carcass_type == 'Upper':
+            # front_pointer = props.cabinet_door_pointers["Upper Cabinet Doors"]
+            pull_pointer = props.upper_handle
+
+        #LEFT DOOR
+        l_door = assemblies_cabinet.add_door_assembly(self)
+        l_door.loc_x('-lo_var',[lo_var])
+        l_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        l_door.loc_z('-bo_var',[bo_var])
+        l_door.rot_x(value = math.radians(90))
+        l_door.rot_y(value = math.radians(-90))
+        l_door.rot_z('-door_rotation*open_door',[door_rotation,open_door])
+        l_door.dim_x('z+to_var+bo_var-top_df_height_var-h_gap',[z,to_var,bo_var,top_df_height_var,h_gap])
+        l_door.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)*-1',[door_swing,x,lo_var,ro_var,vertical_gap])            
+        l_door.dim_z('front_thickness',[front_thickness])
+        hide = l_door.get_prompt("Hide") 
+        hide.set_formula('IF(door_swing==1,True,False)',[door_swing])
+        self.add_door_pull(l_door,pull_pointer)
+
+        #RIGHT DOOR
+        r_door = assemblies_cabinet.add_door_assembly(self)
+        r_door.loc_x('x+ro_var',[x,ro_var])
+        r_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        r_door.loc_z('-bo_var',[bo_var])
+        r_door.rot_x(value = math.radians(90))
+        r_door.rot_y(value = math.radians(-90))
+        r_door.rot_z('door_rotation*open_door',[door_rotation,open_door])   
+        r_door.dim_x('z+to_var+bo_var-top_df_height_var-h_gap',[z,to_var,bo_var,top_df_height_var,h_gap])
+        r_door.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)',[door_swing,x,lo_var,ro_var,vertical_gap])     
+        r_door.dim_z('front_thickness',[front_thickness])
+        hide = r_door.get_prompt("Hide") 
+        hide.set_formula('IF(door_swing==0,True,False)',[door_swing])
+        self.add_door_pull(r_door,pull_pointer)
+
+        l_drawer_front = assemblies_cabinet.add_door_assembly(self)
+        top_o = l_drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
+        bottom_o = l_drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
+        left_o = l_drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
+        right_o = l_drawer_front.add_prompt("Right Overlay",'DISTANCE',0)        
+        l_drawer_front.obj_bp['IS_CABINET_DRAWER_FRONT_PANEL'] = True
+        l_drawer_front.set_name('Drawer Front')
+        l_drawer_front.loc_x('-lo_var',[lo_var])
+        l_drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        l_drawer_front.loc_z('z+to_var-top_df_height_var',[z,to_var,top_df_height_var])
+        l_drawer_front.rot_x(value = math.radians(90))
+        l_drawer_front.rot_y(value = math.radians(-90))
+        l_drawer_front.dim_x('top_df_height_var',[top_df_height_var])
+        l_drawer_front.dim_y('IF(add_two_drawer_fronts_var,(((x+lo_var+ro_var)-vertical_gap)/2)*-1,(x+lo_var+ro_var)*-1)',[add_two_drawer_fronts_var,x,lo_var,ro_var,vertical_gap])
+        l_drawer_front.dim_z('front_thickness',[front_thickness])
+        self.add_drawer_pull(l_drawer_front,drawer_pull_pointer)
+        left_o.set_formula('lo_var',[lo_var])
+        right_o.set_formula('IF(add_two_drawer_fronts_var,0,ro_var)',[add_two_drawer_fronts_var,ro_var])
+        # self.add_drawer_box(l_drawer_front)
+
+        r_drawer_front = assemblies_cabinet.add_door_assembly(self)
+        top_o = r_drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
+        bottom_o = r_drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
+        left_o = r_drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
+        right_o = r_drawer_front.add_prompt("Right Overlay",'DISTANCE',0)        
+        r_drawer_front.obj_bp['IS_CABINET_DRAWER_FRONT_PANEL'] = True
+        r_drawer_front.set_name('Drawer Front')
+        r_drawer_front.loc_x('(x/2)+(vertical_gap/2)',[x,vertical_gap])
+        r_drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        r_drawer_front.loc_z('z+to_var-top_df_height_var',[z,to_var,top_df_height_var])
+        r_drawer_front.rot_x(value = math.radians(90))
+        r_drawer_front.rot_y(value = math.radians(-90))
+        r_drawer_front.dim_x('top_df_height_var',[top_df_height_var])
+        r_drawer_front.dim_y('(((x+lo_var+ro_var)-vertical_gap)/2)*-1',[x,lo_var,ro_var,vertical_gap])
+        r_drawer_front.dim_z('front_thickness',[front_thickness])
+        hide = r_drawer_front.get_prompt('Hide')
+        hide.set_formula('IF(add_two_drawer_fronts_var,False,True)',[add_two_drawer_fronts_var])
+        self.add_drawer_pull(r_drawer_front,drawer_pull_pointer)
+        left_o.set_formula('0',[])
+        right_o.set_formula('ro_var',[ro_var])        
+        # self.add_drawer_box(r_drawer_front)
+
+        self.set_prompts()
