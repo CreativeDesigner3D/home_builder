@@ -111,3 +111,109 @@ class Shelves(Closet_Insert):
     def render(self):
         self.pre_draw()
         self.draw()
+
+
+class Hanging_Rod(Closet_Insert):
+    show_in_library = True
+    category_name = "CLOSETS"
+    subcategory_name = "INSERTS"
+    catalog_name = "_Sample"
+
+    is_double = False
+
+    def add_hanging_rod(self):
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        hanging_rod_setback = self.get_prompt("Hanging Rod Setback").get_var("hanging_rod_setback")
+
+        hanging_rod = assemblies_cabinet.add_closet_oval_hanging_rod(self)
+        hangers = assemblies_cabinet.add_closet_hangers(self)
+
+        hanging_rod.loc_x(value = 0)
+        hanging_rod.loc_y('hanging_rod_setback',[hanging_rod_setback])
+        hanging_rod.rot_x(value = 0)
+        hanging_rod.rot_y(value = 0)
+        hanging_rod.rot_z(value = 0)
+        hanging_rod.dim_x('width',[width])
+        hanging_rod.dim_y(value = 0)
+        hanging_rod.dim_z(value = 0)
+
+        loc_z = hanging_rod.obj_bp.pyclone.get_var('location.z','loc_z')
+
+        if hangers:
+            hangers.loc_x(value = 0)
+            hangers.loc_y('hanging_rod_setback',[hanging_rod_setback])
+            hangers.loc_z('loc_z',[loc_z])
+            hangers.rot_x(value = 0)
+            hangers.rot_y(value = 0)
+            hangers.rot_z(value = 0)
+            hangers.dim_x('width',[width])
+            hangers.dim_y(value = 0)
+            hangers.dim_z(value = 0)  
+        return hanging_rod      
+
+    def draw(self):      
+        self.create_assembly()
+        self.add_closet_insert_prompts()      
+        self.obj_bp["IS_HANGING_RODS_BP"] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["PROMPT_ID"] = "home_builder.hanging_rod_prompts"
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)
+
+        self.add_prompt("Hanging Rod Location From Top",'DISTANCE',pc_unit.inch(2.145)) 
+        self.add_prompt("Hanging Rod Setback",'DISTANCE',pc_unit.inch(2)) 
+        self.add_prompt("Shelf Thickness",'DISTANCE',pc_unit.inch(.75)) 
+
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        hanging_rod_location_from_top = self.get_prompt("Hanging Rod Location From Top").get_var("hanging_rod_location_from_top")
+        s_thickness = self.get_prompt("Shelf Thickness").get_var("s_thickness")
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        rod = self.add_hanging_rod()
+        rod.loc_z('height-hanging_rod_location_from_top',[height,hanging_rod_location_from_top])
+
+        if self.is_double:
+            self.add_prompt("Top Opening Height",'DISTANCE',pc_unit.inch(38)) 
+            top_opening_height = self.get_prompt("Top Opening Height").get_var("top_opening_height")
+
+            rod = self.add_hanging_rod()
+            rod.loc_z('height-top_opening_height-hanging_rod_location_from_top-s_thickness',[height,top_opening_height,hanging_rod_location_from_top,s_thickness])
+
+            #MID SHELF
+            shelf = assemblies_cabinet.add_closet_part(self)
+            props = utils_cabinet.get_object_props(shelf.obj_bp)
+            props.ebl1 = True                           
+            shelf.obj_bp["IS_SHELF_BP"] = True
+            shelf.obj_bp['ADD_DIMENSION'] = True
+            shelf.set_name('Shelf')
+            shelf.loc_x(value = 0)
+            shelf.loc_y(value = 0)
+            shelf.loc_z('height-top_opening_height-s_thickness',[height,top_opening_height,s_thickness])
+            shelf.rot_y(value = 0)
+            shelf.rot_z(value = 0)
+            shelf.dim_x('x',[x])
+            shelf.dim_y('y-back_inset',[y,back_inset])
+            shelf.dim_z('s_thickness',[s_thickness])
+            pc_utils.flip_normals(shelf)
+
+            top_opening = self.add_opening()
+            top_opening.set_name('Top Opening')
+            top_opening.loc_z('height-top_opening_height',
+                              [height,top_opening_height])
+            top_opening.dim_z('top_opening_height',[top_opening_height])            
+
+            bot_opening = self.add_opening()
+            bot_opening.set_name('Bottom Opening')
+            bot_opening.loc_z(value = 0)
+            bot_opening.dim_z('height-top_opening_height-s_thickness',
+                              [height,top_opening_height,s_thickness])           
+      
+        else:
+            opening = self.add_opening()
+            opening.set_name('Opening')
+            opening.loc_z(value = 0)
+            opening.dim_z('height',[height])        

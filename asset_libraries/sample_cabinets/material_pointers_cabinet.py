@@ -15,6 +15,7 @@ CABINET_POINTERS.append(("Cabinet Door Edges",SAMPLE_CABINET_MATERIALS,"Autumn L
 CABINET_POINTERS.append(("Cabinet Pull Finish",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
 CABINET_POINTERS.append(("Countertop Surface",SAMPLE_CABINET_MATERIALS,"Midnight Granite"))
 CABINET_POINTERS.append(("Shelf Holes",SAMPLE_CABINET_MATERIALS,"Black Melamine"))
+CABINET_POINTERS.append(("Hanging Rod",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
 
 
 def get_material(library_path,material_name):
@@ -200,6 +201,12 @@ def assign_cabinet_shelf_pointers(assembly):
                     pointer.pointer_name = "Cabinet Interior Edges"
                 if pointer.name == 'W2':
                     pointer.pointer_name = "Cabinet Interior Edges" 
+
+def assign_hanging_rods_pointers(assembly):
+    for child in assembly.obj_bp.children:
+        if child.type == 'MESH':
+            for pointer in child.pyclone.pointers:
+                pointer.pointer_name = "Hanging Rod"     
 
 def update_side_material(assembly,is_finished_end,is_finished_back,is_finished_top,is_finished_bottom):
     for child in assembly.obj_bp.children:
