@@ -49,6 +49,17 @@ class Base_Open(types_cabinet.Standard_Cabinet):
         self.carcass.exposed_interior = True
         self.include_countertop = True
         
+class Base_Drawer(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_drawer
+        self.height = props.base_cabinet_height   
+        self.depth = props.base_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Base_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Drawers()
+        self.include_countertop = True        
 
 class Tall_1_Door(types_cabinet.Standard_Cabinet):
     

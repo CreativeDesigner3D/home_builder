@@ -90,6 +90,31 @@ class Cabinet_Exterior(pc_types.Assembly):
         material_pointers_cabinet.assign_pointer_to_object(pull_obj,"Cabinet Pull Finish")  
         # home_builder_utils.get_object_props(pull_obj).pointer_name = pointer.name
 
+    def add_drawer_pull(self,front,pointer):
+        drawer_front_width = front.obj_y.pyclone.get_var('location.y',"drawer_front_width")
+        drawer_front_height = front.obj_x.pyclone.get_var('location.x',"drawer_front_height")
+        front_thickness = front.obj_z.pyclone.get_var('location.z',"front_thickness")
+        turn_off_pulls = self.get_prompt("Turn Off Pulls").get_var('turn_off_pulls')
+        hide_drawer_front = front.get_prompt("Hide").get_var('hide_drawer_front')
+        center_pull = self.get_prompt("Center Pull On Front").get_var('center_pull')
+        vert_loc = self.get_prompt("Drawer Pull Vertical Location").get_var('vert_loc')
+
+        pull_path = paths_cabinet.get_handle_path_by_pointer(pointer)
+        pull_obj = pc_utils.get_object(pull_path) 
+        pull_obj['IS_CABINET_PULL'] = True
+        # home_builder_utils.get_object_props(pull_obj).pointer_name = "Drawer Pulls"
+        front.add_object(pull_obj)
+        # pull_obj.parent = front.obj_bp
+        pull_obj.pyclone.loc_x('IF(center_pull,(drawer_front_height/2),drawer_front_height-vert_loc)',[drawer_front_height,center_pull,vert_loc])
+        pull_obj.pyclone.loc_y('(fabs(drawer_front_width)/2)*-1',[drawer_front_width])
+        pull_obj.pyclone.loc_z('front_thickness',[front_thickness])
+        pull_obj.rotation_euler.x = math.radians(-90)
+        pull_obj.rotation_euler.y = math.radians(0)
+        pull_obj.rotation_euler.z = math.radians(90)
+        pull_obj.pyclone.hide('IF(turn_off_pulls,True,hide_drawer_front)',[turn_off_pulls,hide_drawer_front])
+
+        material_pointers_cabinet.assign_pointer_to_object(pull_obj,"Cabinet Pull Finish")  
+
     def draw_prompts(self,layout,context):
         open_door = self.get_prompt("Open Door")
         front_height_calculator = self.get_calculator("Front Height Calculator")
@@ -243,5 +268,104 @@ class Doors(Cabinet_Exterior):
         hide = r_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==0,True,hide_doors)',[door_swing,hide_doors])
         self.add_door_pull(r_door,pull_pointer)
+
+        self.set_prompts()        
+
+
+class Drawers(Cabinet_Exterior):
+    carcass_type = '' #Base, Tall, Upper
+
+    drawer_qty = 3
+
+    def add_drawer_front(self,index,prev_drawer_empty,calculator,to,lo,ro):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+
+        drawer_front_height = self.get_prompt("Drawer Front " + str(index) + " Height").get_var(calculator.name,'drawer_front_height')
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')
+        top_overlay = to.get_var('top_overlay')
+        left_overlay = lo.get_var('left_overlay')
+        right_overlay = ro.get_var('right_overlay')
+        door_to_cabinet_gap = self.get_prompt("Door to Cabinet Gap").get_var('door_to_cabinet_gap')
+        front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
+        vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
+
+        front_empty = self.add_empty('Front Z Location ' + str(index))
+        front_empty.empty_display_size = .001
+
+        if prev_drawer_empty:
+            prev_drawer_z_loc = prev_drawer_empty.pyclone.get_var('location.z','prev_drawer_z_loc')
+            front_empty.pyclone.loc_z('prev_drawer_z_loc-drawer_front_height-vertical_gap',[prev_drawer_z_loc,drawer_front_height,vertical_gap])
+        else:
+            front_empty.pyclone.loc_z('z-drawer_front_height+top_overlay',[z,drawer_front_height,top_overlay])        
+        
+        drawer_z_loc = front_empty.pyclone.get_var('location.z',"drawer_z_loc")
+
+        # front_pointer = props.cabinet_door_pointers["Drawer Fronts"]
+        pull_pointer = props.drawer_handle
+
+        drawer_front = assemblies_cabinet.add_door_assembly(self)
+        top_o = drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
+        bottom_o = drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
+        left_o = drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
+        right_o = drawer_front.add_prompt("Right Overlay",'DISTANCE',0)
+        drawer_front.obj_bp['IS_CABINET_DRAWER_FRONT_PANEL'] = True
+        drawer_front.set_name('Drawer Front')
+        drawer_front.loc_x('-left_overlay',[left_overlay])
+        drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        drawer_front.loc_z('drawer_z_loc',[drawer_z_loc])
+        drawer_front.rot_x(value = math.radians(90))
+        drawer_front.rot_y(value = math.radians(-90))
+        drawer_front.dim_x('drawer_front_height',[drawer_front_height])
+        drawer_front.dim_y('(x+left_overlay+right_overlay)*-1',[x,left_overlay,right_overlay])
+        drawer_front.dim_z('front_thickness',[front_thickness])
+        left_o.set_formula('left_overlay',[left_overlay])
+        right_o.set_formula('right_overlay',[right_overlay])
+        if index == 1:
+            top_o.set_formula('top_overlay',[top_overlay])
+        # if index == self.drawer_qty:
+        #     bottom_o.set_formula('to_var',[to_var])
+     
+        self.add_drawer_pull(drawer_front,pull_pointer)
+        # self.add_drawer_box(drawer_front,front_empty)
+
+        return front_empty
+
+    def draw(self):
+        self.create_assembly("Drawers")
+        self.obj_bp["IS_DRAWERS_BP"] = True
+        self.obj_bp["IS_EXTERIOR_BP"] = True
+        self.obj_bp["EXTERIOR_NAME"] = "DRAWERS"
+
+        prompts_cabinet.add_carcass_prompts(self)
+        prompts_cabinet.add_drawer_prompts(self)
+        prompts_cabinet.add_thickness_prompts(self)
+        prompts_cabinet.add_front_prompts(self)
+        prompts_cabinet.add_front_overlay_prompts(self)
+        prompts_cabinet.add_drawer_pull_prompts(self)
+
+        self.add_prompt("Back Inset",'DISTANCE',0)
+
+        carcass_type = self.get_prompt("Carcass Type")
+        carcass_type.set_value("Drawer")
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        calc_distance_obj = self.add_empty('Calc Distance Obj')
+        calc_distance_obj.empty_display_size = .001
+        front_height_calculator = self.obj_prompts.pyclone.add_calculator("Front Height Calculator",calc_distance_obj)
+
+        drawer = None
+        for i in range(self.drawer_qty):
+            front_height_calculator.add_calculator_prompt('Drawer Front ' + str(i + 1) + ' Height')
+            drawer = self.add_drawer_front(i + 1,drawer,front_height_calculator,to,lo,ro)
+
+        z = self.obj_z.pyclone.get_var('location.z','z')
+        top_overlay = to.get_var('top_overlay')
+        bottom_overlay = bo.get_var('bottom_overlay')
+        vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
+        
+        front_height_calculator.set_total_distance('z+top_overlay+bottom_overlay-vertical_gap*' + str(self.drawer_qty-1),[z,top_overlay,bottom_overlay,vertical_gap])
 
         self.set_prompts()        
