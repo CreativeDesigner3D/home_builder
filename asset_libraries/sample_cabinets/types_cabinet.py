@@ -166,3 +166,56 @@ class Stacked_Cabinet(Cabinet):
             self.bottom_carcass.add_insert(self.bottom_carcass.exterior)
         if self.bottom_carcass.interior:
             self.bottom_carcass.add_insert(self.bottom_carcass.interior)                                      
+
+
+class Blind_Corner_Cabinet(Cabinet):
+
+    width = pc_unit.inch(18)
+    height = pc_unit.inch(34)
+    depth = pc_unit.inch(21)
+
+    carcass = None
+
+    is_upper = False
+    
+    def __init__(self):
+        pass
+
+    def draw(self):
+        self.create_assembly("Cabinet")
+        self.obj_bp[const.CABINET_TAG] = True
+        self.carcasses = []
+
+        self.obj_x.location.x = self.width
+        self.obj_y.location.y = -self.depth
+        self.obj_z.location.z = self.height
+
+        prompts_cabinet.add_cabinet_prompts(self)
+        prompts_cabinet.add_filler_prompts(self)
+
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')  
+        cabinet_type = self.get_prompt("Cabinet Type")
+        left_adjustment_width = self.get_prompt("Left Adjustment Width").get_var('left_adjustment_width')
+        right_adjustment_width = self.get_prompt("Right Adjustment Width").get_var('right_adjustment_width')
+
+        carcass = self.add_assembly(self.carcass)
+        carcass.set_name('Carcass')
+        carcass.loc_x('left_adjustment_width',[left_adjustment_width])
+        carcass.loc_y(value=0)
+        carcass.loc_z(value=0)
+        carcass.dim_x('width-left_adjustment_width-right_adjustment_width',[width,left_adjustment_width,right_adjustment_width])
+        carcass.dim_y('depth',[depth])
+        carcass.dim_z('height',[height])
+        self.carcasses.append(carcass)
+
+        cabinet_type.set_value(carcass.carcass_type)
+
+        if self.carcass.exterior:
+            self.carcass.add_exterior_insert(self.carcass.exterior)
+        if self.carcass.interior:
+            self.carcass.add_interior_insert(self.carcass.interior)
+
+        if self.include_countertop:
+            self.add_countertop()        

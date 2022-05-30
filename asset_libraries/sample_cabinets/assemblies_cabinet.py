@@ -63,6 +63,21 @@ def add_carcass_part_assembly(assembly):
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part           
 
+def add_blind_panel_part_assembly(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Part.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    part.obj_bp['IS_CUTPART_BP'] = True
+    assembly.add_assembly(part)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    pc_utils.add_bevel(part)
+    material_pointers_cabinet.assign_blind_panel_part_pointers(part)
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part      
+
 def add_closet_part(assembly):
     part_path = path.join(paths_cabinet.get_assembly_path(),"Part.blend")
     part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))

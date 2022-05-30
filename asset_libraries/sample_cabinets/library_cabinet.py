@@ -108,6 +108,21 @@ class Base_1_Door_1_Drawer(types_cabinet.Standard_Cabinet):
         self.include_countertop = True   
 
 
+class Base_Blind_1_Door(types_cabinet.Blind_Corner_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.base_width_blind
+        self.height = props.base_cabinet_height   
+        self.depth = props.base_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Base_Blind_Design_Carcass()
+        if props.add_shelves_to_interior:
+            self.carcass.interior = types_cabinet_interiors.Shelves()
+        self.carcass.exterior = types_cabinet_exteriors.Doors()
+        self.carcass.exterior.door_swing = 0
+        self.include_countertop = True   
+
+
 class Tall_1_Door(types_cabinet.Standard_Cabinet):
     
     def __init__(self):
@@ -151,6 +166,21 @@ class Tall_Open(types_cabinet.Standard_Cabinet):
         self.carcass.exposed_interior = True     
 
 
+class Tall_Blind_1_Door(types_cabinet.Blind_Corner_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.tall_width_blind
+        self.height = props.tall_cabinet_height   
+        self.depth = props.tall_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Tall_Blind_Design_Carcass()
+        if props.add_shelves_to_interior:
+            self.carcass.interior = types_cabinet_interiors.Shelves()
+            self.carcass.interior.shelf_qty = 3
+        self.carcass.exterior = types_cabinet_exteriors.Doors()
+        self.carcass.exterior.door_swing = 0   
+
+
 class Upper_1_Door(types_cabinet.Standard_Cabinet):
     
     def __init__(self):
@@ -192,6 +222,21 @@ class Upper_Open(types_cabinet.Standard_Cabinet):
         self.carcass.interior.shelf_qty = 2
         self.carcass.exterior = None
         self.carcass.exposed_interior = True
+
+
+class Upper_Blind_1_Door(types_cabinet.Blind_Corner_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.upper_width_blind
+        self.height = props.upper_cabinet_height   
+        self.depth = props.upper_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Upper_Blind_Design_Carcass()
+        if props.add_shelves_to_interior:
+            self.carcass.interior = types_cabinet_interiors.Shelves()
+            self.carcass.interior.shelf_qty = 2
+        self.carcass.exterior = types_cabinet_exteriors.Doors()
+        self.carcass.exterior.door_swing = 0   
 
 
 class Tall_Stacked(types_cabinet.Stacked_Cabinet):
