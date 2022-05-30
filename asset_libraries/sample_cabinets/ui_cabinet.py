@@ -20,7 +20,7 @@ class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_label = "Cabinet Sizes"
     bl_region_type = 'HEADER'
-    bl_ui_units_x = 20
+    bl_ui_units_x = 23
 
     def draw(self, context):
         props = utils_cabinet.get_scene_props(context.scene)
@@ -70,18 +70,18 @@ class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
         row = box.row(align=True)
         row.label(text="Inside Corner Widths:")     
         row.prop(props,'base_inside_corner_size',text="Base")
-        row.prop(props,'tall_inside_corner_size',text="Tall")             
+        row.prop(props,'tall_inside_corner_size',text="Tall")          
+        row.prop(props,'upper_inside_corner_size',text="Upper")     
         
         row = box.row(align=True)
-        row.label(text="Stacked Heights:")     
-        row.prop(props,'upper_stacked_cabinet_height',text="Upper")
-        row.prop(props,'stacked_top_cabinet_height',text="Top")  
+        row.label(text="Stacked Cabinet Heights:")
+        row.prop(props,'stacked_top_cabinet_height',text="Top Cabinet Height")  
 
         box = layout.box()
         box.label(text="Upper Cabinet Placement:")
         row = box.row(align=True)
         row.label(text="Height Above Floor:")    
-        row.prop(props,'upper_stacked_cabinet_height',text="To Top of Cabinet")         
+        row.prop(props,'height_above_floor',text="To Top of Cabinet")         
 
 
 class HOME_BUILDER_PT_cabinet_construction(bpy.types.Panel):

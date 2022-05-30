@@ -74,10 +74,20 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                                   unit='LENGTH')
     
     base_inside_corner_size: FloatProperty(name="Base Inside Corner Size",
-                                                     description="Default width and depth for the inside base corner cabinets",
-                                                     default=pc_unit.inch(36.0),
-                                                     unit='LENGTH')
+                                           description="Default width and depth for the inside base corner cabinets",
+                                           default=pc_unit.inch(36.0),
+                                           unit='LENGTH')
     
+    tall_inside_corner_size: FloatProperty(name="Tall Inside Corner Size",
+                                           description="Default width and depth for the inside tall corner cabinets",
+                                           default=pc_unit.inch(36.0),
+                                           unit='LENGTH')
+
+    upper_inside_corner_size: FloatProperty(name="Upper Inside Corner Size",
+                                           description="Default width and depth for the inside upper corner cabinets",
+                                           default=pc_unit.inch(24.0),
+                                           unit='LENGTH')
+
     tall_cabinet_depth: FloatProperty(name="Tall Cabinet Depth",
                                                  description="Default depth for tall cabinets",
                                                  default=pc_unit.inch(25.0),
@@ -165,11 +175,6 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     upper_width_blind: FloatProperty(name="Upper Width Blind",
                                                 description="Default width for upper blind corner cabinets",
                                                 default=pc_unit.inch(36.0),
-                                                unit='LENGTH')
-
-    upper_stacked_cabinet_height: FloatProperty(name="Upper Stacked Cabinet Height",
-                                                description="Default Height for Stacked Upper Cabinet Height",
-                                                default=pc_unit.inch(46.0),
                                                 unit='LENGTH')
 
     stacked_top_cabinet_height: FloatProperty(name="Stacked Top Cabinet Height",

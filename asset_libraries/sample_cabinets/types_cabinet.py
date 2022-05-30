@@ -103,6 +103,8 @@ class Stacked_Cabinet(Cabinet):
     depth = pc_unit.inch(21)
 
     carcass = None
+
+    is_upper = False
     
     def __init__(self):
         pass
@@ -118,6 +120,12 @@ class Stacked_Cabinet(Cabinet):
 
         bottom_cabinet_height = self.get_prompt("Bottom Cabinet Height")
         bottom_cabinet_height.set_value(self.bottom_cabinet_height)
+
+        cabinet_type = self.get_prompt("Cabinet Type")
+        if self.is_upper:
+            cabinet_type.set_value("Upper")
+        else:
+            cabinet_type.set_value("Tall")
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         depth = self.obj_y.pyclone.get_var('location.y','depth')

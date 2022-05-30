@@ -198,6 +198,7 @@ class Tall_Stacked(types_cabinet.Stacked_Cabinet):
 
     def __init__(self):
         props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_1_door  
         self.height = props.tall_cabinet_height
         self.depth = props.tall_cabinet_depth
         self.bottom_cabinet_height = props.tall_cabinet_height - props.stacked_top_cabinet_height
@@ -210,3 +211,26 @@ class Tall_Stacked(types_cabinet.Stacked_Cabinet):
             self.bottom_carcass.interior = types_cabinet_interiors.Shelves()
             self.bottom_carcass.interior.shelf_qty = 2
         self.bottom_carcass.exterior = types_cabinet_exteriors.Doors()
+        self.is_upper = False
+
+
+class Upper_Stacked(types_cabinet.Stacked_Cabinet):
+
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_2_door  
+        self.height = props.upper_cabinet_height
+        self.depth = props.upper_cabinet_depth
+        self.bottom_cabinet_height = props.upper_cabinet_height - props.stacked_top_cabinet_height
+        self.top_carcass = types_cabinet_carcass.Upper_Design_Carcass()
+        if props.add_shelves_to_interior:
+            self.top_carcass.interior = types_cabinet_interiors.Shelves()
+        self.top_carcass.exterior = types_cabinet_exteriors.Doors()
+        self.top_carcass.exterior.door_swing = 2
+        self.bottom_carcass = types_cabinet_carcass.Upper_Design_Carcass()
+        if props.add_shelves_to_interior:
+            self.bottom_carcass.interior = types_cabinet_interiors.Shelves()
+            self.bottom_carcass.interior.shelf_qty = 2
+        self.bottom_carcass.exterior = types_cabinet_exteriors.Doors()
+        self.bottom_carcass.exterior.door_swing = 2
+        self.is_upper = True
