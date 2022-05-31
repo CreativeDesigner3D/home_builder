@@ -114,10 +114,6 @@ class Shelves(Closet_Insert):
 
 
 class Hanging_Rod(Closet_Insert):
-    show_in_library = True
-    category_name = "CLOSETS"
-    subcategory_name = "INSERTS"
-    catalog_name = "_Sample"
 
     is_double = False
 
@@ -216,4 +212,99 @@ class Hanging_Rod(Closet_Insert):
             opening = self.add_opening()
             opening.set_name('Opening')
             opening.loc_z(value = 0)
-            opening.dim_z('height',[height])        
+            opening.dim_z('height',[height])    
+
+
+class Slanted_Shoe_Shelf(Closet_Insert):
+
+    def draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()    
+        self.obj_bp["IS_SHOE_SHELVES_INSERT"] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["PROMPT_ID"] = "home_builder.closet_shoe_shelf_prompts"
+        
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(.75)
+
+        self.add_prompt("Shelf Thickness",'DISTANCE',pc_unit.inch(.75)) 
+        self.add_prompt("Shelf Clip Gap",'DISTANCE',pc_unit.inch(1)) 
+        self.add_prompt("Shelf Setback",'DISTANCE',pc_unit.inch(0))
+        self.add_prompt("Shelf Lip Width",'DISTANCE',pc_unit.inch(2))
+        self.add_prompt("Metal Lip Width Inset",'DISTANCE',pc_unit.millimeter(19))
+        self.add_prompt("Distance Between Shelves",'DISTANCE',pc_unit.inch(8))
+        self.add_prompt("Space From Bottom",'DISTANCE',pc_unit.inch(0))
+        self.add_prompt("Shelf Quantity",'QUANTITY',3) 
+        self.add_prompt("Shelf Angle",'ANGLE',17.25) 
+        self.add_prompt("Turn Off Top Shelf",'CHECKBOX',True)
+        self.add_prompt("Accessory Name",'TEXT',"")
+
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        qty = self.get_prompt("Shelf Quantity").get_var("qty")
+        lip_width = self.get_prompt("Shelf Lip Width").get_var('lip_width')
+        bot_space = self.get_prompt("Space From Bottom").get_var('bot_space')
+        s_thickness = self.get_prompt("Shelf Thickness").get_var("s_thickness")
+        angle = self.get_prompt("Shelf Angle").get_var("angle")
+        setback = self.get_prompt("Shelf Setback").get_var("setback")
+        dim_between_shelves = self.get_prompt("Distance Between Shelves").get_var('dim_between_shelves')
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+        metal_width_inset = self.get_prompt("Metal Lip Width Inset").get_var("metal_width_inset")
+        turn_off_top_shelf = self.get_prompt("Turn Off Top Shelf").get_var("turn_off_top_shelf")
+
+        #TOP SHELF
+        shelf = assemblies_cabinet.add_closet_part(self)     
+        shelf.obj_bp["IS_SHELF_BP"] = True
+        shelf.set_name('Top Shelf')
+        shelf.loc_x(value = 0)
+        shelf.loc_y(value = 0)
+        shelf.loc_z('bot_space+dim_between_shelves*qty',[bot_space,dim_between_shelves,qty])
+        shelf.rot_y(value = 0)
+        shelf.rot_z(value = 0)
+        shelf.dim_x('width',[width])
+        shelf.dim_y('depth-back_inset',[depth,back_inset])
+        shelf.dim_z('s_thickness',[s_thickness])
+        hide = shelf.get_prompt("Hide")
+        hide.set_formula('turn_off_top_shelf',[turn_off_top_shelf])        
+
+        z_loc = shelf.obj_bp.pyclone.get_var('location.z','z_loc')
+
+        opening = self.add_opening()
+        opening.loc_z('min(height,z_loc+s_thickness)',[height,z_loc,s_thickness])
+        opening.dim_z('max(0,height-z_loc-s_thickness)',[height,z_loc,s_thickness])
+
+        for i in range(1,11):
+            slanted_shelf = assemblies_cabinet.add_closet_array_part(self)        
+            slanted_shelf.set_name("Slanted Shelf")
+            slanted_shelf.obj_bp['IS_SLANTED_SHOE_SHELF'] = True
+            slanted_shelf.loc_x(value = 0)
+            slanted_shelf.loc_y('depth-back_inset',[depth,back_inset])
+            if i == 1:
+                slanted_shelf.loc_z('((fabs(depth)-back_inset)*sin(angle))+bot_space',[depth,back_inset,angle,bot_space])
+            else:
+                slanted_shelf.loc_z('(((fabs(depth)-back_inset)*sin(angle))+bot_space)+dim_between_shelves*' + str(i-1),[depth,back_inset,angle,bot_space,dim_between_shelves])
+            slanted_shelf.rot_x('angle',[angle])
+            slanted_shelf.rot_y(value = 0)
+            slanted_shelf.rot_z(value = 0)
+            slanted_shelf.dim_x('width',[width])
+            slanted_shelf.dim_y('-depth+setback+back_inset',[depth,setback,back_inset])
+            slanted_shelf.dim_z('s_thickness',[s_thickness])
+            hide = slanted_shelf.get_prompt('Hide')
+            hide.set_formula('IF(' + str(i) + '>qty,True,False)',[qty])
+            pc_utils.flip_normals(slanted_shelf)
+
+            shelf_depth = slanted_shelf.obj_y.pyclone.get_var('location.y','shelf_depth')
+            z_loc = slanted_shelf.obj_bp.pyclone.get_var('location.z','z_loc')
+
+            shelf_lip = assemblies_cabinet.add_metal_shoe_shelf_part(slanted_shelf)
+            shelf_lip.set_name("Shelf Lip")
+            shelf_lip.loc_x('metal_width_inset',[metal_width_inset])
+            shelf_lip.loc_y('-depth+back_inset+.02',[depth,back_inset])
+            shelf_lip.loc_z('s_thickness',[s_thickness])
+            shelf_lip.rot_y(value = 0)
+            shelf_lip.rot_z(value = 0)
+            shelf_lip.dim_x('width-metal_width_inset*2',[width,metal_width_inset])
+            hide = shelf_lip.get_prompt('Hide')
+            hide.set_formula('IF(' + str(i) + '>qty,True,False)',[qty])
