@@ -677,3 +677,265 @@ class Base_Doors(Doors):
         hide = r_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==0,True,False)',[door_swing])
         self.add_door_pull(r_door,pull_pointer)        
+
+
+class Tall_Doors(Doors):
+
+    def draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()    
+        self.obj_bp["IS_CLOSET_DOORS_BP"] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["IS_EXTERIOR_BP"] = True
+        self.obj_bp["PROMPT_ID"] = "home_builder.closet_door_prompts"
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)
+
+        scene_props = utils_cabinet.get_scene_props(bpy.context.scene)
+
+        self.add_prompts()
+        self.add_prompt("Shelf Quantity",'QUANTITY',2) 
+
+        # front_pointer = props.cabinet_door_pointers["Tall Cabinet Doors"]
+        pull_pointer = scene_props.tall_handle
+
+        door_swing_prompt = self.get_prompt("Door Swing")
+        door_swing_prompt.set_value(2)
+
+        door_type_prompt = self.get_prompt("Door Type")
+        door_type_prompt.set_value("Tall")
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')        
+        vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
+        door_swing = door_swing_prompt.get_var('door_swing')
+        door_to_cabinet_gap = self.get_prompt("Door to Cabinet Gap").get_var('door_to_cabinet_gap')
+        front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
+        door_rotation = self.get_prompt("Door Rotation").get_var('door_rotation')
+        open_door = self.get_prompt("Open Door").get_var('open_door')
+        door_swing = self.get_prompt("Door Swing").get_var('door_swing')
+        s_thickness = self.get_prompt("Shelf Thickness").get_var('s_thickness')
+        s_qty = self.get_prompt("Shelf Quantity").get_var('s_qty')
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        to_var = to.get_var("to_var")
+        bo_var = bo.get_var("bo_var")
+        lo_var = lo.get_var("lo_var")
+        ro_var = ro.get_var("ro_var")
+
+        adj_shelf = assemblies_cabinet.add_closet_array_part(self)
+        adj_shelf.obj_bp['IS_ADJ_SHELF'] = True
+        adj_shelf.set_name("Adj Shelf")     
+        adj_shelf.add_prompt("Is Locked Shelf",'CHECKBOX',False)
+        adj_shelf.add_prompt("Adj Shelf Setback",'DISTANCE',scene_props.adj_shelf_setback)
+        adj_shelf.add_prompt("Fixed Shelf Setback",'DISTANCE',scene_props.fixed_shelf_setback)
+
+        adj_shelf.loc_x(value = 0)
+        adj_shelf.loc_y('y-back_inset',[y,back_inset])
+        adj_shelf.loc_z('(z-(s_thickness*s_qty))/(s_qty+1)',[z,s_thickness,s_qty])
+        adj_shelf.rot_x(value = 0)
+        adj_shelf.rot_y(value = 0)
+        adj_shelf.rot_z(value = 0)
+        adj_shelf.dim_x('x',[x])
+        adj_shelf.dim_y('-y+back_inset',[y,back_inset])
+        adj_shelf.dim_z('s_thickness',[s_thickness])
+        hide = adj_shelf.get_prompt("Hide")
+        z_quantity = adj_shelf.get_prompt("Z Quantity")
+        z_offset = adj_shelf.get_prompt("Z Offset")
+        hide.set_formula('IF(s_qty==0,True,False)',[s_qty])
+        z_quantity.set_formula('s_qty',[s_qty]) 
+        z_offset.set_formula('((z-(s_thickness*s_qty))/(s_qty+1))+s_thickness',[z,s_thickness,s_qty]) 
+
+        #LEFT DOOR
+        l_door = assemblies_cabinet.add_door_assembly(self)     
+        top_o = l_door.add_prompt("Top Overlay",'DISTANCE',0)
+        top_o.set_formula("to_var",[to_var])
+        bottom_o = l_door.add_prompt("Bottom Overlay",'DISTANCE',0)
+        bottom_o.set_formula("bo_var",[bo_var])
+        left_o = l_door.add_prompt("Left Overlay",'DISTANCE',0)
+        left_o.set_formula("lo_var",[lo_var])
+        right_o = l_door.add_prompt("Right Overlay",'DISTANCE',0)
+        right_o.set_formula("ro_var",[ro_var])        
+        l_door.loc_x('-lo_var',[lo_var])
+        l_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        l_door.loc_z('-bo_var',[bo_var])
+        l_door.rot_x(value = math.radians(90))
+        l_door.rot_y(value = math.radians(-90))
+        l_door.rot_z('-door_rotation*open_door',[door_rotation,open_door])
+        l_door.dim_x('z+to_var+bo_var',[z,to_var,bo_var])
+        l_door.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)*-1',[door_swing,x,lo_var,ro_var,vertical_gap])            
+        l_door.dim_z('front_thickness',[front_thickness])
+        hide = l_door.get_prompt("Hide") 
+        hide.set_formula('IF(door_swing==1,True,False)',[door_swing])
+        self.add_door_pull(l_door,pull_pointer)
+
+        #RIGHT DOOR
+        r_door = assemblies_cabinet.add_door_assembly(self)        
+        top_o = r_door.add_prompt("Top Overlay",'DISTANCE',0)
+        top_o.set_formula("to_var",[to_var])
+        bottom_o = r_door.add_prompt("Bottom Overlay",'DISTANCE',0)
+        bottom_o.set_formula("bo_var",[bo_var])
+        left_o = r_door.add_prompt("Left Overlay",'DISTANCE',0)
+        left_o.set_formula("lo_var",[lo_var])
+        right_o = r_door.add_prompt("Right Overlay",'DISTANCE',0)
+        right_o.set_formula("ro_var",[ro_var])        
+        r_door.loc_x('x+ro_var',[x,ro_var])
+        r_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        r_door.loc_z('-bo_var',[bo_var])
+        r_door.rot_x(value = math.radians(90))
+        r_door.rot_y(value = math.radians(-90))
+        r_door.rot_z('door_rotation*open_door',[door_rotation,open_door])   
+        r_door.dim_x('z+to_var+bo_var',[z,to_var,bo_var])
+        r_door.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)',[door_swing,x,lo_var,ro_var,vertical_gap])     
+        r_door.dim_z('front_thickness',[front_thickness])
+        hide = r_door.get_prompt("Hide") 
+        hide.set_formula('IF(door_swing==0,True,False)',[door_swing])
+        self.add_door_pull(r_door,pull_pointer)
+
+
+class Upper_Doors(Doors):
+
+    def draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()    
+        self.obj_bp["IS_CLOSET_DOORS_BP"] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["IS_EXTERIOR_BP"] = True
+        self.obj_bp["PROMPT_ID"] = "home_builder.closet_door_prompts"
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)
+
+        scene_props = utils_cabinet.get_scene_props(bpy.context.scene)
+
+        self.add_prompts()      
+        self.add_prompt("Fill Opening",'CHECKBOX',False)
+        self.add_prompt("Door Height",'DISTANCE',pc_unit.millimeter(716.95))
+        self.add_prompt("Shelf Quantity",'QUANTITY',2) 
+
+        # front_pointer = props.cabinet_door_pointers["Upper Cabinet Doors"]
+        pull_pointer = scene_props.upper_handle
+
+        door_swing_prompt = self.get_prompt("Door Swing")
+        door_swing_prompt.set_value(2)
+
+        door_type_prompt = self.get_prompt("Door Type")
+        door_type_prompt.set_value("Upper")
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')    
+        fill = self.get_prompt("Fill Opening").get_var('fill')    
+        door_height_var = self.get_prompt("Door Height").get_var('door_height_var')
+        vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
+        door_swing = door_swing_prompt.get_var('door_swing')
+        door_to_cabinet_gap = self.get_prompt("Door to Cabinet Gap").get_var('door_to_cabinet_gap')
+        front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
+        door_rotation = self.get_prompt("Door Rotation").get_var('door_rotation')
+        open_door = self.get_prompt("Open Door").get_var('open_door')
+        door_swing = self.get_prompt("Door Swing").get_var('door_swing')
+        s_thickness = self.get_prompt("Shelf Thickness").get_var('s_thickness')
+        s_qty = self.get_prompt("Shelf Quantity").get_var("s_qty")
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        to_var = to.get_var("to_var")
+        bo_var = bo.get_var("bo_var")
+        lo_var = lo.get_var("lo_var")
+        ro_var = ro.get_var("ro_var")
+
+        opening = self.add_opening()
+        opening.set_name('Opening')
+        opening.loc_z(value = 0)
+        opening.dim_z('IF(fill,0,z-door_height_var-s_thickness)',[fill,z,door_height_var,s_thickness])
+
+        #BOTTOM SHELF
+        shelf = assemblies_cabinet.add_closet_part(self)     
+        shelf.obj_bp["IS_SHELF_BP"] = True
+        shelf.set_name('Door Shelf')
+        shelf.loc_x(value = 0)
+        shelf.loc_y(value = 0)
+        shelf.loc_z('z-door_height_var-s_thickness',[z,door_height_var,s_thickness])
+        shelf.rot_y(value = 0)
+        shelf.rot_z(value = 0)
+        shelf.dim_x('x',[x])
+        shelf.dim_y('y-back_inset',[y,back_inset])
+        shelf.dim_z('s_thickness',[s_thickness])
+        hide = shelf.get_prompt("Hide")
+        hide.set_formula('fill',[fill])
+
+        adj_shelf = assemblies_cabinet.add_closet_array_part(self)
+        adj_shelf.obj_bp['IS_ADJ_SHELF'] = True
+        adj_shelf.set_name("Adj Shelf")      
+        adj_shelf.add_prompt("Is Locked Shelf",'CHECKBOX',False)
+        adj_shelf.add_prompt("Adj Shelf Setback",'DISTANCE',scene_props.adj_shelf_setback)
+        adj_shelf.add_prompt("Fixed Shelf Setback",'DISTANCE',scene_props.fixed_shelf_setback)
+
+        adj_shelf.loc_x(value = 0)
+        adj_shelf.loc_y('y-back_inset',[y,back_inset])
+        adj_shelf.loc_z('IF(fill,0,z-door_height_var)+((IF(fill,z,door_height_var)-(s_thickness*s_qty))/(s_qty+1))',[fill,door_height_var,z,s_thickness,s_qty])
+        adj_shelf.rot_x(value = 0)
+        adj_shelf.rot_y(value = 0)
+        adj_shelf.rot_z(value = 0)
+        adj_shelf.dim_x('x',[x])
+        adj_shelf.dim_y('-y+back_inset',[y,back_inset])
+        adj_shelf.dim_z('s_thickness',[s_thickness])
+        hide = adj_shelf.get_prompt("Hide")
+        z_quantity = adj_shelf.get_prompt("Z Quantity")
+        z_offset = adj_shelf.get_prompt("Z Offset")
+        hide.set_formula('IF(s_qty==0,True,False)',[s_qty])
+        z_quantity.set_formula('s_qty',[s_qty]) 
+        z_offset.set_formula('((IF(fill,z,door_height_var)-(s_thickness*s_qty))/(s_qty+1))+s_thickness',[fill,z,door_height_var,s_thickness,s_qty]) 
+
+        #LEFT DOOR
+        l_door = assemblies_cabinet.add_door_assembly(self)
+        top_o = l_door.add_prompt("Top Overlay",'DISTANCE',0)
+        top_o.set_formula("to_var",[to_var])
+        bottom_o = l_door.add_prompt("Bottom Overlay",'DISTANCE',0)
+        bottom_o.set_formula("bo_var",[bo_var])
+        left_o = l_door.add_prompt("Left Overlay",'DISTANCE',0)
+        left_o.set_formula("lo_var",[lo_var])
+        right_o = l_door.add_prompt("Right Overlay",'DISTANCE',0)
+        right_o.set_formula("ro_var",[ro_var])           
+        l_door.loc_x('-lo_var',[lo_var])
+        l_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        l_door.loc_z('IF(fill,0,z-door_height_var)-bo_var',[fill,z,door_height_var,bo_var])
+        l_door.rot_x(value = math.radians(90))
+        l_door.rot_y(value = math.radians(-90))
+        l_door.rot_z('-door_rotation*open_door',[door_rotation,open_door])
+        l_door.dim_x('IF(fill,z,door_height_var)+to_var+bo_var',[fill,z,door_height_var,to_var,bo_var])
+        l_door.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)*-1',[door_swing,x,lo_var,ro_var,vertical_gap])            
+        l_door.dim_z('front_thickness',[front_thickness])
+        hide = l_door.get_prompt("Hide") 
+        hide.set_formula('IF(door_swing==1,True,False)',[door_swing])
+        self.add_door_pull(l_door,pull_pointer)
+
+        #RIGHT DOOR
+        r_door = assemblies_cabinet.add_door_assembly(self)   
+        top_o = r_door.add_prompt("Top Overlay",'DISTANCE',0)
+        top_o.set_formula("to_var",[to_var])
+        bottom_o = r_door.add_prompt("Bottom Overlay",'DISTANCE',0)
+        bottom_o.set_formula("bo_var",[bo_var])
+        left_o = r_door.add_prompt("Left Overlay",'DISTANCE',0)
+        left_o.set_formula("lo_var",[lo_var])
+        right_o = r_door.add_prompt("Right Overlay",'DISTANCE',0)
+        right_o.set_formula("ro_var",[ro_var])             
+        r_door.loc_x('x+ro_var',[x,ro_var])
+        r_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        r_door.loc_z('IF(fill,0,z-door_height_var)-bo_var',[fill,z,door_height_var,bo_var])
+        r_door.rot_x(value = math.radians(90))
+        r_door.rot_y(value = math.radians(-90))
+        r_door.rot_z('door_rotation*open_door',[door_rotation,open_door])   
+        r_door.dim_x('IF(fill,z,door_height_var)+to_var+bo_var',[fill,z,door_height_var,to_var,bo_var])
+        r_door.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)',[door_swing,x,lo_var,ro_var,vertical_gap])     
+        r_door.dim_z('front_thickness',[front_thickness])
+        hide = r_door.get_prompt("Hide") 
+        hide.set_formula('IF(door_swing==0,True,False)',[door_swing])
+        self.add_door_pull(r_door,pull_pointer)
