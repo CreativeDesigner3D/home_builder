@@ -22,3 +22,15 @@ class Slanted_Shoe_Shelf(types_closet_inserts.Slanted_Shoe_Shelf):
 
     def __init__(self):
         pass             
+
+
+class Cubbies(types_closet_inserts.Cubbies):
+
+    def __init__(self):
+        pass        
+
+
+class Base_Doors(types_closet_inserts.Base_Doors):
+
+    def __init__(self):
+        pass        
