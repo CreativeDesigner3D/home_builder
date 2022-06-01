@@ -939,3 +939,322 @@ class Upper_Doors(Doors):
         hide = r_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==0,True,False)',[door_swing])
         self.add_door_pull(r_door,pull_pointer)
+
+
+class Drawers(Doors):
+
+    def draw(self):
+        self.create_assembly()    
+        self.add_closet_insert_prompts()         
+        self.obj_bp['IS_CLOSET_DRAWERS_BP'] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["IS_EXTERIOR_BP"] = True
+        self.obj_bp['PROMPT_ID'] = 'home_builder.closet_drawer_prompts'
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)
+
+        self.add_prompts()
+
+        self.add_prompt("Remove Top Shelf",'CHECKBOX',False)
+        self.add_prompt("Drawer Quantity",'QUANTITY',3)
+        drawer_1_height = self.add_prompt("Drawer 1 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh1 = drawer_1_height.get_var('dh1')
+        drawer_2_height = self.add_prompt("Drawer 2 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh2 = drawer_2_height.get_var('dh2')
+        drawer_3_height = self.add_prompt("Drawer 3 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh3 = drawer_3_height.get_var('dh3')     
+        drawer_4_height = self.add_prompt("Drawer 4 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh4 = drawer_4_height.get_var('dh4')  
+        drawer_5_height = self.add_prompt("Drawer 5 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh5 = drawer_5_height.get_var('dh5')  
+        drawer_6_height = self.add_prompt("Drawer 6 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh6 = drawer_6_height.get_var('dh6')  
+        drawer_7_height = self.add_prompt("Drawer 7 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh7 = drawer_7_height.get_var('dh7')  
+        drawer_8_height = self.add_prompt("Drawer 8 Height",'DISTANCE',pc_unit.millimeter(140.95))
+        dh8 = drawer_8_height.get_var('dh8')          
+        prompts_cabinet.add_front_prompts(self)
+        prompts_cabinet.add_drawer_prompts(self)
+        prompts_cabinet.add_drawer_pull_prompts(self)
+        prompts_cabinet.add_closet_thickness_prompts(self)
+
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        # front_pointer = props.cabinet_door_pointers["Drawer Fronts"]
+        pull_pointer = props.drawer_handle
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z') 
+        remove_shelf = self.get_prompt("Remove Top Shelf").get_var('remove_shelf')      
+        dq = self.get_prompt("Drawer Quantity").get_var('dq') 
+        h_gap = self.get_prompt("Horizontal Gap").get_var('h_gap') 
+        door_to_cabinet_gap = self.get_prompt("Door to Cabinet Gap").get_var('door_to_cabinet_gap')
+        front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
+        open_drawer = self.get_prompt("Open Drawer").get_var('open_drawer')
+        st = self.get_prompt("Shelf Thickness").get_var('st')
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        to_var = to.get_var("to_var")
+        bo_var = bo.get_var("bo_var")
+        lo_var = lo.get_var("lo_var")
+        ro_var = ro.get_var("ro_var")
+
+        #TOP SHELF
+        shelf = assemblies_cabinet.add_closet_part(self)       
+        shelf.obj_bp["IS_SHELF_BP"] = True
+        shelf.set_name('Door Shelf')
+        shelf.loc_x(value = 0)
+        shelf.loc_y(value = 0)  
+        shelf.loc_z('dh1+IF(dq>1,dh2,0)+IF(dq>2,dh3,0)+IF(dq>3,dh4,0)+IF(dq>4,dh5,0)+IF(dq>5,dh6,0)+IF(dq>6,dh7,0)+IF(dq>7,dh8,0)+(st*(dq-1))',
+                    [dq,dh1,dh2,dh3,dh4,dh5,dh6,dh7,dh8,st])                
+        shelf.rot_y(value = 0)
+        shelf.rot_z(value = 0)
+        shelf.dim_x('x',[x])
+        shelf.dim_y('y-back_inset',[y,back_inset])
+        shelf.dim_z('st',[st])
+        hide = shelf.get_prompt('Hide')
+        hide.set_formula('remove_shelf',[remove_shelf])
+
+        shelf_z_loc = shelf.obj_bp.pyclone.get_var('location.z','shelf_z_loc')
+
+        opening = self.add_opening()
+        opening.loc_z('shelf_z_loc+st',[shelf_z_loc,st])
+        opening.dim_z('z-shelf_z_loc-st',[z,shelf_z_loc,st])  
+
+        prev_drawer_empty = None
+
+        for i in range(1,9):
+            drawer_height = self.get_prompt('Drawer ' + str(i) + " Height")
+            dh = drawer_height.get_var('dh')
+            front_empty = self.add_empty('Front Loc ' + str(i))
+            if prev_drawer_empty:
+                prev_drawer_z_loc = prev_drawer_empty.pyclone.get_var('location.z','prev_drawer_z_loc')
+                front_empty.pyclone.loc_z('prev_drawer_z_loc-dh-st',[prev_drawer_z_loc,dh,st])
+            else:
+                front_empty.pyclone.loc_z('shelf_z_loc-dh-st',
+                                          [shelf_z_loc,dh,st])      
+
+            z_loc = front_empty.pyclone.get_var('location.z','z_loc')
+
+            front = assemblies_cabinet.add_door_assembly(self)   
+            top_o = front.add_prompt("Top Overlay",'DISTANCE',0)
+            bottom_o = front.add_prompt("Bottom Overlay",'DISTANCE',0)
+            left_o = front.add_prompt("Left Overlay",'DISTANCE',0)
+            right_o = front.add_prompt("Right Overlay",'DISTANCE',0)
+            left_o.set_formula('lo_var',[lo_var])
+            right_o.set_formula('ro_var',[ro_var])
+            if i == 1:
+                top_o.set_formula('to_var',[to_var])
+            else:
+                top_o.set_formula('(st-h_gap)/2',[st,h_gap])
+            bottom_o.set_formula('IF(dq==' + str(i) + ',bo_var,(st-h_gap)/2)',[dq,bo_var,st,h_gap])              
+            front.loc_x('-lo_var',[lo_var])
+            front.loc_y('-door_to_cabinet_gap-(y*open_drawer)',[door_to_cabinet_gap,y,open_drawer])
+            front.loc_z('z_loc+st-bo_var',[z_loc,st,bo_var])                                                                             
+            front.rot_x(value = math.radians(90))
+            front.rot_y(value = math.radians(-90))
+            front.rot_z(value = 0)
+            front.dim_x('dh+to_var+bo_var',[dh,to_var,bo_var])
+            front.dim_y('(x+lo_var+ro_var)*-1',[x,lo_var,ro_var])            
+            front.dim_z('front_thickness',[front_thickness])
+            hide = front.get_prompt('Hide')
+            hide.set_formula('IF(dq>' + str(i-1) + ',False,True)',[dq])
+            self.add_drawer_pull(front,pull_pointer)
+
+            stretcher = assemblies_cabinet.add_closet_part(self)
+            stretcher.set_name("Drawer Stretcher")
+            stretcher.obj_bp['IS_DRAWER_STRETCHER_BP'] = True 
+            stretcher.loc_x(value = 0)
+            stretcher.loc_y(value = 0)
+            stretcher.loc_z('z_loc',[z_loc])
+            stretcher.rot_x(value = 0)
+            stretcher.rot_y(value = 0)
+            stretcher.rot_z(value = 0)
+            stretcher.dim_x('x',[x])
+            stretcher.dim_y(value = pc_unit.inch(6))
+            stretcher.dim_z('st',[st])
+            hide = stretcher.get_prompt('Hide')
+            hide.set_formula('IF(dq>' + str(i) + ',False,True)',[dq])
+
+            prev_drawer_empty = front_empty
+
+
+class Single_Drawer(Doors):
+
+    def draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()                     
+        self.obj_bp['IS_CLOSET_DRAWERS_BP'] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp['PROMPT_ID'] = 'home_builder.closet_drawer_prompts'
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)        
+        self.add_prompts()
+
+        self.add_prompt("Remove Top Shelf",'CHECKBOX',False)
+        drawer_height = self.add_prompt("Drawer Height",'DISTANCE',pc_unit.millimeter(157))
+        dh = drawer_height.get_var('dh')
+
+        prompts_cabinet.add_front_prompts(self)
+        prompts_cabinet.add_drawer_prompts(self)
+        prompts_cabinet.add_drawer_pull_prompts(self)
+        prompts_cabinet.add_closet_thickness_prompts(self)
+
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        # front_pointer = props.cabinet_door_pointers["Drawer Fronts"]
+        pull_pointer = props.drawer_handle
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')      
+        door_to_cabinet_gap = self.get_prompt("Door to Cabinet Gap").get_var('door_to_cabinet_gap')
+        front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
+        s_thickness = self.get_prompt("Shelf Thickness").get_var('s_thickness')
+        remove_top_shelf = self.get_prompt("Remove Top Shelf").get_var("remove_top_shelf")
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        to_var = to.get_var("to_var")
+        bo_var = bo.get_var("bo_var")
+        lo_var = lo.get_var("lo_var")
+        ro_var = ro.get_var("ro_var")
+
+        #TOP SHELF
+        shelf = assemblies_cabinet.add_closet_part(self)       
+        shelf.obj_bp["IS_SHELF_BP"] = True
+        shelf.set_name('Door Shelf')
+        shelf.loc_x(value = 0)
+        shelf.loc_y(value = 0)
+        shelf.loc_z('-bo_var-to_var+dh',
+                    [bo_var,to_var,dh])        
+        shelf.rot_y(value = 0)
+        shelf.rot_z(value = 0)
+        shelf.dim_x('x',[x])
+        shelf.dim_y('y-back_inset',[y,back_inset])
+        shelf.dim_z('s_thickness',[s_thickness])
+        hide = shelf.get_prompt("Hide")
+        hide.set_formula('remove_top_shelf',[remove_top_shelf])
+
+        shelf_z_loc = shelf.obj_bp.pyclone.get_var('location.z','shelf_z_loc')
+
+        opening = self.add_opening()
+        opening.loc_z('shelf_z_loc+s_thickness',[shelf_z_loc,s_thickness])
+        opening.dim_z('z-shelf_z_loc-s_thickness',[z,shelf_z_loc,s_thickness])
+
+        drawer = assemblies_cabinet.add_door_assembly(self) 
+        top_o = drawer.add_prompt("Top Overlay",'DISTANCE',0)
+        bottom_o = drawer.add_prompt("Bottom Overlay",'DISTANCE',0)
+        left_o = drawer.add_prompt("Left Overlay",'DISTANCE',0)
+        right_o = drawer.add_prompt("Right Overlay",'DISTANCE',0)
+        left_o.set_formula('lo_var',[lo_var])
+        right_o.set_formula('ro_var',[ro_var])
+        top_o.set_formula('to_var',[to_var])
+        bottom_o.set_formula('bo_var',[bo_var])                
+        drawer.loc_x('-lo_var',[lo_var])
+        drawer.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        drawer.loc_z('-bo_var',[bo_var])                                                                             
+        drawer.rot_x(value = math.radians(90))
+        drawer.rot_y(value = math.radians(-90))
+        drawer.rot_z(value = 0)
+        drawer.dim_x('dh',[dh])
+        drawer.dim_y('(x+lo_var+ro_var)*-1',[x,lo_var,ro_var])            
+        drawer.dim_z('front_thickness',[front_thickness])
+        self.add_drawer_pull(drawer,pull_pointer)
+              
+
+class Wire_Baskets(Closet_Insert):
+    
+    def draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()      
+        self.obj_bp['IS_WIRE_BASKET_INSERT_BP'] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp['PROMPT_ID'] = 'home_builder.closet_wire_baskets_prompts'
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)        
+
+        self.add_prompt("Wire Basket Quantity",'QUANTITY',3)
+        self.add_prompt("Wire Basket 1 Height",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Wire Basket 2 Height",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Wire Basket 3 Height",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Wire Basket 4 Height",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Wire Basket 5 Height",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Wire Basket 6 Height",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Vertical Spacing",'DISTANCE',pc_unit.inch(3))
+        
+        prompts_cabinet.add_closet_thickness_prompts(self)
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')      
+        qty = self.get_prompt("Wire Basket Quantity").get_var('qty') 
+        wbh1 = self.get_prompt("Wire Basket 1 Height").get_var('wbh1')
+        wbh2 = self.get_prompt("Wire Basket 2 Height").get_var('wbh2')
+        wbh3 = self.get_prompt("Wire Basket 3 Height").get_var('wbh3') 
+        wbh4 = self.get_prompt("Wire Basket 4 Height").get_var('wbh4') 
+        wbh5 = self.get_prompt("Wire Basket 5 Height").get_var('wbh5') 
+        wbh6 = self.get_prompt("Wire Basket 6 Height").get_var('wbh6')
+        v = self.get_prompt("Shelf Thickness").get_var('v')
+        s_thickness = self.get_prompt("Shelf Thickness").get_var('s_thickness')
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        #TOP SHELF
+        shelf = assemblies_cabinet.add_closet_part(self)          
+        shelf.obj_bp["IS_SHELF_BP"] = True
+        shelf.set_name('Wire Basket Shelf')
+        shelf.loc_x(value = 0)
+        shelf.loc_y(value = 0)
+        shelf.loc_z('wbh1+v+IF(qty>1,wbh2+v,0)+IF(qty>2,wbh3+v,0)+IF(qty>3,wbh4+v,0)+IF(qty>4,wbh5+v,0)+IF(qty>5,wbh6+v,0)',
+                    [qty,wbh1,wbh2,wbh3,wbh4,wbh5,wbh6,v])        
+        shelf.rot_y(value = 0)
+        shelf.rot_z(value = 0)
+        shelf.dim_x('x',[x])
+        shelf.dim_y('y-back_inset',[y,back_inset])
+        shelf.dim_z('s_thickness',[s_thickness])
+
+        shelf_z_loc = shelf.obj_bp.pyclone.get_var('location.z','shelf_z_loc')
+
+        opening = self.add_opening()
+        opening.loc_z('shelf_z_loc+s_thickness',[shelf_z_loc,s_thickness])
+        opening.dim_z('z-shelf_z_loc-s_thickness',[z,shelf_z_loc,s_thickness])
+
+        prev_wire_basket_empty = None
+
+        for i in range(1,7):
+            wire_basket_height = self.get_prompt('Wire Basket ' + str(i) + " Height")
+            wbh = wire_basket_height.get_var('wbh')
+            wire_basket_empty = self.add_empty('Z Loc ' + str(i))
+            if prev_wire_basket_empty:
+                prev_z_loc = prev_wire_basket_empty.pyclone.get_var('location.z','prev_z_loc')
+                wire_basket_empty.pyclone.loc_z('prev_z_loc-wbh-v',[prev_z_loc,wbh,v])
+            else:
+                wire_basket_empty.pyclone.loc_z('shelf_z_loc-wbh-v',
+                                          [shelf_z_loc,wbh,v])      
+
+            z_loc = wire_basket_empty.pyclone.get_var('location.z','z_loc')
+
+            basket = assemblies_cabinet.add_wire_basket(self)
+            basket.loc_x(value = 0)
+            basket.loc_y(value = 0)
+            basket.loc_z('z_loc',[z_loc])                                                                             
+            basket.rot_x(value = 0)
+            basket.rot_y(value = 0)
+            basket.rot_z(value = 0)
+            basket.dim_x('x',[x])
+            basket.dim_y('y-back_inset',[y,back_inset])            
+            basket.dim_z('wbh',[wbh])
+            hide = basket.get_prompt('Hide')
+            hide.set_formula('IF(qty>' + str(i-1) + ',False,True)',[qty])
+
+
+            prev_wire_basket_empty = wire_basket_empty
+               

@@ -46,3 +46,21 @@ class Upper_Doors(types_closet_inserts.Upper_Doors):
 
     def __init__(self):
         pass                
+
+
+class Drawers(types_closet_inserts.Drawers):
+
+    def __init__(self):
+        pass            
+
+
+class Single_Drawer(types_closet_inserts.Single_Drawer):
+
+    def __init__(self):
+        pass         
+
+
+class Wire_Baskets(types_closet_inserts.Wire_Baskets):
+
+    def __init__(self):
+        pass             

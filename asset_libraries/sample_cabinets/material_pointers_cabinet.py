@@ -16,7 +16,7 @@ CABINET_POINTERS.append(("Cabinet Pull Finish",SAMPLE_CABINET_MATERIALS,"Polishe
 CABINET_POINTERS.append(("Countertop Surface",SAMPLE_CABINET_MATERIALS,"Midnight Granite"))
 CABINET_POINTERS.append(("Shelf Holes",SAMPLE_CABINET_MATERIALS,"Black Melamine"))
 CABINET_POINTERS.append(("Hanging Rod",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
-
+CABINET_POINTERS.append(("Wire Baskets",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
 
 def get_material(library_path,material_name):
     if material_name in bpy.data.materials:
