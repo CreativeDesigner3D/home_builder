@@ -693,7 +693,7 @@ class Closet_Starter(Closet):
         self.obj_bp["IS_CLOSET_BP"] = True
         if self.is_base:
             self.obj_bp["IS_BASE_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_prompts" 
+        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_prompts"
         self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets"
         self.obj_y['IS_MIRROR'] = True
 
@@ -938,7 +938,7 @@ class Closet_Inside_Corner(Closet):
     def draw(self):
         self.obj_bp['IS_INSIDE_CORNER_BP'] = True
         self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_inside_corner_prompts" 
+        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_inside_corner_prompts"
         self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets"
         self.obj_y['IS_MIRROR'] = True
 

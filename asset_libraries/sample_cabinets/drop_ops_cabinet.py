@@ -629,7 +629,7 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         else:
             self.closet.draw()
 
-        # self.closet.set_name(filename)
+        self.closet.set_name(asset.file_data.name)
         self.set_child_properties(self.closet.obj_bp)
 
     def set_child_properties(self,obj):
