@@ -118,7 +118,7 @@ class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
                 calculator.calculate()
                 self.calculators.append(calculator)
 
-        # home_builder_utils.update_id_props(obj,self.cabinet.obj_bp)
+        pc_utils.update_id_props(obj,self.cabinet.obj_bp)
         # home_builder_utils.assign_current_material_index(obj)
         if obj.type == 'EMPTY':
             obj.hide_viewport = True    

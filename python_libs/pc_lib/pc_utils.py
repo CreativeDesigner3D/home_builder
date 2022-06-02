@@ -375,6 +375,25 @@ def update_assembly_id_props(assembly,parent_assembly):
     for child in assembly.obj_bp.children:
         update_id_props(child,parent_assembly.obj_bp)
 
+def hide_empties(obj):
+    if obj.type == 'EMPTY':
+        obj.hide_viewport = True
+    for child in obj.children:
+        hide_empties(child)   
+
+def assign_boolean_to_child_assemblies(assembly,bool_obj):
+    #TODO: DELETE OLD BOOLEAN MODIFIERS
+    bool_obj.hide_viewport = True
+    bool_obj.hide_render = True
+    bool_obj.display_type = 'WIRE'  
+    for child in assembly.obj_bp.children:
+        for nchild in child.children:
+            if nchild.type == 'MESH':       
+                mod = nchild.modifiers.new(bool_obj.name,'BOOLEAN')
+                mod.solver ='FAST'
+                mod.object = bool_obj
+                mod.operation = 'DIFFERENCE'
+
 def flip_normals(assembly):
     for child in assembly.obj_bp.children:
         if child.type == 'MESH':

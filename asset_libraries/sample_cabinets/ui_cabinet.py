@@ -16,6 +16,14 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
         layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
 
 
+class HOME_BUILDER_MT_cabinets(bpy.types.Menu):
+    bl_label = "Cabinet Commands"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('hb_sample_cabinets.cabinet_prompts',icon='WINDOW')        
+
+
 class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_label = "Cabinet Sizes"
@@ -114,30 +122,7 @@ class HOME_BUILDER_PT_cabinet_construction(bpy.types.Panel):
         row.label(text="Overhang:")       
         row.prop(props,'countertop_front_overhang',text="Front")       
         row.prop(props,'countertop_rear_overhang',text="Rear")      
-        row.prop(props,'countertop_front_overhang',text="Side")  
-
-        box = layout.box()
-        box.label(text="Cabinet Handles:")
-        row = box.row(align=True)
-        row.label(text="Center Pulls on Drawers:")        
-        row.prop(props,'center_pulls_on_drawer_front',text="")        
-        if not props.center_pulls_on_drawer_front:
-            row = box.row(align=True)
-            row.label(text="Drawer Pull Vertical Location:")        
-            row.prop(props,'pull_vertical_location_drawers',text="From Top of Drawer")       
-
-        row = box.row(align=True)
-        row.label(text="Horizontal Location:")        
-        row.prop(props,'pull_dim_from_edge',text="")       
-        row = box.row(align=True)
-        row.label(text="Base Vertical Location:")        
-        row.prop(props,'pull_vertical_location_base',text="From Top of Door")                   
-        row = box.row(align=True)
-        row.label(text="Tall Vertical Location:")        
-        row.prop(props,'pull_vertical_location_tall',text="From Bottom of Door")   
-        row = box.row(align=True)
-        row.label(text="Upper Vertical Location:")        
-        row.prop(props,'pull_vertical_location_upper',text="From Bottom of Door")           
+        row.prop(props,'countertop_front_overhang',text="Side")          
 
 
 class HOME_BUILDER_PT_cabinet_material_thickness(bpy.types.Panel):
@@ -209,6 +194,29 @@ class HOME_BUILDER_PT_cabinet_hardware(bpy.types.Panel):
         row = box.row()
         row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_handle"
         row.label(text="Drawer Handle: " + props.drawer_handle.category_name + " - " + props.drawer_handle.item_name)                                         
+
+        box = layout.box()
+        box.label(text="Cabinet Handle Location:")
+        row = box.row(align=True)
+        row.label(text="Center Pulls on Drawers:")        
+        row.prop(props,'center_pulls_on_drawer_front',text="")        
+        if not props.center_pulls_on_drawer_front:
+            row = box.row(align=True)
+            row.label(text="Drawer Pull Vertical Location:")        
+            row.prop(props,'pull_vertical_location_drawers',text="From Top of Drawer")       
+
+        row = box.row(align=True)
+        row.label(text="Horizontal Location:")        
+        row.prop(props,'pull_dim_from_edge',text="")       
+        row = box.row(align=True)
+        row.label(text="Base Vertical Location:")        
+        row.prop(props,'pull_vertical_location_base',text="Top of Door")                   
+        row = box.row(align=True)
+        row.label(text="Tall Vertical Location:")        
+        row.prop(props,'pull_vertical_location_tall',text="Bottom of Door")   
+        row = box.row(align=True)
+        row.label(text="Upper Vertical Location:")        
+        row.prop(props,'pull_vertical_location_upper',text="Bottom of Door")       
 
 
 class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
@@ -288,6 +296,7 @@ class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):
 
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
+    HOME_BUILDER_MT_cabinets,
     HOME_BUILDER_PT_cabinet_sizes,
     HOME_BUILDER_PT_cabinet_construction,
     HOME_BUILDER_PT_cabinet_material_thickness,

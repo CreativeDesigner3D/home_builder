@@ -4,6 +4,8 @@ from pc_lib import pc_types, pc_unit, pc_utils
 from . import assemblies_cabinet
 from . import const_cabinets as const
 from . import prompts_cabinet
+from . import types_cabinet_exteriors
+from . import types_cabinet_interiors
 
 class Design_Carcass(pc_types.Assembly):
 
@@ -19,6 +21,29 @@ class Design_Carcass(pc_types.Assembly):
     design_base_assembly = None
     interior = None
     exterior = None
+
+    def __init__(self,obj_bp=None):
+        super().__init__(obj_bp=obj_bp)  
+        if obj_bp:
+            for child in obj_bp.children:   
+                if "IS_LEFT_SIDE_BP" in child:
+                    self.left_side = pc_types.Assembly(child)
+                if "IS_RIGHT_SIDE_BP" in child:
+                    self.right_side = pc_types.Assembly(child)    
+                if "IS_BACK_BP" in child:
+                    self.back = pc_types.Assembly(child)   
+                if "IS_BOTTOM_BP" in child:
+                    self.bottom = pc_types.Assembly(child)
+                if "IS_TOP_BP" in child:
+                    self.top = pc_types.Assembly(child)      
+                if "IS_DESIGN_CARCASS_BP" in child:
+                    self.design_carcass = pc_types.Assembly(child)         
+                if "IS_DESIGN_BASE_ASSEMBLY_BP" in child:
+                    self.design_base_assembly = pc_types.Assembly(child)                                          
+                if "IS_INTERIOR_BP" in child:
+                    self.interior = types_cabinet_interiors.Cabinet_Interior(child)    
+                if "IS_EXTERIOR_BP" in child:
+                    self.exterior = types_cabinet_exteriors.Cabinet_Exterior(child)   
 
     def add_insert(self,insert):
         width = self.obj_x.pyclone.get_var('location.x','width')
@@ -241,19 +266,19 @@ class Design_Blind_Carcass(pc_types.Assembly):
         carcass_type.set_value(self.carcass_type)
 
         if carcass_type.get_value() == "Upper":
-            carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
-            carcass.set_name("Design Carcass")
-            carcass.dim_x('width',[width])
-            carcass.dim_y('depth',[depth])
-            carcass.dim_z('height',[height])
-            carcass.loc_z(value=0)
+            self.design_carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
+            self.design_carcass.set_name("Design Carcass")
+            self.design_carcass.dim_x('width',[width])
+            self.design_carcass.dim_y('depth',[depth])
+            self.design_carcass.dim_z('height',[height])
+            self.design_carcass.loc_z(value=0)
         else:
-            carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
-            carcass.set_name("Design Carcass")
-            carcass.dim_x('width',[width])
-            carcass.dim_y('depth',[depth])
-            carcass.dim_z('height-tkh',[height,tkh])
-            carcass.loc_z('tkh',[tkh])
+            self.design_carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
+            self.design_carcass.set_name("Design Carcass")
+            self.design_carcass.dim_x('width',[width])
+            self.design_carcass.dim_y('depth',[depth])
+            self.design_carcass.dim_z('height-tkh',[height,tkh])
+            self.design_carcass.loc_z('tkh',[tkh])
 
             base_assembly = assemblies_cabinet.add_base_assembly(self)
             base_assembly.set_name("Base Assembly")

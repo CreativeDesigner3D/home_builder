@@ -14,6 +14,27 @@ def get_door_paths():
 def get_molding_paths():
     return os.path.join(os.path.dirname(__file__),'cabinet_assets','Moldings')
 
+def get_sink_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Sinks')
+
+def get_faucet_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Faucets')
+
+def get_cooktop_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Cooktops')
+
+def get_range_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Ranges')
+
+def get_range_hood_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Range Hoods')
+
+def get_dishwasher_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Dishwashers')
+
+def get_refrigerator_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Refrigerators')
+
 def get_handle_path_by_pointer(pointer):
     if pointer and pointer.category_name != "" and pointer.item_name != "":
         category_name = pointer.category_name
