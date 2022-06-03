@@ -534,7 +534,7 @@ class Base_Doors(Doors):
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_door_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_door_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -687,7 +687,7 @@ class Tall_Doors(Doors):
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_door_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_door_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -806,7 +806,7 @@ class Upper_Doors(Doors):
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_door_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_door_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)

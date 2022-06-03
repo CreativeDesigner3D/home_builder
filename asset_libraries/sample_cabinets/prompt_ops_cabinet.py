@@ -1105,10 +1105,152 @@ class hb_closet_starters_OT_closet_inside_corner_prompts(bpy.types.Operator):
         self.draw_construction_prompts(layout)
 
 
+class hb_closet_starters_OT_closet_door_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_starters.closet_door_prompts"
+    bl_label = "Closet Door Prompts"
+
+    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
+    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
+    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+
+    door_swing: bpy.props.EnumProperty(name="Door Swing",
+                                       items=[('LEFT',"Left","Left Swing Door"),
+                                              ('RIGHT',"Right","Right Swing Door"),
+                                              ('DOUBLE',"Double","Double Door")])
+
+    door_opening_height: bpy.props.EnumProperty(name="Door Opening Height",
+                                    items=const.OPENING_HEIGHTS,
+                                    default = '716.95')
+    
+    insert = None
+    calculators = []
+
+    def check(self, context):
+        hb_props = utils_cabinet.get_scene_props(context.scene)
+        if hb_props.use_fixed_closet_heights:
+            insert_height = self.insert.get_prompt("Door Height")
+            if insert_height:
+                insert_height.distance_value = pc_unit.inch(float(self.door_opening_height) / 25.4)
+
+        door_swing = self.insert.get_prompt("Door Swing")
+        if self.door_swing == 'LEFT':
+            door_swing.set_value(0)
+        if self.door_swing == 'RIGHT':
+            door_swing.set_value(1)
+        if self.door_swing == 'DOUBLE':
+            door_swing.set_value(2)         
+        return True
+
+    def execute(self, context):                   
+        return {'FINISHED'}
+
+    def set_properties_from_prompts(self):
+        hb_props = utils_cabinet.get_scene_props(bpy.context.scene)
+        if hb_props.use_fixed_closet_heights:        
+            door_height = self.insert.get_prompt("Door Height")
+            if door_height:
+                value = round(door_height.distance_value * 1000,2)
+                for index, height in enumerate(const.OPENING_HEIGHTS):
+                    if not value >= float(height[0]):
+                        self.door_opening_height = const.OPENING_HEIGHTS[index - 1][0]
+                        break
+        door_swing = self.insert.get_prompt("Door Swing")
+        if door_swing.get_value() == 0:
+            self.door_swing = 'LEFT'
+        if door_swing.get_value() == 1:
+            self.door_swing = 'RIGHT'
+        if door_swing.get_value() == 2:
+            self.door_swing = 'DOUBLE' 
+
+    def invoke(self,context,event):
+        self.get_assemblies(context)
+        self.set_properties_from_prompts()
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=300)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_DOORS_TAG)
+        self.insert = pc_types.Assembly(bp)
+
+    def draw(self, context):
+        hb_props = utils_cabinet.get_scene_props(context.scene)
+              
+        layout = self.layout
+        hot = self.insert.get_prompt("Half Overlay Top")
+        hob = self.insert.get_prompt("Half Overlay Bottom")
+        hol = self.insert.get_prompt("Half Overlay Left")   
+        hor = self.insert.get_prompt("Half Overlay Right")   
+        open_door = self.insert.get_prompt("Open Door")  
+        door_height = self.insert.get_prompt("Door Height") 
+        turn_off_pulls = self.insert.get_prompt("Turn Off Pulls") 
+        door_type = self.insert.get_prompt("Door Type")
+        fill_opening = self.insert.get_prompt("Fill Opening")
+        s_qty = self.insert.get_prompt("Shelf Quantity")
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="Door Swing")      
+        row.prop(self,'door_swing',expand=True) 
+        if door_height:         
+            if fill_opening:
+                row = box.row()
+                row.label(text="Fill Opening")
+                row.prop(fill_opening,'checkbox_value',text="")   
+
+                if fill_opening.get_value() == False:
+                    row = box.row()
+                    if hb_props.use_fixed_closet_heights:  
+                        row.label(text="Door Opening Height")      
+                        row.prop(self,'door_opening_height',text="") 
+                    else:
+                        row.label(text="Door Opening Height")      
+                        row.prop(door_height,'distance_value',text="")  
+
+        row = box.row()
+        row.label(text="Open Door")      
+        row.prop(open_door,'percentage_value',text="")  
+
+        box = layout.box()
+        box.label(text="Front Half Overlays")
+        row = box.row()
+        row.prop(hot,'checkbox_value',text="Top") 
+        row.prop(hob,'checkbox_value',text="Bottom") 
+        row.prop(hol,'checkbox_value',text="Left") 
+        row.prop(hor,'checkbox_value',text="Right") 
+
+        box = layout.box()
+        box.label(text="Pulls")
+        row = box.row()
+        row.label(text="Turn Off Pulls")      
+        row.prop(turn_off_pulls,'checkbox_value',text="")    
+        if door_type.get_value() == "Base":
+            vert_loc = self.insert.get_prompt("Base Pull Vertical Location")  
+            row = box.row()
+            row.label(text="Pull Location")               
+            row.prop(vert_loc,'distance_value',text="")       
+        if door_type.get_value() == "Tall":
+            vert_loc = self.insert.get_prompt("Tall Pull Vertical Location")   
+            row = box.row()
+            row.label(text="Pull Location")               
+            row.prop(vert_loc,'distance_value',text="")                  
+        if door_type.get_value() == "Upper":
+            vert_loc = self.insert.get_prompt("Upper Pull Vertical Location")         
+            row = box.row()
+            row.label(text="Pull Location")               
+            row.prop(vert_loc,'distance_value',text="")  
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="Shelf Quantity")      
+        row.prop(s_qty,'quantity_value',text="")     
+
+
+
 classes = (
     hb_sample_cabinets_OT_cabinet_prompts,
     hb_closet_starters_OT_closet_prompts,
     hb_closet_starters_OT_closet_inside_corner_prompts,
+    hb_closet_starters_OT_closet_door_prompts,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)
