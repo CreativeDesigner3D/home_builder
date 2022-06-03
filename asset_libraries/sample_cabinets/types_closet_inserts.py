@@ -9,6 +9,7 @@ from . import utils_cabinet
 from . import paths_cabinet
 from . import material_pointers_cabinet
 from . import prompts_cabinet
+from . import const_cabinets as const
 
 class Closet_Insert(pc_types.Assembly):
     
@@ -91,18 +92,17 @@ class Shelves(Closet_Insert):
         z_quantity.set_formula('shelf_qty',[shelf_qty]) 
         z_offset.set_formula('((height-(shelf_thickness*shelf_qty))/(shelf_qty+1))+shelf_thickness',[height,shelf_thickness,shelf_qty]) 
 
-    def pre_draw(self):
+    def draw(self):
         self.create_assembly()
         self.add_closet_insert_prompts()
-        self.obj_bp["IS_SHELVES_INSERT"] = True
+        self.obj_bp[const.CLOSET_SHELVES_TAG] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_shelves_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_shelves_prompts"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
         self.obj_z.location.z = pc_unit.inch(60)
 
-    def draw(self):
         hb_props = utils_cabinet.get_scene_props(bpy.context.scene)
 
         self.add_prompt("Shelf Thickness",'DISTANCE',pc_unit.inch(.75)) 
@@ -153,9 +153,9 @@ class Hanging_Rod(Closet_Insert):
     def draw(self):      
         self.create_assembly()
         self.add_closet_insert_prompts()      
-        self.obj_bp["IS_HANGING_RODS_BP"] = True
+        self.obj_bp[const.CLOSET_HANGING_ROD] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.hanging_rod_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.hanging_rod_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -223,9 +223,9 @@ class Slanted_Shoe_Shelf(Closet_Insert):
     def draw(self):
         self.create_assembly()
         self.add_closet_insert_prompts()    
-        self.obj_bp["IS_SHOE_SHELVES_INSERT"] = True
+        self.obj_bp[const.CLOSET_SLANTED_SHOE_SHELVES] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_shoe_shelf_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_shoe_shelf_prompts"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -318,9 +318,9 @@ class Cubbies(Closet_Insert):
     def draw(self):      
         self.create_assembly()
         self.add_closet_insert_prompts()        
-        self.obj_bp["IS_CUBBY_INSERT"] = True
+        self.obj_bp[const.CLOSET_CUBBIES_TAG] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_cubby_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_cubby_prompts"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -534,7 +534,7 @@ class Base_Doors(Doors):
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_door_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_door_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -687,7 +687,7 @@ class Tall_Doors(Doors):
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_door_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_door_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -806,7 +806,7 @@ class Upper_Doors(Doors):
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_door_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_door_prompts"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -946,10 +946,10 @@ class Drawers(Doors):
     def draw(self):
         self.create_assembly()    
         self.add_closet_insert_prompts()         
-        self.obj_bp['IS_CLOSET_DRAWERS_BP'] = True
+        self.obj_bp[const.CLOSET_DRAWERS_TAG] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
-        self.obj_bp['PROMPT_ID'] = 'home_builder.closet_drawer_prompts'
+        self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.closet_drawer_prompts'
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -1088,9 +1088,9 @@ class Single_Drawer(Doors):
     def draw(self):
         self.create_assembly()
         self.add_closet_insert_prompts()                     
-        self.obj_bp['IS_CLOSET_DRAWERS_BP'] = True
+        self.obj_bp[const.CLOSET_DRAWERS_TAG] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp['PROMPT_ID'] = 'home_builder.closet_drawer_prompts'
+        self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.closet_drawer_prompts'
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -1174,9 +1174,9 @@ class Wire_Baskets(Closet_Insert):
     def draw(self):
         self.create_assembly()
         self.add_closet_insert_prompts()      
-        self.obj_bp['IS_WIRE_BASKET_INSERT_BP'] = True
+        self.obj_bp[const.CLOSET_WIRE_BASKETS_TAG] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp['PROMPT_ID'] = 'home_builder.closet_wire_baskets_prompts'
+        self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.closet_wire_baskets_prompts'
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
