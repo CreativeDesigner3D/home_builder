@@ -6,6 +6,7 @@ from . import library_appliance
 from . import library_closet_starters
 from . import library_closet_inserts
 from . import library_closet_parts
+from . import types_closet_inserts
 from . import utils_placement
 from . import utils_cabinet
 from . import material_pointers_cabinet
@@ -14,6 +15,35 @@ from pc_lib import pc_utils, pc_types, pc_unit, pc_placement_utils
 from mathutils import Vector
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from . import const_cabinets as const
+
+def add_insert_to_opening(insert,opening):
+    insert.obj_bp.parent = opening.obj_bp
+    insert.obj_x.location.x = 0
+    insert.obj_y.location.y = 0
+    insert.obj_z.location.z = 0
+    # o_left_depth = opening.get_prompt('Left Depth').get_var('o_left_depth')
+    # o_right_depth = opening.get_prompt('Right Depth').get_var('o_right_depth')
+    o_back_inset = opening.get_prompt('Back Inset').get_var('o_back_inset')
+    i_back_inset = insert.get_prompt('Back Inset')
+    i_back_inset.set_formula('o_back_inset',[o_back_inset])
+    # i_left_depth = insert.get_prompt('Left Depth')
+    # i_right_depth = insert.get_prompt('Right Depth')
+    # i_back_inset = insert.get_prompt('Back Inset')
+    # i_left_depth.set_formula('o_left_depth',[o_left_depth])
+    # i_right_depth.set_formula('o_right_depth',[o_right_depth])
+    # i_back_inset.set_formula('o_back_inset',[o_back_inset])
+    
+    # props = utils_cabinet.get_object_props(insert.obj_bp)
+    # props.insert_opening = opening.obj_bp
+
+    opening.obj_bp["IS_FILLED"] = True
+    # home_builder_utils.copy_drivers(opening.obj_bp,self.insert.obj_bp)
+    pc_utils.copy_drivers(opening.obj_x,insert.obj_x)
+    pc_utils.copy_drivers(opening.obj_y,insert.obj_y)
+    pc_utils.copy_drivers(opening.obj_z,insert.obj_z)
+    pc_utils.copy_drivers(opening.obj_prompts,insert.obj_prompts)
+    for child in opening.obj_bp.children:
+        child.hide_viewport = True
 
 class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.drop_cabinet_library"
@@ -1573,6 +1603,213 @@ class hb_sample_cabinets_OT_place_closet_back(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.place_single_fixed_shelf_part"
+    bl_label = "Place Single Fixed Shelf Part"
+    bl_options = {'UNDO'}
+    
+    filepath: bpy.props.StringProperty(name="Filepath",default="Error")
+
+    part = None
+    insert = None
+
+    is_fixed = True
+
+    exclude_objects = []
+
+    region = None
+
+    def reset_properties(self):
+        self.part = None
+        self.exclude_objects = []
+
+    def execute(self, context):
+        self.region = pc_utils.get_3d_view_region(context)
+        self.reset_properties()
+        self.create_part(context)
+        # path, file_name = os.path.split(self.filepath)
+        # if 'Fixed' in file_name:
+        #     self.is_fixed = True
+        # else:
+        #     self.is_fixed = False
+        context.window_manager.modal_handler_add(self)
+        context.area.tag_redraw()
+        return {'RUNNING_MODAL'}
+
+    def position_part(self,mouse_location,selected_obj,event,cursor_z,selected_normal):
+        if selected_obj is not None:
+            self.drop = True
+        else:
+            self.drop = False
+
+        opening_bp = pc_utils.get_bp_by_tag(selected_obj,const.OPENING_TAG)
+
+        if opening_bp:
+            if "IS_FILLED" not in opening_bp:
+                opening = pc_types.Assembly(opening_bp)
+                for child in opening.obj_bp.children:
+                    if child.type == 'MESH':
+                        if child not in self.exclude_objects:
+                            child.select_set(True)
+                z_rot = opening_bp.matrix_world.to_euler()[2]
+                self.part.obj_bp.rotation_euler.z = z_rot
+                self.part.obj_bp.location.x = opening.obj_bp.matrix_world[0][3]
+                self.part.obj_bp.location.y = opening.obj_bp.matrix_world[1][3]
+                self.part.obj_bp.location.z = self.get_32mm_position(mouse_location) 
+                self.part.obj_x.location.x = opening.obj_x.location.x
+                self.part.obj_y.location.y = opening.obj_y.location.y
+                return opening
+
+    def create_part(self,context):
+        path = os.path.join(paths_cabinet.get_assembly_path(),"Part.blend")
+        self.part = pc_types.Assembly(filepath=path)
+        self.part.obj_z.location.z = pc_unit.inch(.75)
+
+        self.exclude_objects.append(self.part.obj_bp)
+        for obj in self.part.obj_bp.children:
+            self.exclude_objects.append(obj)
+
+        self.part.set_name("Single Shelf")
+        self.part.obj_bp.hide_viewport = True
+        self.part.obj_x.hide_viewport = True
+        self.part.obj_y.hide_viewport = True
+        self.part.obj_z.hide_viewport = True
+        self.part.obj_bp['PROMPT_ID'] = "home_builder.closet_single_shelf_prompts"
+        self.part.obj_bp['IS_SINGLE_SHELF'] = True
+
+    def set_child_properties(self,obj):
+        if self.insert:
+            pc_utils.update_id_props(obj,self.insert.obj_bp)
+        else:
+            pc_utils.update_id_props(obj,self.part.obj_bp)
+        # home_builder_utils.assign_current_material_index(obj)
+        if obj.type == 'EMPTY':
+            obj.hide_viewport = True    
+        if obj.type == 'MESH':
+            obj.display_type = 'WIRE'            
+        for child in obj.children:
+            self.set_child_properties(child)
+
+    def set_placed_properties(self,obj):
+        if obj.type == 'MESH' and obj.hide_render == False:
+            obj.display_type = 'TEXTURED'          
+        for child in obj.children:
+            self.set_placed_properties(child) 
+
+    def get_32mm_position(self,selected_point):
+        number_of_holes =  math.floor((selected_point[2] / pc_unit.millimeter(32)))
+        return number_of_holes * pc_unit.millimeter(32)
+
+    def modal(self, context, event):
+        bpy.ops.object.select_all(action='DESELECT')
+
+        context.view_layer.update()
+        #EMPTY MUST BE VISIBLE TO CALCULATE CORRECT SIZE FOR HEIGHT COLLISION
+        self.part.obj_z.empty_display_size = .001
+        self.part.obj_z.hide_viewport = False
+
+        self.mouse_x = event.mouse_x
+        self.mouse_y = event.mouse_y
+
+        ## selected_normal added in to pass this info on from ray cast to position_cabinet
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
+
+        ## cursor_z added to allow for multi level placement
+        cursor_z = context.scene.cursor.location.z
+
+        opening = self.position_part(selected_point,selected_obj,event,cursor_z,selected_normal)
+
+        if utils_placement.event_is_place_asset(event):
+            return self.finish(context,opening,event.shift)
+            
+        if utils_placement.event_is_cancel_command(event):
+            return self.cancel_drop(context)
+
+        if utils_placement.event_is_pass_through(event):
+            return {'PASS_THROUGH'}
+
+        return {'RUNNING_MODAL'}
+
+    def cancel_drop(self,context):
+        pc_utils.delete_object_and_children(self.part.obj_bp)
+        return {'CANCELLED'}
+
+    def refresh_data(self,hide=True):
+        ''' For some reason matrix world doesn't evaluate correctly
+            when placing cabinets next to this if object is hidden
+            For now set x, y, z object to not be hidden.
+        '''
+        self.part.obj_x.hide_viewport = hide
+        self.part.obj_y.hide_viewport = hide
+        self.part.obj_z.hide_viewport = hide
+        self.part.obj_x.empty_display_size = .001
+        self.part.obj_y.empty_display_size = .001
+        self.part.obj_z.empty_display_size = .001
+ 
+    def delete_reference_object(self):
+        for obj in self.part.obj_bp.children:
+            if "IS_REFERENCE" in obj:
+                pc_utils.delete_object_and_children(obj)
+
+    def finish(self,context,opening,is_recursive):
+        hb_props = utils_cabinet.get_scene_props(context.scene)
+        context.window.cursor_set('DEFAULT')
+        self.set_placed_properties(self.part.obj_bp) 
+        bpy.ops.object.select_all(action='DESELECT')
+        context.area.tag_redraw()
+        if self.is_fixed:
+            print("IS FIXED")
+            world_opening_z = opening.obj_z.matrix_world[2][3]
+            sel_loc = self.part.obj_bp.location.z
+            top_opening_height = world_opening_z - sel_loc
+            self.insert = types_closet_inserts.Vertical_Splitter()
+            self.insert.pre_draw()
+            self.insert.draw()
+            self.insert.set_name("Splitter Shelf")
+            add_insert_to_opening(self.insert,opening)
+            calculator = self.insert.get_calculator("Opening Calculator")
+            opening_1_height = calculator.get_calculator_prompt("Opening 1 Height")
+            opening_1_height.equal = False
+            value = top_opening_height*1000
+            for index, height in enumerate(const.OPENING_HEIGHTS):
+                if not value >= float(height[0]):
+                    target_height = float(const.OPENING_HEIGHTS[index - 1][0])
+                    opening_1_height.set_value(target_height/1000)
+                    break
+            calculator.calculate()
+            self.set_child_properties(self.insert.obj_bp)
+            self.set_placed_properties(self.insert.obj_bp)
+            pc_utils.delete_object_and_children(self.part.obj_bp)
+        else:
+            self.part.obj_bp['IS_ADJ_SHELF'] = True
+            self.part.obj_bp['IS_CUTPART_BP'] = True
+            # props = home_builder_utils.get_object_props(self.part.obj_bp)
+            # props.ebl2 = True
+            # props.part_name = "Adj Shelf"
+            self.part.add_prompt("Is Locked Shelf",'CHECKBOX',False)
+            self.part.add_prompt("Adj Shelf Setback",'DISTANCE',hb_props.adj_shelf_setback)
+            self.part.add_prompt("Fixed Shelf Setback",'DISTANCE',hb_props.fixed_shelf_setback)
+            # l_depth = self.part.add_prompt("Left Depth",'DISTANCE',0)
+            # r_depth = self.part.add_prompt("Right Depth",'DISTANCE',0)            
+            z_loc = self.part.obj_bp.matrix_world[2][3]
+            self.part.obj_bp.parent = opening.obj_bp
+            self.part.obj_bp.location.x = opening.obj_bp.location.x
+            self.part.obj_bp.location.y = opening.obj_bp.location.y
+            self.part.obj_bp.matrix_world[2][3] = z_loc
+            self.part.obj_x.location.x = opening.obj_x.location.x
+            self.part.obj_y.location.y = opening.obj_y.location.y
+            pc_utils.copy_drivers(opening.obj_x,self.part.obj_x)
+            pc_utils.copy_drivers(opening.obj_y,self.part.obj_y)
+            pc_utils.copy_drivers(opening.obj_prompts,self.part.obj_prompts)
+            self.set_child_properties(self.part.obj_bp)
+            self.set_placed_properties(self.part.obj_bp)
+            material_pointers_cabinet.assign_double_sided_pointers(self.part)
+            material_pointers_cabinet.assign_materials_to_assembly(self.part)
+        # if is_recursive:
+        #     bpy.ops.home_builder.place_closet_part(filepath=self.filepath)
+        return {'FINISHED'}
+
+
 classes = (
     hb_sample_cabinets_OT_drop_cabinet_library,
     hb_sample_cabinets_OT_drop_appliance,
@@ -1582,6 +1819,7 @@ classes = (
     hb_sample_cabinets_OT_place_closet_shelf,
     hb_sample_cabinets_OT_place_closet_cleat,
     hb_sample_cabinets_OT_place_closet_back,
+    hb_sample_cabinets_OT_place_single_fixed_shelf_part,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)

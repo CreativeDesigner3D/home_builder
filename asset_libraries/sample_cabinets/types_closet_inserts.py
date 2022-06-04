@@ -1258,3 +1258,234 @@ class Wire_Baskets(Closet_Insert):
 
             prev_wire_basket_empty = wire_basket_empty
                
+
+class Vertical_Splitter(Closet_Insert):
+
+    splitter_qty = 1
+
+    def add_splitters(self):
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        s_thickness = self.get_prompt("Shelf Thickness").get_var("s_thickness")
+        # left_depth = self.get_prompt("Left Depth").get_var("left_depth")
+        # right_depth = self.get_prompt("Right Depth").get_var("right_depth")
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+
+        previous_splitter = None
+
+        for i in range(1,self.splitter_qty+1):
+            opening_height = self.get_prompt('Opening ' + str(i) + ' Height').get_var('Opening Calculator','opening_height')
+            splitter = assemblies_cabinet.add_closet_part(self)
+            # splitter.obj_bp["IS_SHELF_BP"] = True
+            # splitter.obj_bp['ADD_DIMENSION'] = True
+            # props = home_builder_utils.get_object_props(splitter.obj_bp)
+            # props.ebl2 = True
+            # props.part_name = "Fixed Shelf"             
+            splitter.loc_x(value = 0)
+            splitter.loc_y(value = 0)
+            if previous_splitter:
+                loc_z = previous_splitter.obj_bp.pyclone.get_var('location.z','loc_z')
+                splitter.loc_z('loc_z-opening_height-s_thickness',[loc_z,opening_height,s_thickness])
+            else:
+                splitter.loc_z('height-opening_height-s_thickness',[height,opening_height,s_thickness])
+            splitter.rot_x(value = 0)
+            splitter.rot_y(value = 0)
+            splitter.rot_z(value = 0)
+            splitter.dim_x('width',[width])
+            splitter.dim_y('depth-back_inset',[depth,back_inset])
+            splitter.dim_z('s_thickness',[s_thickness])
+            # left_depth_p = splitter.get_prompt("Left Depth")
+            # left_depth_p.set_formula('left_depth',[left_depth])
+            # right_depth_p = splitter.get_prompt("Right Depth")
+            # right_depth_p.set_formula('right_depth',[right_depth])
+
+            s_loc_z = splitter.obj_bp.pyclone.get_var('location.z','s_loc_z')
+
+            opening = self.add_opening()
+            opening.loc_z('s_loc_z+s_thickness',[s_loc_z,s_thickness])
+            opening.dim_z('opening_height',[opening_height])
+
+            previous_splitter = splitter
+
+        last_opening_height = self.get_prompt('Opening ' + str(self.splitter_qty+1) + ' Height').get_var('Opening Calculator','last_opening_height')
+
+        opening = self.add_opening()
+        opening.loc_z(value = 0)
+        opening.dim_z('last_opening_height',[last_opening_height])       
+
+    def pre_draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()   
+        self.obj_bp["IS_SPLITTER_INSERT"] = True
+        self.obj_bp["IS_VERTICAL_SPLITTER_INSERT"] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["PROMPT_ID"] = "home_builder.splitter_prompts"
+        
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(.75)
+
+    def draw(self):
+        shelf_thickness = self.add_prompt("Shelf Thickness",'DISTANCE',pc_unit.inch(.75)) 
+
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        s_thickness = shelf_thickness.get_var('s_thickness')
+        calc_distance_obj = self.add_empty('Calc Distance Obj')
+        calc_distance_obj.empty_display_size = .001
+        opening_calculator = self.obj_prompts.pyclone.add_calculator("Opening Calculator",calc_distance_obj)
+
+        for i in range(1,self.splitter_qty+2):
+            opening_calculator.add_calculator_prompt('Opening ' + str(i) + ' Height')
+
+        opening_calculator.set_total_distance('height-s_thickness*' + str(self.splitter_qty),[height,s_thickness])
+
+        self.add_splitters()
+
+        bpy.context.view_layer.update()
+        opening_calculator.calculate()
+
+    def render(self):
+        self.pre_draw()
+        self.draw()
+
+
+class Horizontal_Splitter(Closet_Insert):
+
+    splitter_qty = 1
+
+    def add_splitters(self):
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        d_thickness = self.get_prompt("Division Thickness").get_var("d_thickness")
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+        left_depth_var = self.get_prompt("Left Depth").get_var("left_depth_var")
+        right_depth_var = self.get_prompt("Right Depth").get_var("right_depth_var")
+        drill_start_loc = self.get_prompt("Drill Start Location").get_var("drill_start_loc")
+        previous_splitter = None
+
+        for i in range(1,self.splitter_qty+1):
+            opening_width = self.get_prompt('Opening ' + str(i) + ' Width').get_var('Opening Calculator','opening_width')
+
+            opening = self.add_opening()
+            opening.set_name('Opening ' + str(i))
+            if previous_splitter:
+                loc_x = previous_splitter.obj_bp.pyclone.get_var('location.x','loc_x')
+                opening.loc_x('loc_x',[loc_x])
+            else:
+                opening.loc_x(value = 0)
+            opening.loc_y(value = 0)
+            opening.loc_z(value = 0)
+            opening.dim_x('opening_width',[opening_width])
+            opening.dim_z('height',[height])
+
+            splitter = assemblies_cabinet.add_closet_part(self)
+            # splitter.obj_bp['IS_DIVISION_BP'] = True
+            # props = home_builder_utils.get_object_props(splitter.obj_bp)
+            # props.ebl2 = True
+            # props.part_name = "Division"                   
+            # splitter.set_name("Division " + str(i))
+            if previous_splitter:
+                loc_x = previous_splitter.obj_bp.pyclone.get_var('location.x','loc_x')
+                splitter.loc_x('loc_x+opening_width+d_thickness',[loc_x,opening_width,d_thickness])
+            else:
+                splitter.loc_x('opening_width+d_thickness',[opening_width,d_thickness])            
+            splitter.loc_y(value = 0)
+            splitter.loc_z(value = 0)
+            splitter.rot_x(value = 0)
+            splitter.rot_y(value = math.radians(-90))
+            splitter.rot_z(value = 0)
+            splitter.dim_x('height',[height])
+            splitter.dim_y('depth-back_inset',[depth,back_inset])
+            splitter.dim_z('d_thickness',[d_thickness])
+
+            splitter.add_prompt("Left Depth",'DISTANCE',0)
+            splitter.add_prompt("Left Height",'DISTANCE',0)       
+            splitter.add_prompt("Left Floor",'CHECKBOX',False)  
+            splitter.add_prompt("Left Drill Start",'DISTANCE',0)
+            splitter.add_prompt("Left Drill Stop",'DISTANCE',0)
+            splitter.add_prompt("Right Depth",'DISTANCE',0)     
+            splitter.add_prompt("Right Height",'DISTANCE',0)
+            splitter.add_prompt("Right Floor",'CHECKBOX',False)
+            splitter.add_prompt("Right Drill Start",'DISTANCE',0)
+            splitter.add_prompt("Right Drill Stop",'DISTANCE',0)                                     
+            splitter.add_prompt("Drill From Left",'CHECKBOX',False)
+            splitter.add_prompt("Drill From One Side",'CHECKBOX',True)      
+
+            left_depth = splitter.get_prompt("Left Depth")
+            left_depth.set_formula('left_depth_var',[left_depth_var])
+            left_height = splitter.get_prompt("Left Height")
+            left_height.set_formula('height',[height])
+            left_floor = splitter.get_prompt("Left Floor")
+            left_floor.set_formula('True',[])
+            left_drill_start = splitter.get_prompt("Left Drill Start")
+            left_drill_start.set_formula('drill_start_loc',[drill_start_loc])
+            left_drill_stop = splitter.get_prompt("Left Drill Stop")
+            left_drill_stop.set_formula('height',[height])
+            right_depth = splitter.get_prompt("Right Depth")
+            right_depth.set_formula('right_depth_var',[right_depth_var])
+            right_height = splitter.get_prompt("Right Height")
+            right_height.set_formula('height',[height])
+            right_floor = splitter.get_prompt("Right Floor")
+            right_floor.set_formula('True',[])
+            right_drill_start = splitter.get_prompt("Right Drill Start")
+            right_drill_start.set_formula('drill_start_loc',[drill_start_loc])
+            right_drill_stop = splitter.get_prompt("Right Drill Stop")
+            right_drill_stop.set_formula('height',[height])
+            drill_from_left = splitter.get_prompt("Drill From Left")
+            drill_from_left.set_formula('True',[])
+            drill_from_one_side = splitter.get_prompt("Drill From One Side")
+            drill_from_one_side.set_formula('True',[])
+
+            previous_splitter = splitter
+
+        previous_splitter_x = previous_splitter.obj_bp.pyclone.get_var('location.x','previous_splitter_x')
+        last_opening_width = self.get_prompt('Opening ' + str(self.splitter_qty+1) + ' Width').get_var('Opening Calculator','last_opening_width')
+
+        last_opening = assemblies_cabinet.add_closet_opening(self)
+        last_opening.set_name('Opening ' + str(self.splitter_qty+1))
+        last_opening.loc_x('previous_splitter_x',[previous_splitter_x])
+        last_opening.loc_y(value = 0)
+        last_opening.loc_z(value = 0)
+        last_opening.rot_x(value = 0)
+        last_opening.rot_y(value = 0)
+        last_opening.rot_z(value = 0)
+        last_opening.dim_x('last_opening_width',[last_opening_width])
+        last_opening.dim_y('depth',[depth])
+        last_opening.dim_z('height',[height])
+
+    def pre_draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()  
+        self.obj_bp["IS_HORIZONTAL_SPLITTER_INSERT"] = True
+        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp["PROMPT_ID"] = "home_builder.division_prompts"
+        
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(.75)
+
+    def draw(self):
+        self.add_prompt("Division Thickness",'DISTANCE',pc_unit.inch(.75)) 
+        self.add_prompt("Add Hang Rail Notch",'CHECKBOX',False) 
+        self.add_prompt("Drill Start Location",'DISTANCE',pc_unit.inch(.8699)) #.8597
+
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        d_thickness = self.get_prompt("Division Thickness").get_var('d_thickness')
+        calc_distance_obj = self.add_empty('Calc Distance Obj')
+        calc_distance_obj.empty_display_size = .001
+        opening_calculator = self.obj_prompts.pyclone.add_calculator("Opening Calculator",calc_distance_obj)
+
+        for i in range(1,self.splitter_qty+2):
+            opening_calculator.add_calculator_prompt('Opening ' + str(i) + ' Width')
+
+        opening_calculator.set_total_distance('width-d_thickness*' + str(self.splitter_qty),[width,d_thickness])
+
+        self.add_splitters()
+
+        bpy.context.view_layer.update()
+        opening_calculator.calculate()
+
+    def render(self):
+        self.pre_draw()
+        self.draw()
