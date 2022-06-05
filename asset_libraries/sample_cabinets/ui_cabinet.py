@@ -16,7 +16,7 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
         layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
 
 
-class HOME_BUILDER_MT_cabinets(bpy.types.Menu):
+class HOME_BUILDER_MT_cabinet_commands(bpy.types.Menu):
     bl_label = "Cabinet Commands"
 
     def draw(self, context):
@@ -296,7 +296,7 @@ class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):
 
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
-    HOME_BUILDER_MT_cabinets,
+    HOME_BUILDER_MT_cabinet_commands,
     HOME_BUILDER_PT_cabinet_sizes,
     HOME_BUILDER_PT_cabinet_construction,
     HOME_BUILDER_PT_cabinet_material_thickness,

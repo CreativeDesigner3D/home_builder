@@ -254,7 +254,7 @@ class Standard_Cabinet(Cabinet):
         self.create_assembly("Cabinet")
         self.obj_bp[const.CABINET_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.cabinet_prompts" 
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinets"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_commands"
         self.obj_y['IS_MIRROR'] = True
         self.carcasses = []
 
