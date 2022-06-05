@@ -1417,15 +1417,13 @@ class Horizontal_Splitter(Closet_Insert):
         self.add_closet_insert_prompts()  
         self.obj_bp[const.HORIZONTAL_SPLITTER_TAG] = True
         self.obj_bp["IS_CLOSET_INSERT"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.division_prompts"
+        self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.division_prompts"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
         self.obj_z.location.z = pc_unit.inch(.75)
 
         self.add_prompt("Division Thickness",'DISTANCE',pc_unit.inch(.75)) 
-        self.add_prompt("Add Hang Rail Notch",'CHECKBOX',False) 
-        self.add_prompt("Drill Start Location",'DISTANCE',pc_unit.inch(.8699)) #.8597
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         d_thickness = self.get_prompt("Division Thickness").get_var('d_thickness')

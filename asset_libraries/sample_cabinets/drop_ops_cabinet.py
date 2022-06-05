@@ -914,21 +914,15 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
 
         self.add_exclude_objects(self.insert.obj_bp)
         self.set_child_properties(self.insert.obj_bp)
+        self.get_calculators(self.insert.obj_bp)
+
+    def get_calculators(self,obj):
+        for calculator in obj.pyclone.calculators:
+            self.calculators.append(calculator)
+        for child in obj.children:
+            self.get_calculators(child)
 
     def set_child_properties(self,obj):
-        if "IS_DRAWERS_BP" in obj and obj["IS_DRAWERS_BP"]:
-            assembly = pc_types.Assembly(obj)
-            calculator = assembly.get_calculator('Front Height Calculator')
-            if calculator:
-                calculator.calculate()
-                self.calculators.append(calculator)
-
-        if "IS_VERTICAL_SPLITTER_BP" in obj and obj["IS_VERTICAL_SPLITTER_BP"]:
-            assembly = pc_types.Assembly(obj)
-            calculator = assembly.get_calculator('Opening Height Calculator')
-            if calculator:
-                calculator.calculate()
-                self.calculators.append(calculator)
         #Dont Update Id Props when duplicating
         if self.obj_bp_name == "":
             pc_utils.update_id_props(obj,self.insert.obj_bp)

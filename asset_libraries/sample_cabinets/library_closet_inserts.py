@@ -64,3 +64,27 @@ class Wire_Baskets(types_closet_inserts.Wire_Baskets):
 
     def __init__(self):
         pass             
+
+
+class Division_1(types_closet_inserts.Horizontal_Splitter):
+
+    def __init__(self):
+        self.splitter_qty = 1
+
+
+class Division_2(types_closet_inserts.Horizontal_Splitter):
+
+    def __init__(self):
+        self.splitter_qty = 2
+
+
+class Division_3(types_closet_inserts.Horizontal_Splitter):
+
+    def __init__(self):
+        self.splitter_qty = 3      
+
+
+class Division_4(types_closet_inserts.Horizontal_Splitter):
+
+    def __init__(self):
+        self.splitter_qty = 4                  

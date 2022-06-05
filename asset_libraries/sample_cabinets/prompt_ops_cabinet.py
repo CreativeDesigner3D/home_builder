@@ -1988,8 +1988,6 @@ class hb_closet_inserts_OT_division_prompts(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
-        add_hang_rail_notch = self.insert.get_prompt("Add Hang Rail Notch")
-        layout.prop(add_hang_rail_notch,'checkbox_value',text="Add Hang Rail Notch")
         unit_settings = bpy.context.scene.unit_settings
         for i in range(1,10):
             opening = self.insert.get_prompt("Opening " + str(i) + " Width")
