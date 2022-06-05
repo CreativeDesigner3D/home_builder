@@ -129,26 +129,19 @@ class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
         self.cabinet.draw()
         self.cabinet.set_name(asset.file_data.name.replace(" ","_"))
         self.set_child_properties(self.cabinet.obj_bp)
+        self.get_calculators(self.cabinet.obj_bp)
 
         cabinet_type = self.cabinet.get_prompt("Cabinet Type")
         if cabinet_type.get_value() == 'Upper':
             self.height_above_floor = scene_props.height_above_floor - self.cabinet.obj_z.location.z
 
+    def get_calculators(self,obj):
+        for calculator in obj.pyclone.calculators:
+            self.calculators.append(calculator)
+        for child in obj.children:
+            self.get_calculators(child)
+
     def set_child_properties(self,obj):
-        if "IS_DRAWERS_BP" in obj and obj["IS_DRAWERS_BP"]:
-            assembly = pc_types.Assembly(obj)
-            calculator = assembly.get_calculator('Front Height Calculator')
-            if calculator:
-                calculator.calculate()
-                self.calculators.append(calculator)
-
-        if "IS_VERTICAL_SPLITTER_BP" in obj and obj["IS_VERTICAL_SPLITTER_BP"]:
-            assembly = pc_types.Assembly(obj)
-            calculator = assembly.get_calculator('Opening Height Calculator')
-            if calculator:
-                calculator.calculate()
-                self.calculators.append(calculator)
-
         pc_utils.update_id_props(obj,self.cabinet.obj_bp)
         # home_builder_utils.assign_current_material_index(obj)
         if obj.type == 'EMPTY':
@@ -662,22 +655,15 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
 
         self.closet.set_name(asset.file_data.name)
         self.set_child_properties(self.closet.obj_bp)
+        self.get_calculators(self.closet.obj_bp)
+
+    def get_calculators(self,obj):
+        for calculator in obj.pyclone.calculators:
+            self.calculators.append(calculator)
+        for child in obj.children:
+            self.get_calculators(child)
 
     def set_child_properties(self,obj):
-        if "IS_DRAWERS_BP" in obj and obj["IS_DRAWERS_BP"]:
-            assembly = pc_types.Assembly(obj)
-            calculator = assembly.get_calculator('Front Height Calculator')
-            if calculator:
-                calculator.calculate()
-                self.calculators.append(calculator)
-
-        if "IS_VERTICAL_SPLITTER_BP" in obj and obj["IS_VERTICAL_SPLITTER_BP"]:
-            assembly = pc_types.Assembly(obj)
-            calculator = assembly.get_calculator('Opening Height Calculator')
-            if calculator:
-                calculator.calculate()
-                self.calculators.append(calculator)
-
         pc_utils.update_id_props(obj,self.closet.obj_bp)
         # home_builder_utils.assign_current_material_index(obj)
         if obj.type == 'EMPTY':
