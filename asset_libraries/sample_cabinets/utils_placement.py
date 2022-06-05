@@ -1,8 +1,9 @@
-from . import types_cabinet
 import bpy
 import math
 from mathutils import Vector
 from pc_lib import pc_types, pc_unit, pc_utils
+from . import types_closet_starters
+from . import types_cabinet
 from . import utils_cabinet
 from . import const_cabinets as const
 
@@ -67,6 +68,40 @@ def create_placement_obj(context):
     context.view_layer.active_layer_collection.collection.objects.link(placement_obj)
     return placement_obj        
 
+def calc_depth(assembly):
+    """ 
+    Calculates the depth of the assembly based on the rotation. 
+    Used to determine collisions for rotated groups.
+    """
+    #TODO: This not correct
+    if assembly.obj_bp.rotation_euler.z < 0:
+        return math.fabs(assembly.obj_x.location.x)
+    else:
+        return math.fabs(assembly.obj_y.location.y)
+
+def base_point_is_closet(obj_bp):
+    if const.CLOSET_TAG in obj_bp or const.CLOSET_INSIDE_CORNER_TAG in obj_bp:
+        return True
+    else:
+        return False
+
+def get_wall_products(wall,cabinet,placement_obj,loc_sort='X'):
+    """ This returns a sorted list of all of the assemblies base points
+        parented to the wall
+    """
+    list_obj_bp = []
+    list_obj_bp.append(placement_obj)
+    for child in wall.obj_bp.children:
+        if 'IS_ASSEMBLY_BP' in child and child.name != cabinet.obj_bp.name:
+            list_obj_bp.append(child)
+    if loc_sort == 'X':
+        list_obj_bp.sort(key=lambda obj: obj.location.x, reverse=False)
+    if loc_sort == 'Y':
+        list_obj_bp.sort(key=lambda obj: obj.location.y, reverse=False)            
+    if loc_sort == 'Z':
+        list_obj_bp.sort(key=lambda obj: obj.location.z, reverse=False)
+    return list_obj_bp
+
 def has_height_collision(active_assembly,assembly):
     cab1_z_1 = active_assembly.obj_bp.matrix_world[2][3]
     cab1_z_2 = active_assembly.obj_z.matrix_world[2][3]
@@ -84,6 +119,24 @@ def has_height_collision(active_assembly,assembly):
         
     if cab2_z_2 >= cab1_z_1 and cab2_z_2 <= cab1_z_2:
         return True
+
+def has_closet_height_collision(current_assembly,assembly):
+    if current_assembly.is_hanging:
+        if hasattr(assembly,'is_base'):
+            if assembly.is_base:
+                return False
+            else:
+                return has_height_collision(current_assembly,assembly)
+        else:
+            return has_height_collision(current_assembly,assembly)
+    else:
+        if hasattr(assembly,'is_hanging'):
+            if assembly.is_hanging:
+                return False
+            else:
+                return has_height_collision(current_assembly,assembly)
+        else:
+            return has_height_collision(current_assembly,assembly)
 
 def get_cabinet_placement_location(cabinet,sel_cabinet,mouse_location):
     sel_cabinet_world_loc = (sel_cabinet.obj_bp.matrix_world[0][3],
@@ -104,6 +157,94 @@ def get_cabinet_placement_location(cabinet,sel_cabinet,mouse_location):
             return 'RIGHT'
     else:
         return 'CENTER'
+
+def get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='LEFT'):
+    if wall:
+        placement_obj.parent = wall.obj_bp
+        placement_obj.matrix_world[0][3] = mouse_location[0]
+        placement_obj.matrix_world[1][3] = mouse_location[1]   
+
+        list_obj_bp = get_wall_products(wall,closet,placement_obj)
+        list_obj_left_bp = []
+        list_obj_right_bp = []
+        for index, obj_bp in enumerate(list_obj_bp):
+            if obj_bp.name == placement_obj.name:
+                list_obj_left_bp = list_obj_bp[:index]
+                list_obj_right_bp = list_obj_bp[index + 1:]
+                break
+
+        if direction == 'LEFT':
+            list_obj_left_bp.reverse()
+            for obj_bp in list_obj_left_bp:
+                if base_point_is_closet(obj_bp):
+                    prev_ass = types_closet_starters.Closet(obj_bp)
+                else:
+                    prev_ass = pc_types.Assembly(obj_bp)
+                if has_closet_height_collision(closet,prev_ass):
+                    return obj_bp.location.x + prev_ass.obj_x.location.x, prev_ass, wall
+            
+            # CHECK NEXT WALL
+            left_wall_bp =  pc_utils.get_connected_left_wall_bp(wall)
+            if left_wall_bp:
+                left_wall = pc_types.Assembly(left_wall_bp)
+                rotation_difference = math.degrees(wall.obj_bp.rotation_euler.z) - math.degrees(left_wall.obj_bp.rotation_euler.z)
+                if rotation_difference < 0 or rotation_difference > 180:
+                    list_obj_bp = get_wall_products(left_wall,closet,placement_obj)
+                    for obj in list_obj_bp:
+                        if obj == placement_obj:
+                            continue                            
+                        if base_point_is_closet(obj):
+                            prev_ass = types_closet_starters.Closet(obj)
+                        else:
+                            prev_ass = pc_types.Assembly(obj)
+                        product_x = obj.location.x
+                        product_width = prev_ass.obj_x.location.x
+                        x_dist = left_wall.obj_x.location.x  - (product_x + product_width)
+                        product_depth = math.fabs(closet.obj_y.location.y)
+                        if x_dist <= product_depth:
+                            if has_closet_height_collision(closet,prev_ass): 
+                                return math.fabs(prev_ass.obj_y.location.y), prev_ass, left_wall
+            return 0, None, None
+        
+        if direction == 'RIGHT':
+            for obj_bp in list_obj_right_bp:
+                if base_point_is_closet(obj_bp):
+                    next_assembly = types_closet_starters.Closet(obj_bp)
+                else:
+                    next_assembly = pc_types.Assembly(obj_bp)
+                if has_closet_height_collision(closet,next_assembly):
+                    wall_length = wall.obj_x.location.x
+                    product_x_loc = next_assembly.obj_bp.location.x
+                    product_size = 0
+                    if next_assembly.obj_bp.rotation_euler.z < 0:
+                        product_size = calc_depth(next_assembly)
+                    return wall_length - product_x_loc + product_size, next_assembly, wall
+    
+            # CHECK NEXT WALL
+            right_wall_bp =  pc_utils.get_connected_right_wall_bp(wall)
+            if right_wall_bp:
+                right_wall = pc_types.Assembly(right_wall_bp)
+                rotation_difference = math.degrees(wall.obj_bp.rotation_euler.z) - math.degrees(right_wall.obj_bp.rotation_euler.z)
+                if rotation_difference > 0 or rotation_difference < -180:
+                    list_obj_bp = get_wall_products(right_wall,closet,placement_obj)
+                    for obj in list_obj_bp:
+                        if obj == placement_obj:
+                            continue
+                        if base_point_is_closet(obj):
+                            next_ass = types_closet_starters.Closet(obj)
+                        else:
+                            next_ass = pc_types.Assembly(obj)
+                        product_x = obj.location.x
+                        product_width = next_ass.obj_x.location.x
+                        product_depth = math.fabs(closet.obj_y.location.y)
+                        if product_x <= product_depth:
+                            if has_closet_height_collision(closet,next_ass):
+                                product_depth = math.fabs(next_ass.obj_y.location.y)
+                                return product_depth, next_ass, right_wall
+    
+            return 0, None, None
+
+    return 0, None, None
 
 def position_cabinet_next_to_door_window(cabinet,mouse_location,assembly):
     placement = get_cabinet_placement_location(cabinet,assembly,mouse_location)
@@ -293,24 +434,24 @@ def position_closet_on_wall(closet,wall,placement_obj,mouse_location):
     closet.obj_bp.location = (0,0,0)        
     closet.obj_x.location.x = wall.obj_x.location.x
     pc_utils.select_children(closet.obj_bp)              
-    # left_x_loc, left_product, left_wall = get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='LEFT')
-    # right_x_loc, right_product, right_wall = get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='RIGHT')
-    # if left_wall:
-    #     if left_wall.obj_bp.name == wall.obj_bp.name:
-    #         left_spacing = 0
-    #     else:
-    #         if left_product and 'IS_INSIDE_CORNER_BP' not in left_product.obj_bp:
-    #             left_spacing = props.closet_corner_spacing
+    left_x_loc, left_product, left_wall = get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='LEFT')
+    right_x_loc, right_product, right_wall = get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='RIGHT')
+    if left_wall:
+        if left_wall.obj_bp.name == wall.obj_bp.name:
+            left_spacing = 0
+        else:
+            if left_product and const.CLOSET_INSIDE_CORNER_TAG not in left_product.obj_bp:
+                left_spacing = props.closet_corner_spacing
 
-    # if right_wall:
-    #     if right_wall.obj_bp.name == wall.obj_bp.name:
-    #         right_spacing = 0
-    #     else:
-    #         if right_product and 'IS_INSIDE_CORNER_BP' not in right_product.obj_bp:
-    #             right_spacing = props.closet_corner_spacing
+    if right_wall:
+        if right_wall.obj_bp.name == wall.obj_bp.name:
+            right_spacing = 0
+        else:
+            if right_product and const.CLOSET_INSIDE_CORNER_TAG not in right_product.obj_bp:
+                right_spacing = props.closet_corner_spacing
 
-    # closet.obj_bp.location.x = left_x_loc + left_spacing
-    # closet.obj_x.location.x -= left_x_loc + left_spacing + right_spacing + right_x_loc
+    closet.obj_bp.location.x = left_x_loc + left_spacing
+    closet.obj_x.location.x -= left_x_loc + left_spacing + right_spacing + right_x_loc
     return 'WALL'
 
 def position_closet_on_countertop(closet,countertop,placement_obj,mouse_location):
@@ -448,6 +589,7 @@ def position_corner_unit(cabinet,mouse_location,selected_obj,cursor_z,selected_n
     placement = ""
     sel_cabinet = None
     sel_wall = None
+    override_height = 0
 
     if not cabinet_bp:
         cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_APPLIANCE_TAG)
@@ -469,4 +611,4 @@ def position_corner_unit(cabinet,mouse_location,selected_obj,cursor_z,selected_n
     else:
         placement = position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,selected_normal,height_above_floor)
 
-    return placement, sel_cabinet, sel_wall        
+    return placement, sel_cabinet, sel_wall, override_height        

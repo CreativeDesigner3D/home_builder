@@ -752,13 +752,22 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         ## cursor_z added to allow for multi level placement
         cursor_z = context.scene.cursor.location.z
 
-        self.placement, self.selected_cabinet, self.current_wall, override_height = utils_placement.position_closet(self.closet,
-                                                                                                    selected_point,
-                                                                                                    selected_obj,
-                                                                                                    cursor_z,
-                                                                                                    selected_normal,
-                                                                                                    self.placement_obj,
-                                                                                                    0)
+        if self.closet.is_inside_corner:
+            self.placement, self.selected_cabinet, self.selected_wall, override_height = utils_placement.position_corner_unit(self.closet,
+                                                                                                            selected_point,
+                                                                                                            selected_obj,
+                                                                                                            cursor_z,
+                                                                                                            selected_normal,
+                                                                                                            self.placement_obj,
+                                                                                                            0)
+        else:
+            self.placement, self.selected_cabinet, self.current_wall, override_height = utils_placement.position_closet(self.closet,
+                                                                                                        selected_point,
+                                                                                                        selected_obj,
+                                                                                                        cursor_z,
+                                                                                                        selected_normal,
+                                                                                                        self.placement_obj,
+                                                                                                        0)
 
         if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context,override_height)

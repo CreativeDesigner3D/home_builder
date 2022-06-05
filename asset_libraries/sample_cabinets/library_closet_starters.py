@@ -19,14 +19,15 @@ class Base_Starter(types_closet_starters.Closet_Starter):
 class Tall_L_Shelves(types_closet_starters.Closet_Inside_Corner):
 
     def __init__(self):
-        pass
+        self.is_inside_corner = True
 
 class Hanging_L_Shelves(types_closet_starters.Closet_Inside_Corner):
 
     def __init__(self):
+        self.is_inside_corner = True
         self.is_hanging = True
 
 class Corner_Filler(types_closet_starters.Closet_Inside_Corner_Filler):
 
     def __init__(self):
-        pass        
+        self.is_inside_corner = True        
