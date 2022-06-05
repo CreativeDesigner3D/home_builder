@@ -1140,8 +1140,8 @@ class hb_sample_cabinets_OT_place_closet_shelf(bpy.types.Operator):
             self.exclude_objects.append(obj)
 
         self.part.set_name("Single Shelf")
-        self.part.obj_bp['IS_SINGLE_SHELF'] = True
-        self.part.obj_bp['PROMPT_ID'] = 'home_builder.closet_single_shelf_prompts'
+        self.part.obj_bp[const.CLOSET_SINGLE_ADJ_SHELF_TAG] = True
+        self.part.obj_bp['PROMPT_ID'] = 'hb_closet_parts.closet_single_adj_shelf_prompts'
         self.set_child_properties(self.part.obj_bp)
 
     def set_child_properties(self,obj):
@@ -1326,9 +1326,9 @@ class hb_sample_cabinets_OT_place_closet_cleat(bpy.types.Operator):
             self.exclude_objects.append(obj)
 
         self.part.set_name("Cleat")
-        self.part.obj_bp['IS_CLEAT_BP'] = True
+        self.part.obj_bp[const.CLOSET_CLEAT_TAG] = True
         self.part.obj_bp['IS_CUTPART_BP'] = True
-        self.part.obj_bp['PROMPT_ID'] = 'home_builder.closet_cleat_prompts'
+        self.part.obj_bp['PROMPT_ID'] = 'hb_closet_parts.closet_cleat_prompts'
         self.set_child_properties(self.part.obj_bp)
 
     def set_child_properties(self,obj):
@@ -1496,9 +1496,9 @@ class hb_sample_cabinets_OT_place_closet_back(bpy.types.Operator):
             self.exclude_objects.append(obj)
 
         self.part.set_name("Back")
-        self.part.obj_bp['IS_CLOSET_BACK_BP'] = True
+        self.part.obj_bp[const.CLOSET_BACK_TAG] = True
         self.part.obj_bp['IS_CUTPART_BP'] = True
-        self.part.obj_bp['PROMPT_ID'] = 'home_builder.closet_back_prompts'
+        self.part.obj_bp['PROMPT_ID'] = 'hb_closet_parts.closet_back_prompts'
         self.set_child_properties(self.part.obj_bp)
 
     def set_child_properties(self,obj):
@@ -1598,8 +1598,8 @@ class hb_sample_cabinets_OT_place_closet_back(bpy.types.Operator):
         self.set_placed_properties(self.part.obj_bp) 
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
-        if is_recursive:
-            bpy.ops.home_builder.place_closet_back(filepath=self.filepath)
+        # if is_recursive:
+        #     bpy.ops.home_builder.place_closet_back(filepath=self.filepath)
         return {'FINISHED'}
 
 
@@ -1674,8 +1674,8 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
         self.part.obj_x.hide_viewport = True
         self.part.obj_y.hide_viewport = True
         self.part.obj_z.hide_viewport = True
-        self.part.obj_bp['PROMPT_ID'] = "home_builder.closet_single_shelf_prompts"
-        self.part.obj_bp['IS_SINGLE_SHELF'] = True
+        # self.part.obj_bp['PROMPT_ID'] = "hb_closet_parts.closet_single_fixed_shelf_prompts"
+        # self.part.obj_bp[const.CLOSET_SINGLE_FIXED_SHELF_TAG] = True
 
     def set_child_properties(self,obj):
         if self.insert:
@@ -1758,13 +1758,13 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
         if self.is_fixed:
-            print("IS FIXED")
             world_opening_z = opening.obj_z.matrix_world[2][3]
             sel_loc = self.part.obj_bp.location.z
             top_opening_height = world_opening_z - sel_loc
             self.insert = types_closet_inserts.Vertical_Splitter()
-            self.insert.pre_draw()
+            # self.insert.pre_draw()
             self.insert.draw()
+            self.insert.obj_bp["PROMPT_ID"] = "hb_closet_parts.closet_single_fixed_shelf_prompts"
             self.insert.set_name("Splitter Shelf")
             add_insert_to_opening(self.insert,opening)
             calculator = self.insert.get_calculator("Opening Calculator")

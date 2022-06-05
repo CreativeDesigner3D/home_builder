@@ -1705,6 +1705,311 @@ class hb_closet_inserts_OT_closet_wire_baskets_prompts(bpy.types.Operator):
         row.prop(spacing,'distance_value',text="")
 
 
+class hb_closet_parts_OT_closet_single_adj_shelf_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_parts.closet_single_adj_shelf_prompts"
+    bl_label = "Closet Single Adjustable Shelf Prompts"
+
+    insert = None
+    calculators = []
+
+    def check(self, context):
+        return True
+
+    def execute(self, context):                   
+        return {'FINISHED'}
+
+    def invoke(self,context,event):
+        self.get_assemblies(context)
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=200)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_SINGLE_ADJ_SHELF_TAG)
+        self.insert = pc_types.Assembly(bp)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self.insert.obj_bp,'location',index=2,text="Shelf Location")
+
+
+class hb_closet_parts_OT_closet_cleat_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_parts.closet_cleat_prompts"
+    bl_label = "Closet Cleat Prompts"
+
+    cleat_width: bpy.props.FloatProperty(name="Width",min=pc_unit.inch(1),unit='LENGTH',precision=4)
+
+    part = None
+    calculators = []
+
+    def check(self, context):
+        if self.part.obj_y.location.y > 0:
+            self.part.obj_y.location.y = self.cleat_width
+        else:
+            self.part.obj_y.location.y = -self.cleat_width
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self,context,event):
+        self.get_assemblies(context)
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=200)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_CLEAT_TAG)
+        self.part = pc_types.Assembly(bp)
+        self.cleat_width = math.fabs(self.part.obj_y.location.y)
+
+    def draw(self, context):
+        layout = self.layout
+        inset = self.part.get_prompt("Cleat Inset")
+        width = self.part.get_prompt("Cleat Width")
+        row = layout.row()
+        row.label(text="Cleat Inset")
+        row.prop(inset,'distance_value',text="")
+        row = layout.row()
+        row.label(text="Cleat Width")
+        row.prop(self,'cleat_width',text="")
+
+
+class hb_closet_parts_OT_closet_back_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_parts.closet_back_prompts"
+    bl_label = "Closet Back Prompts"
+
+    part = None
+    calculators = []
+
+    def check(self, context):
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def invoke(self,context,event):
+        self.get_assemblies(context)
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=200)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_BACK_TAG)
+        self.part = pc_types.Assembly(bp)
+
+    def draw(self, context):
+        layout = self.layout
+        inset = self.part.get_prompt("Back Inset")
+        row = layout.row()
+        row.label(text="Back Inset")
+        row.prop(inset,'distance_value',text="")
+
+
+class hb_closet_parts_OT_closet_single_fixed_shelf_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_parts.closet_single_fixed_shelf_prompts"
+    bl_label = "Fixed Shelf Prompts"
+
+    set_height_location: bpy.props.EnumProperty(name="Set Height Location",
+                                           items=[('TOP',"Top","Set Top Height"),
+                                                  ('Bottom',"Bottom","Set Bottom Height")])
+
+    opening_1_height: bpy.props.EnumProperty(name="Opening 1 Height",
+                                    items=const.OPENING_HEIGHTS,
+                                    default = '716.95')
+    
+    opening_2_height: bpy.props.EnumProperty(name="Opening 2 Height",
+                                    items=const.OPENING_HEIGHTS,
+                                    default = '716.95')
+
+    opening_3_height: bpy.props.EnumProperty(name="Opening 3 Height",
+                                    items=const.OPENING_HEIGHTS,
+                                    default = '716.95')
+
+    opening_4_height: bpy.props.EnumProperty(name="Opening 4 Height",
+                                    items=const.OPENING_HEIGHTS,
+                                    default = '716.95')
+
+    opening_5_height: bpy.props.EnumProperty(name="Opening 5 Height",
+                                    items=const.OPENING_HEIGHTS,
+                                    default = '716.95')
+
+    insert = None
+    calculators = []
+
+    def check(self, context): 
+        opening_top = self.insert.get_prompt("Opening 1 Height")
+        opening_bottom = self.insert.get_prompt("Opening 2 Height")
+        if self.set_height_location == 'TOP':
+            opening_top.equal = False
+            opening_bottom.equal = True
+        else:
+            opening_top.equal = True
+            opening_bottom.equal = False  
+
+        hb_props = utils_cabinet.get_scene_props(context.scene)
+        if hb_props.use_fixed_closet_heights:
+            for i in range(1,6):
+                opening = self.insert.get_prompt("Opening " + str(i) + " Height")
+                if opening:
+                    height = eval("float(self.opening_" + str(i) + "_height)/1000")
+                    opening.set_value(height)        
+        for calculator in self.calculators:
+            calculator.calculate()
+        return True
+
+    def execute(self, context):                   
+        return {'FINISHED'}
+
+    def set_properties_from_prompts(self):
+        hb_props = utils_cabinet.get_scene_props(bpy.context.scene)
+        if hb_props.use_fixed_closet_heights:        
+            for i in range(1,6):
+                opening = self.insert.get_prompt("Opening " + str(i) + " Height")
+                if opening:
+                    value = round(opening.distance_value * 1000,2)
+                    for index, height in enumerate(const.OPENING_HEIGHTS):
+                        if not value >= float(height[0]):
+                            exec("self.opening_" + str(i) + "_height = const.OPENING_HEIGHTS[index - 1][0]")
+                            break
+
+    def invoke(self,context,event):
+        self.get_assemblies(context) 
+        self.get_calculators(self.insert.obj_bp)
+        self.set_properties_from_prompts()
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=300)
+
+    def get_calculators(self,obj):
+        for cal in obj.pyclone.calculators:
+            self.calculators.append(cal)
+        for child in obj.children:
+            self.get_calculators(child)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.VERTICAL_SPLITTER_TAG)
+        self.insert = pc_types.Assembly(bp)
+
+    def get_number_of_equal_openings(self,name="Height"):
+        number_of_equal_openings = 0
+        
+        for i in range(1,9):
+            size = self.insert.get_prompt("Opening " + str(i) + " " + name)
+            if size:
+                number_of_equal_openings += 1 if size.equal else 0
+            else:
+                break
+            
+        return number_of_equal_openings
+
+    def draw_prompts(self,layout,name="Height"):
+        unit_settings = bpy.context.scene.unit_settings
+        row = layout.row()
+        row.prop(self,'set_height_location',expand=True)
+        opening_top = self.insert.get_prompt("Opening 1 Height")
+        opening_bottom = self.insert.get_prompt("Opening 2 Height")
+        if self.set_height_location == 'TOP':
+            row = layout.row()
+            row.label(text="Top Opening Height:")
+            row.prop(self,'opening_1_height',text="")
+            row = layout.row()
+            row.label(text="Bottom Opening Height:")
+            row.label(text=pc_unit.unit_to_string(unit_settings,opening_bottom.distance_value))                  
+        else:
+            row = layout.row()
+            row.label(text="Top Opening Height:")
+            row.label(text=pc_unit.unit_to_string(unit_settings,opening_top.distance_value))     
+            row = layout.row()
+            row.label(text="Bottom Opening Height:")
+            row.prop(self,'opening_2_height',text="")               
+
+    def draw(self, context):
+        layout = self.layout
+        unit_settings = bpy.context.scene.unit_settings
+        row = layout.row()
+        row.prop(self,'set_height_location',expand=True)
+        opening_top = self.insert.get_prompt("Opening 1 Height")
+        opening_bottom = self.insert.get_prompt("Opening 2 Height")
+        if self.set_height_location == 'TOP':
+            row = layout.row()
+            row.label(text="Top Opening Height:")
+            row.prop(self,'opening_1_height',text="")
+            row = layout.row()
+            row.label(text="Bottom Opening Height:")
+            row.label(text=pc_unit.unit_to_string(unit_settings,opening_bottom.distance_value))                  
+        else:
+            row = layout.row()
+            row.label(text="Top Opening Height:")
+            row.label(text=pc_unit.unit_to_string(unit_settings,opening_top.distance_value))     
+            row = layout.row()
+            row.label(text="Bottom Opening Height:")
+            row.prop(self,'opening_2_height',text="")           
+
+
+class hb_closet_inserts_OT_division_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_inserts.division_prompts"
+    bl_label = "Division Prompts"
+
+    insert = None
+    calculators = []
+
+    def check(self, context):       
+        for calculator in self.calculators:
+            calculator.calculate()
+        return True
+
+    def execute(self, context):                   
+        return {'FINISHED'}
+
+    def invoke(self,context,event):
+        self.get_assemblies(context) 
+        self.get_calculators(self.insert.obj_bp)
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=300)
+
+    def get_calculators(self,obj):
+        for cal in obj.pyclone.calculators:
+            self.calculators.append(cal)
+        for child in obj.children:
+            self.get_calculators(child)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.HORIZONTAL_SPLITTER_TAG)
+        self.insert = pc_types.Assembly(bp)
+
+    def get_number_of_equal_openings(self):
+        number_of_equal_openings = 0
+        
+        for i in range(1,9):
+            size = self.insert.get_prompt("Opening " + str(i) + " Width")
+            if size:
+                number_of_equal_openings += 1 if size.equal else 0
+            else:
+                break
+            
+        return number_of_equal_openings
+
+    def draw(self, context):
+        layout = self.layout
+        add_hang_rail_notch = self.insert.get_prompt("Add Hang Rail Notch")
+        layout.prop(add_hang_rail_notch,'checkbox_value',text="Add Hang Rail Notch")
+        unit_settings = bpy.context.scene.unit_settings
+        for i in range(1,10):
+            opening = self.insert.get_prompt("Opening " + str(i) + " Width")
+            if opening:
+                row = layout.row()
+                if opening.equal == False:
+                    row.prop(opening,'equal',text="")
+                else:
+                    if self.get_number_of_equal_openings() != 1:
+                        row.prop(opening,'equal',text="")
+                    else:
+                        row.label(text="",icon='BLANK1')                
+                row.label(text="Opening " + str(i) + " Width:")
+                if opening.equal:
+                    value = pc_unit.unit_to_string(unit_settings,opening.distance_value)
+                    row.label(text=value)
+                else:
+                    row.prop(opening,'distance_value',text="")
+
+
 classes = (
     hb_sample_cabinets_OT_cabinet_prompts,
     hb_closet_starters_OT_closet_prompts,
@@ -1716,6 +2021,11 @@ classes = (
     hb_closet_inserts_OT_closet_cubby_prompts,
     hb_closet_inserts_OT_closet_drawer_prompts,
     hb_closet_inserts_OT_closet_wire_baskets_prompts,
+    hb_closet_parts_OT_closet_single_adj_shelf_prompts,
+    hb_closet_parts_OT_closet_cleat_prompts,
+    hb_closet_parts_OT_closet_back_prompts,
+    hb_closet_parts_OT_closet_single_fixed_shelf_prompts,
+    hb_closet_inserts_OT_division_prompts,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)
