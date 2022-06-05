@@ -382,6 +382,7 @@ class Blind_Corner_Cabinet(Cabinet):
 
     def draw(self):
         self.create_assembly("Cabinet")
+        self.corner_type = "Blind"
         self.obj_bp[const.CABINET_TAG] = True
         self.carcasses = []
 
@@ -408,6 +409,9 @@ class Blind_Corner_Cabinet(Cabinet):
         carcass.dim_y('depth',[depth])
         carcass.dim_z('height',[height])
         self.carcasses.append(carcass)
+
+        corner_type = self.get_prompt("Corner Type")
+        corner_type.set_value("Blind")
 
         cabinet_type.set_value(carcass.carcass_type)
 

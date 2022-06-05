@@ -18,7 +18,7 @@ CABINETS = {"library_name": "Sample Cabinets",
             "library_path": CABINET_LIBRARY_PATH,
             "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
             "library_activate_id": "hb_sample_cabinets.active_cabinet_library",
-            "libary_drop_id": "hb_sample_cabinets.drop_cabinet_library"}
+            "libary_drop_id": "hb_sample_cabinets.drop_cabinet"}
 
 APPLIANCES = {"library_name": "Appliances",
               "library_type": "APPLIANCES",

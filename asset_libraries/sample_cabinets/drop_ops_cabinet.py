@@ -45,8 +45,8 @@ def add_insert_to_opening(insert,opening):
     for child in opening.obj_bp.children:
         child.hide_viewport = True
 
-class hb_sample_cabinets_OT_drop_cabinet_library(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.drop_cabinet_library"
+class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.drop_cabinet"
     bl_label = "Place Cabinet"
     bl_options = {'UNDO'}
     
@@ -1800,7 +1800,7 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
 
 
 classes = (
-    hb_sample_cabinets_OT_drop_cabinet_library,
+    hb_sample_cabinets_OT_drop_cabinet,
     hb_sample_cabinets_OT_drop_appliance,
     hb_sample_cabinets_OT_drop_closet_starter,
     hb_sample_cabinets_OT_place_closet_insert,
