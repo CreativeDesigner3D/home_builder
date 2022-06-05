@@ -24,6 +24,17 @@ class HOME_BUILDER_MT_cabinet_commands(bpy.types.Menu):
         layout.operator('hb_sample_cabinets.cabinet_prompts',icon='WINDOW')        
 
 
+class HOME_BUILDER_MT_closet_commands(bpy.types.Menu):
+    bl_label = "Closet Commands"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('hb_closet_starters.closet_prompts',icon='WINDOW')  
+        layout.operator('hb_sample_cabinets.change_closet_offsets',icon='TRACKING_CLEAR_FORWARDS')  
+        layout.operator('hb_sample_cabinets.change_closet_openings',icon='UV_ISLANDSEL')  
+        
+
+
 class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
     bl_label = "Cabinet Sizes"
@@ -297,6 +308,7 @@ class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_MT_cabinet_commands,
+    HOME_BUILDER_MT_closet_commands,
     HOME_BUILDER_PT_cabinet_sizes,
     HOME_BUILDER_PT_cabinet_construction,
     HOME_BUILDER_PT_cabinet_material_thickness,

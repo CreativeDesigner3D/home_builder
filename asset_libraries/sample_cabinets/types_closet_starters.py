@@ -695,7 +695,7 @@ class Closet_Starter(Closet):
         if self.is_base:
             self.obj_bp["IS_BASE_BP"] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         self.obj_y['IS_MIRROR'] = True
 
         width = self.obj_x.pyclone.get_var('location.x','width')
@@ -712,6 +712,8 @@ class Closet_Starter(Closet):
         self.add_prompt("Right End Condition",'COMBOBOX',0,["EP","WP","CP","OFF"]) 
         self.add_prompt("Left Side Wall Filler",'DISTANCE',0) 
         self.add_prompt("Right Side Wall Filler",'DISTANCE',0) 
+        self.add_prompt("Left Offset",'DISTANCE',0)
+        self.add_prompt("Right Offset",'DISTANCE',0)        
         self.add_prompt("Bridge Left",'CHECKBOX',False) 
         self.add_prompt("Bridge Right",'CHECKBOX',False) 
         self.add_prompt("Left Bridge Shelf Width",'DISTANCE',pc_unit.inch(14))
@@ -940,7 +942,7 @@ class Closet_Inside_Corner(Closet):
         self.obj_bp[const.CLOSET_INSIDE_CORNER_TAG] = True
         # self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_inside_corner_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         self.obj_y['IS_MIRROR'] = True
 
         props = utils_cabinet.get_scene_props(bpy.context.scene)
@@ -1235,7 +1237,7 @@ class Closet_Inside_Corner_Filler(Closet):
         # self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
         self.obj_bp["IS_BASE_BP"] = True
         self.obj_bp["PROMPT_ID"] = "home_builder.closet_inside_corner_prompts" 
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         self.obj_y['IS_MIRROR'] = True
 
         props = utils_cabinet.get_scene_props(bpy.context.scene)

@@ -85,6 +85,17 @@ def base_point_is_closet(obj_bp):
     else:
         return False
 
+def get_wall_assemblies(wall):
+    """ This returns a sorted list of all of the assemblies base points
+        parented to the wall
+    """
+    list_obj_bp = []
+    for child in wall.obj_bp.children:
+        if 'IS_ASSEMBLY_BP' in child:
+            list_obj_bp.append(child)
+    list_obj_bp.sort(key=lambda obj: obj.location.x, reverse=False)
+    return list_obj_bp
+
 def get_wall_products(wall,cabinet,placement_obj,loc_sort='X'):
     """ This returns a sorted list of all of the assemblies base points
         parented to the wall
@@ -157,6 +168,38 @@ def get_cabinet_placement_location(cabinet,sel_cabinet,mouse_location):
             return 'RIGHT'
     else:
         return 'CENTER'
+
+def get_left_collision_location(assembly):
+    wall = pc_types.Assembly(pc_utils.get_bp_by_tag(assembly.obj_bp,const.WALL_TAG))
+    list_obj_bp = get_wall_assemblies(wall)
+    list_obj_left_bp = []
+    for index, obj_bp in enumerate(list_obj_bp):
+        if obj_bp.name == assembly.obj_bp.name:
+            list_obj_left_bp = list_obj_bp[:index]
+            break
+    list_obj_left_bp.reverse()
+    for obj_bp in list_obj_left_bp:
+        prev_assembly = pc_types.Assembly(obj_bp)
+        if has_height_collision(assembly,prev_assembly):
+            return prev_assembly.obj_bp.location.x + prev_assembly.obj_x.location.x
+        #TODO:CHECK NEXT WALL
+    
+    return 0
+    
+def get_right_collision_location(assembly):
+    wall = pc_types.Assembly(pc_utils.get_bp_by_tag(assembly.obj_bp,const.WALL_TAG))   
+    list_obj_bp = get_wall_assemblies(wall)
+    list_obj_right_bp = []   
+    for index, obj_bp in enumerate(list_obj_bp):
+        if obj_bp.name == assembly.obj_bp.name:
+            list_obj_right_bp = list_obj_bp[index + 1:]
+            break  
+    for obj_bp in list_obj_right_bp:
+        next_assembly = pc_types.Assembly(obj_bp)
+        if has_height_collision(assembly,next_assembly):
+            return obj_bp.location.x - math.sin(next_assembly.obj_bp.rotation_euler.z) * next_assembly.obj_y.location.y   
+        #TODO:CHECK NEXT WALL
+    return wall.obj_x.location.x   
 
 def get_closet_collision_location(closet,wall,placement_obj,mouse_location,direction='LEFT'):
     if wall:

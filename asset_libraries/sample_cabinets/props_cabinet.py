@@ -394,6 +394,8 @@ class HB_Cabinet_Object_Props(PropertyGroup):
     ebl1: bpy.props.BoolProperty(name="Edgeband Length 1",default=False)
     ebl2: bpy.props.BoolProperty(name="Edgeband Length 2",default=False)
 
+    opening_number: bpy.props.IntProperty(name="Opening Number") 
+
     @classmethod
     def register(cls):
         bpy.types.Object.hb_cabinet = PointerProperty(
