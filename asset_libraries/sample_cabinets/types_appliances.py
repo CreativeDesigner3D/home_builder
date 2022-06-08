@@ -7,6 +7,7 @@ from . import prompts_cabinet
 from . import assemblies_cabinet
 from . import material_pointers_cabinet
 from . import types_countertop
+from . import const_cabinets as const
 
 class Dishwasher(pc_types.Assembly):
 
@@ -14,9 +15,9 @@ class Dishwasher(pc_types.Assembly):
         super().__init__(obj_bp=obj_bp)  
         if obj_bp:
             for child in obj_bp.children:   
-                if "IS_DISHWASHER_BP" in child:
+                if const.DISHWASHER_TAG in child:
                     self.dishwasher = pc_types.Assembly(child)
-                if "IS_COUNTERTOP_BP" in child:
+                if const.COUNTERTOP_TAG in child:
                     self.countertop = pc_types.Assembly(child)       
 
     def add_countertop(self):
@@ -40,7 +41,7 @@ class Dishwasher(pc_types.Assembly):
     def add_dishwasher(self):
         path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Dishwasher.blend')
         self.dishwasher = pc_types.Assembly(self.add_assembly_from_file(path))
-        self.dishwasher.obj_bp["IS_DISHWASHER_BP"] = True
+        self.dishwasher.obj_bp[const.DISHWASHER_TAG] = True
         
         if self.dishwasher.obj_x.lock_location[0]:
             self.obj_x.location.x = self.dishwasher.obj_x.location.x
@@ -66,8 +67,8 @@ class Dishwasher(pc_types.Assembly):
         props = utils_cabinet.get_scene_props(bpy.context.scene)
 
         self.create_assembly("Dishwasher")
-        self.obj_bp["IS_APPLIANCE_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.dishwasher_prompts"       
+        self.obj_bp[const.APPLIANCE_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.dishwasher_prompts"       
         self.obj_y['IS_MIRROR'] = True
 
         self.add_dishwasher()
@@ -83,9 +84,9 @@ class Range(pc_types.Assembly):
         super().__init__(obj_bp=obj_bp)  
         if obj_bp:
             for child in obj_bp.children:   
-                if "IS_RANGE_BP" in child:
+                if const.RANGE_TAG in child:
                     self.range_appliance = pc_types.Assembly(child)
-                if "IS_RANGE_HOOD_BP" in child:
+                if const.RANGE_HOOD_TAG in child:
                     self.range_hood_appliance = pc_types.Assembly(child)       
 
     def add_range(self):
@@ -95,7 +96,7 @@ class Range(pc_types.Assembly):
 
         path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Range.blend')
         self.range_appliance = pc_types.Assembly(self.add_assembly_from_file(path))
-        self.range_appliance.obj_bp["IS_RANGE_BP"] = True
+        self.range_appliance.obj_bp[const.RANGE_TAG] = True
         self.range_appliance.obj_x.empty_display_size = pc_unit.inch(.5)
         self.range_appliance.obj_y.empty_display_size = pc_unit.inch(.5)
         self.range_appliance.obj_z.empty_display_size = pc_unit.inch(.5)
@@ -129,8 +130,8 @@ class Range(pc_types.Assembly):
 
     def draw(self):
         self.create_assembly("Range")
-        self.obj_bp["IS_APPLIANCE_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.range_prompts"
+        self.obj_bp[const.APPLIANCE_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.range_prompts"
         self.obj_y['IS_MIRROR'] = True
         self.add_prompt("Add Range Hood",'CHECKBOX',False)
         self.add_range()
@@ -144,7 +145,7 @@ class Refrigerator(pc_types.Assembly):
         super().__init__(obj_bp=obj_bp)  
         if obj_bp:
             for child in obj_bp.children:   
-                if "IS_REFRIGERATOR_BP" in child:
+                if const.REFRIGERATOR_TAG in child:
                     self.refrigerator = pc_types.Assembly(child)    
 
     def add_refrigerator(self,assembly_name=""):
@@ -156,7 +157,7 @@ class Refrigerator(pc_types.Assembly):
 
         path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Refrigerator.blend')
         self.refrigerator = pc_types.Assembly(self.add_assembly_from_file(path))
-        self.refrigerator.obj_bp["IS_REFRIGERATOR_BP"] = True
+        self.refrigerator.obj_bp[const.REFRIGERATOR_TAG] = True
 
         if self.refrigerator.obj_x.lock_location[0]:
             self.obj_x.location.x = self.refrigerator.obj_x.location.x + material_thickness.get_value()*2
@@ -259,8 +260,8 @@ class Refrigerator(pc_types.Assembly):
     def draw(self):
         
         self.create_assembly("Refrigerator")
-        self.obj_bp["IS_APPLIANCE_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.refrigerator_prompts"      
+        self.obj_bp[const.APPLIANCE_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.refrigerator_prompts"      
         self.obj_y['IS_MIRROR'] = True
 
         self.add_prompt("Refrigerator Y Location",'DISTANCE',pc_unit.inch(1))

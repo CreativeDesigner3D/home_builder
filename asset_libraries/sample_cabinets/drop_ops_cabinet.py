@@ -397,7 +397,7 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         self.set_child_properties(self.cabinet.obj_bp)
 
     def set_child_properties(self,obj):
-        # # home_builder_utils.update_id_props(obj,self.cabinet.obj_bp)
+        pc_utils.update_id_props(obj,self.cabinet.obj_bp)
         # # home_builder_utils.assign_current_material_index(obj)
         if obj.type == 'EMPTY':
             obj.hide_viewport = True    

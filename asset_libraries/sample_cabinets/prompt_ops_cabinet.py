@@ -4,6 +4,7 @@ import math
 from pc_lib import pc_utils, pc_types, pc_unit
 from . import material_pointers_cabinet
 from . import types_cabinet
+from . import types_appliances
 from . import types_closet_starters
 from . import const_cabinets as const
 from . import enum_cabinets
@@ -558,6 +559,372 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
                     box = prompt_box.box()
                     box.label(text=carcass.interior.obj_bp.name)
                     carcass.interior.draw_prompts(box,context)
+
+
+class Appliance_Prompts(bpy.types.Operator):
+
+    def update_product_size(self,assembly):
+        if 'IS_MIRROR' in assembly.obj_x and assembly.obj_x['IS_MIRROR']:
+            assembly.obj_x.location.x = -self.width
+        else:
+            assembly.obj_x.location.x = self.width
+
+        if 'IS_MIRROR' in assembly.obj_y and assembly.obj_y['IS_MIRROR']:
+            assembly.obj_y.location.y = -self.depth
+        else:
+            assembly.obj_y.location.y = self.depth
+        
+        if 'IS_MIRROR' in assembly.obj_z and assembly.obj_z['IS_MIRROR']:
+            assembly.obj_z.location.z = -self.height
+        else:
+            assembly.obj_z.location.z = self.height
+
+    def draw_product_size(self,assembly,layout,context):
+        unit_system = context.scene.unit_settings.system
+
+        box = layout.box()
+        row = box.row()
+        
+        col = row.column(align=True)
+        row1 = col.row(align=True)
+        if pc_utils.object_has_driver(assembly.obj_x) or assembly.obj_x.lock_location[0]:
+            x = math.fabs(assembly.obj_x.location.x)
+            value = str(bpy.utils.units.to_string(unit_system,'LENGTH',x))
+            row1.label(text='Width: ' + value)
+        else:
+            row1.label(text='Width:')
+            row1.prop(self,'width',text="")
+            row1.prop(assembly.obj_x,'hide_viewport',text="")
+        
+        row1 = col.row(align=True)
+        if pc_utils.object_has_driver(assembly.obj_z) or assembly.obj_z.lock_location[2]:
+            z = math.fabs(assembly.obj_z.location.z)
+            value = str(bpy.utils.units.to_string(unit_system,'LENGTH',z))            
+            row1.label(text='Height: ' + value)
+        else:
+            row1.label(text='Height:')
+            row1.prop(self,'height',text="")
+            row1.prop(assembly.obj_z,'hide_viewport',text="")
+        
+        row1 = col.row(align=True)
+        if pc_utils.object_has_driver(assembly.obj_y) or assembly.obj_y.lock_location[1]:
+            y = math.fabs(assembly.obj_y.location.y)
+            value = str(bpy.utils.units.to_string(unit_system,'LENGTH',y))                 
+            row1.label(text='Depth: ' + value)
+        else:
+            row1.label(text='Depth:')
+            row1.prop(self,'depth',text="")
+            row1.prop(assembly.obj_y,'hide_viewport',text="")
+            
+        if len(assembly.obj_bp.constraints) > 0:
+            col = row.column(align=True)
+            col.label(text="Location:")
+            col.operator('home_builder.disconnect_constraint',text='Disconnect Constraint',icon='CONSTRAINT').obj_name = assembly.obj_bp.name
+        else:
+            col = row.column(align=True)
+            col.label(text="Location X:")
+            col.label(text="Location Y:")
+            col.label(text="Location Z:")
+        
+            col = row.column(align=True)
+            col.prop(assembly.obj_bp,'location',text="")
+        
+        row = box.row()
+        row.label(text='Rotation Z:')
+        row.prop(assembly.obj_bp,'rotation_euler',index=2,text="")  
+
+
+
+class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
+    bl_idname = "hb_sample_cabinets.range_prompts"
+    bl_label = "Range Prompts"
+
+    appliance_bp_name: bpy.props.StringProperty(name="Appliance BP Name",default="")
+    add_range_hood: bpy.props.BoolProperty(name="Add Range Hood",default=False)
+    range_changed: bpy.props.BoolProperty(name="Range Changed",default=False)
+    range_hood_changed: bpy.props.BoolProperty(name="Range Changed",default=False)
+
+    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
+    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
+    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+
+    # range_category: bpy.props.EnumProperty(name="Range Category",
+    #     items=home_builder_enums.enum_range_categories,
+    #     update=home_builder_enums.update_range_category)
+    # range_name: bpy.props.EnumProperty(name="Range Name",
+    #     items=home_builder_enums.enum_range_names,
+    #     update=update_range)
+
+    # range_hood_category: bpy.props.EnumProperty(name="Range Hood Category",
+    #     items=home_builder_enums.enum_range_hood_categories,
+    #     update=home_builder_enums.update_range_hood_category)
+    # range_hood_name: bpy.props.EnumProperty(name="Range Hood Name",
+    #     items=home_builder_enums.enum_range_hood_names,
+    #     update=update_range_hood)
+
+    product = None
+
+    def reset_variables(self,context):
+        self.product = None
+        # home_builder_enums.update_range_category(self,context)
+        # home_builder_enums.update_range_hood_category(self,context)
+
+    def check(self, context):
+        self.update_product_size(self.product)
+        self.update_range(context)
+        self.update_range_hood(context)
+        self.product.update_range_hood_location()
+        return True
+
+    def update_range(self,context):
+        if self.range_changed:
+            self.range_changed = False
+
+            if self.product.range_appliance:
+                pc_utils.delete_object_and_children(self.product.range_appliance.obj_bp)                
+
+            self.product.add_range(self.range_category,self.range_name)
+            self.width = self.product.range_appliance.obj_x.location.x
+            self.depth = math.fabs(self.product.range_appliance.obj_y.location.y)
+            self.height = self.product.range_appliance.obj_z.location.z
+            context.view_layer.objects.active = self.product.obj_bp
+            self.get_assemblies(context)
+
+    def update_range_hood(self,context):
+        if self.range_hood_changed:
+            self.range_hood_changed = False
+            add_range_hood = self.product.get_prompt("Add Range Hood")
+            add_range_hood.set_value(self.add_range_hood)
+            if self.product.range_hood_appliance:
+                pc_utils.delete_object_and_children(self.product.range_hood_appliance.obj_bp)   
+
+            if self.add_range_hood:
+                self.product.add_range_hood(self.range_hood_category,self.range_hood_name)
+            context.view_layer.objects.active = self.product.obj_bp
+            self.get_assemblies(context)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        self.product = types_appliances.Range(bp)
+
+    def invoke(self,context,event):
+        self.reset_variables(context)
+        self.get_assemblies(context)
+        add_range_hood = self.product.get_prompt("Add Range Hood")
+        self.add_range_hood = add_range_hood.get_value()        
+        self.depth = math.fabs(self.product.obj_y.location.y)
+        self.height = math.fabs(self.product.obj_z.location.z)
+        self.width = math.fabs(self.product.obj_x.location.x)        
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=500)
+
+    def draw_range_prompts(self,layout,context):
+        layout.label(text="")
+        box = layout.box()
+        box.prop(self,'range_category',text="",icon='FILE_FOLDER')  
+        box.template_icon_view(self,"range_name",show_labels=True)  
+
+    def draw_range_hood_prompts(self,layout,context):
+        layout.prop(self,'add_range_hood',text="Add Range Hood")
+        
+        if not self.add_range_hood:
+            return False
+        else:
+            box = layout.box()
+            box.prop(self,'range_hood_category',text="",icon='FILE_FOLDER')  
+            box.template_icon_view(self,"range_hood_name",show_labels=True)  
+
+    def draw(self, context):
+        layout = self.layout
+        self.draw_product_size(self.product,layout,context)
+        split = layout.split()
+        self.draw_range_prompts(split.column(),context)
+        self.draw_range_hood_prompts(split.column(),context)
+
+
+class hb_sample_cabinets_OT_dishwasher_prompts(Appliance_Prompts):
+    bl_idname = "hb_sample_cabinets.dishwasher_prompts"
+    bl_label = "Dishwasher Prompts"
+
+    appliance_bp_name: bpy.props.StringProperty(name="Appliance BP Name",default="")
+    dishwasher_changed: bpy.props.BoolProperty(name="Range Changed",default=False)
+
+    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
+    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
+    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+
+    # dishwasher_category: bpy.props.EnumProperty(name="Dishwasher Category",
+    #     items=home_builder_enums.enum_dishwasher_categories,
+    #     update=home_builder_enums.update_dishwasher_category)
+    # dishwasher_name: bpy.props.EnumProperty(name="Dishwasher Name",
+    #     items=home_builder_enums.enum_dishwasher_names,
+    #     update=update_dishwasher)
+
+    product = None
+
+    def reset_variables(self,context):
+        self.product = None
+        # home_builder_enums.update_dishwasher_category(self,context)
+
+    def check(self, context):
+        self.update_product_size(self.product)
+        self.update_dishwasher(context)
+        return True
+
+    def update_dishwasher(self,context):
+        if self.dishwasher_changed:
+            self.dishwasher_changed = False
+
+            if self.product:
+                pc_utils.delete_object_and_children(self.product.dishwasher.obj_bp)                
+
+            self.product.add_dishwasher(self.dishwasher_category,self.dishwasher_name)
+            self.width = self.product.obj_x.location.x
+            self.depth = math.fabs(self.product.obj_y.location.y)
+            self.height = self.product.obj_z.location.z
+            context.view_layer.objects.active = self.product.obj_bp
+            pc_utils.hide_empties(self.product.obj_bp)
+            self.get_assemblies(context)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        self.product = types_appliances.Dishwasher(bp)
+
+    def invoke(self,context,event):
+        self.reset_variables(context)
+        self.get_assemblies(context)
+     
+        self.depth = math.fabs(self.product.obj_y.location.y)
+        self.height = math.fabs(self.product.obj_z.location.z)
+        self.width = math.fabs(self.product.obj_x.location.x)        
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=350)
+
+    def draw_dishwasher_prompts(self,layout,context):
+        layout.label(text="")
+        box = layout.box()
+        box.prop(self,'dishwasher_category',text="",icon='FILE_FOLDER')  
+        box.template_icon_view(self,"dishwasher_name",show_labels=True)  
+
+    def draw_countertop_prompts(self,layout,context):
+        ctop_front = self.product.get_prompt("Countertop Overhang Front")
+        ctop_back = self.product.get_prompt("Countertop Overhang Back")
+        ctop_left = self.product.get_prompt("Countertop Overhang Left")
+        ctop_right = self.product.get_prompt("Countertop Overhang Right")
+        ctop_left = self.product.get_prompt("Countertop Overhang Left")   
+
+        col = layout.column(align=True)
+        box = col.box()      
+   
+        # if left_adjustment_width and right_adjustment_width:
+        #     row = box.row()
+        #     row.label(text="Filler Amount:")
+        #     row.prop(left_adjustment_width,'distance_value',text="Left")
+        #     row.prop(right_adjustment_width,'distance_value',text="Right")
+
+        if ctop_front and ctop_back and ctop_left and ctop_right:
+            row = box.row()
+            row.label(text="Countertop Overhang:")     
+            row = box.row()  
+            row.prop(ctop_front,'distance_value',text="Front")      
+            row.prop(ctop_back,'distance_value',text="Rear")  
+            row.prop(ctop_left,'distance_value',text="Left")  
+            row.prop(ctop_right,'distance_value',text="Right")            
+
+    def draw(self, context):
+        layout = self.layout
+        self.draw_product_size(self.product,layout,context)
+        self.draw_countertop_prompts(layout,context)
+        split = layout.split()
+        self.draw_dishwasher_prompts(split.column(),context)
+
+
+class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
+    bl_idname = "hb_sample_cabinets.refrigerator_prompts"
+    bl_label = "Refrigerator Prompts"
+
+    appliance_bp_name: bpy.props.StringProperty(name="Appliance BP Name",default="")
+    refrigerator_changed: bpy.props.BoolProperty(name="Refrigerator Changed",default=False)
+
+    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
+    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
+    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+
+    # refrigerator_category: bpy.props.EnumProperty(name="Refrigerator Category",
+    #     items=home_builder_enums.enum_refrigerator_categories,
+    #     update=home_builder_enums.update_refrigerator_category)
+    # refrigerator_name: bpy.props.EnumProperty(name="Refrigerator Name",
+    #     items=home_builder_enums.enum_refrigerator_names,
+    #     update=update_refrigerator)
+
+    product = None
+
+    def reset_variables(self,context):
+        self.product = None
+        # home_builder_enums.update_refrigerator_category(self,context)
+
+    def check(self, context):
+        self.update_product_size(self.product)
+        self.update_refrigerator(context)
+        return True
+
+    def update_refrigerator(self,context):
+        if self.refrigerator_changed:
+            self.refrigerator_changed = False
+
+            if self.product:
+                pc_utils.delete_object_and_children(self.product.refrigerator.obj_bp)                
+
+            self.product.add_refrigerator(self.refrigerator_category,self.refrigerator_name)
+            self.width = self.product.obj_x.location.x
+            self.depth = math.fabs(self.product.obj_y.location.y)
+            self.height = self.product.obj_z.location.z
+            context.view_layer.objects.active = self.product.obj_bp
+            pc_utils.hide_empties(self.product.obj_bp)
+            self.get_assemblies(context)
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        self.product = types_appliances.Refrigerator(bp)
+
+    def invoke(self,context,event):
+        self.reset_variables(context)
+        self.get_assemblies(context)
+     
+        self.depth = math.fabs(self.product.obj_y.location.y)
+        self.height = math.fabs(self.product.obj_z.location.z)
+        self.width = math.fabs(self.product.obj_x.location.x)        
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=350)
+
+    def draw_refrigerator_selection(self,layout,context):
+        box = layout.box()
+        box.prop(self,'refrigerator_category',text="",icon='FILE_FOLDER')  
+        box.template_icon_view(self,"refrigerator_name",show_labels=True)          
+
+    def draw_refrigerator_prompts(self,layout,context):
+        box = layout.box()
+        y_loc = self.product.get_prompt("Refrigerator Y Location")
+        y_loc.draw(box,allow_edit=False)
+        remove_carcass = self.product.get_prompt("Remove Cabinet Carcass")
+        remove_carcass.draw(box,allow_edit=False)
+        carcass_height = self.product.get_prompt("Carcass Height")
+        carcass_height.draw(box,allow_edit=False)
+
+    def draw(self, context):
+        layout = self.layout
+        self.draw_product_size(self.product,layout,context)
+        self.draw_refrigerator_prompts(layout,context)
+        self.draw_refrigerator_selection(layout,context)
 
 
 class hb_closet_starters_OT_closet_prompts(bpy.types.Operator):
@@ -2010,6 +2377,9 @@ class hb_closet_inserts_OT_division_prompts(bpy.types.Operator):
 
 classes = (
     hb_sample_cabinets_OT_cabinet_prompts,
+    hb_sample_cabinets_OT_range_prompts,
+    hb_sample_cabinets_OT_dishwasher_prompts,
+    hb_sample_cabinets_OT_refrigerator_prompts,
     hb_closet_starters_OT_closet_prompts,
     hb_closet_starters_OT_closet_inside_corner_prompts,
     hb_closet_inserts_OT_closet_door_prompts,
