@@ -65,6 +65,7 @@ class home_builder_OT_place_door_window(bpy.types.Operator):
         self.set_child_properties(self.assembly.obj_bp)
 
     def set_child_properties(self,obj):
+        pc_utils.update_id_props(obj,self.assembly.obj_bp)
         if obj.type == 'EMPTY':
             obj.hide_viewport = True    
         if obj.type == 'MESH':
