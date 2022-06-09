@@ -1,4 +1,3 @@
-
 import bpy
 import math
 from pc_lib import pc_utils, pc_types, pc_unit
@@ -22,6 +21,15 @@ def update_cooktop(self,context):
 def update_range_hood(self,context):
     self.range_hood_changed = True
 
+def update_range(self,context):
+    self.range_changed = True
+
+def update_dishwasher(self,context):
+    self.dishwasher_changed = True
+
+def update_refrigerator(self,context):
+    self.refrigerator_changed = True
+        
 def update_closet_height(self,context):
     ''' EVENT changes height for all closet openings
     '''
@@ -648,26 +656,26 @@ class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
 
-    # range_category: bpy.props.EnumProperty(name="Range Category",
-    #     items=home_builder_enums.enum_range_categories,
-    #     update=home_builder_enums.update_range_category)
-    # range_name: bpy.props.EnumProperty(name="Range Name",
-    #     items=home_builder_enums.enum_range_names,
-    #     update=update_range)
+    range_category: bpy.props.EnumProperty(name="Range Category",
+        items=enum_cabinets.enum_range_categories,
+        update=enum_cabinets.update_range_category)
+    range_name: bpy.props.EnumProperty(name="Range Name",
+        items=enum_cabinets.enum_range_names,
+        update=update_range)
 
-    # range_hood_category: bpy.props.EnumProperty(name="Range Hood Category",
-    #     items=home_builder_enums.enum_range_hood_categories,
-    #     update=home_builder_enums.update_range_hood_category)
-    # range_hood_name: bpy.props.EnumProperty(name="Range Hood Name",
-    #     items=home_builder_enums.enum_range_hood_names,
-    #     update=update_range_hood)
+    range_hood_category: bpy.props.EnumProperty(name="Range Hood Category",
+        items=enum_cabinets.enum_range_hood_categories,
+        update=enum_cabinets.update_range_hood_category)
+    range_hood_name: bpy.props.EnumProperty(name="Range Hood Name",
+        items=enum_cabinets.enum_range_hood_names,
+        update=update_range_hood)
 
     product = None
 
     def reset_variables(self,context):
         self.product = None
-        # home_builder_enums.update_range_category(self,context)
-        # home_builder_enums.update_range_hood_category(self,context)
+        enum_cabinets.update_range_category(self,context)
+        enum_cabinets.update_range_hood_category(self,context)
 
     def check(self, context):
         self.update_product_size(self.product)
@@ -756,18 +764,18 @@ class hb_sample_cabinets_OT_dishwasher_prompts(Appliance_Prompts):
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
 
-    # dishwasher_category: bpy.props.EnumProperty(name="Dishwasher Category",
-    #     items=home_builder_enums.enum_dishwasher_categories,
-    #     update=home_builder_enums.update_dishwasher_category)
-    # dishwasher_name: bpy.props.EnumProperty(name="Dishwasher Name",
-    #     items=home_builder_enums.enum_dishwasher_names,
-    #     update=update_dishwasher)
+    dishwasher_category: bpy.props.EnumProperty(name="Dishwasher Category",
+        items=enum_cabinets.enum_dishwasher_categories,
+        update=enum_cabinets.update_dishwasher_category)
+    dishwasher_name: bpy.props.EnumProperty(name="Dishwasher Name",
+        items=enum_cabinets.enum_dishwasher_names,
+        update=update_dishwasher)
 
     product = None
 
     def reset_variables(self,context):
         self.product = None
-        # home_builder_enums.update_dishwasher_category(self,context)
+        enum_cabinets.update_dishwasher_category(self,context)
 
     def check(self, context):
         self.update_product_size(self.product)
@@ -856,18 +864,18 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
 
-    # refrigerator_category: bpy.props.EnumProperty(name="Refrigerator Category",
-    #     items=home_builder_enums.enum_refrigerator_categories,
-    #     update=home_builder_enums.update_refrigerator_category)
-    # refrigerator_name: bpy.props.EnumProperty(name="Refrigerator Name",
-    #     items=home_builder_enums.enum_refrigerator_names,
-    #     update=update_refrigerator)
+    refrigerator_category: bpy.props.EnumProperty(name="Refrigerator Category",
+        items=enum_cabinets.enum_refrigerator_categories,
+        update=enum_cabinets.update_refrigerator_category)
+    refrigerator_name: bpy.props.EnumProperty(name="Refrigerator Name",
+        items=enum_cabinets.enum_refrigerator_names,
+        update=update_refrigerator)
 
     product = None
 
     def reset_variables(self,context):
         self.product = None
-        # home_builder_enums.update_refrigerator_category(self,context)
+        enum_cabinets.update_refrigerator_category(self,context)
 
     def check(self, context):
         self.update_product_size(self.product)

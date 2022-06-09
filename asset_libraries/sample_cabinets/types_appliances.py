@@ -8,7 +8,15 @@ from . import assemblies_cabinet
 from . import material_pointers_cabinet
 from . import types_countertop
 from . import types_cabinet_exteriors
+from . import paths_cabinet
 from . import const_cabinets as const
+
+def get_range_hood(category,assembly_name):
+    ASSET_DIR = paths_cabinet.get_range_hood_paths()
+    if assembly_name == "":
+        return os.path.join(ASSET_DIR,"_Sample","Generic Range Hood.blend")  
+    else:
+        return os.path.join(ASSET_DIR, category, assembly_name + ".blend")   
 
 class Dishwasher(pc_types.Assembly):
 
@@ -81,6 +89,9 @@ class Dishwasher(pc_types.Assembly):
 
 class Range(pc_types.Assembly):
 
+    range_appliance = None
+    range_hood_appliance = None
+    
     def __init__(self,obj_bp=None):
         super().__init__(obj_bp=obj_bp)  
         if obj_bp:
@@ -89,6 +100,28 @@ class Range(pc_types.Assembly):
                     self.range_appliance = pc_types.Assembly(child)
                 if const.RANGE_HOOD_TAG in child:
                     self.range_hood_appliance = pc_types.Assembly(child)       
+
+    def update_range_hood_location(self):
+        if self.range_hood_appliance:
+            self.range_hood_appliance.obj_bp.location.x = (self.obj_x.location.x/2) - (self.range_hood_appliance.obj_x.location.x)/2
+            self.range_hood_appliance.obj_bp.location.z = pc_unit.inch(70)
+
+    def add_range_hood(self,category="",assembly_name=""):
+        self.range_hood_appliance = pc_types.Assembly(self.add_assembly_from_file(get_range_hood(category,assembly_name)))
+        self.range_hood_appliance.obj_bp["IS_RANGE_HOOD_BP"] = True
+        self.range_hood_appliance.obj_x.empty_display_size = pc_unit.inch(.5)
+        self.range_hood_appliance.obj_y.empty_display_size = pc_unit.inch(.5)
+        self.range_hood_appliance.obj_z.empty_display_size = pc_unit.inch(.5)
+
+        if not self.range_hood_appliance.obj_x.lock_location[0]:
+            width = self.obj_x.pyclone.get_var('location.x','width')
+            self.range_hood_appliance.dim_x('width',[width])
+
+        self.update_range_hood_location()
+        #Location must be updated twice for some reason
+        self.update_range_hood_location()
+
+        pc_utils.update_assembly_id_props(self.range_hood_appliance,self)
 
     def add_range(self):
         width = self.obj_x.pyclone.get_var('location.x','width')
