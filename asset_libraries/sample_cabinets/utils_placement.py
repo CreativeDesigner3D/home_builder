@@ -568,7 +568,7 @@ def position_cabinet(cabinet,mouse_location,selected_obj,cursor_z,selected_norma
     sel_wall = None
 
     if not cabinet_bp:
-        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_APPLIANCE_TAG)
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.APPLIANCE_TAG)
 
     wall_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_TAG)
     if window_bp:
@@ -602,7 +602,7 @@ def position_closet(cabinet,mouse_location,selected_obj,cursor_z,selected_normal
     override_height = 0
 
     if not cabinet_bp:
-        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_APPLIANCE_TAG)
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.APPLIANCE_TAG)
 
     wall_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_TAG)
 
@@ -635,7 +635,7 @@ def position_corner_unit(cabinet,mouse_location,selected_obj,cursor_z,selected_n
     override_height = 0
 
     if not cabinet_bp:
-        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_APPLIANCE_TAG)
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.APPLIANCE_TAG)
 
     wall_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_TAG)
 

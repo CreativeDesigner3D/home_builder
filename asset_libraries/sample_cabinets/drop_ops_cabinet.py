@@ -423,7 +423,31 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         self.drawing_plane.dimensions = (100,100,1)
 
     def confirm_placement(self,context):
-        pass
+        if self.placement == 'LEFT':
+            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.cabinet.obj_x
+            constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint.target = constraint_obj
+            constraint.use_x = True
+            constraint.use_y = True
+            constraint.use_z = False
+
+        if self.placement == 'RIGHT':
+            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.selected_cabinet.obj_x
+            constraint = self.cabinet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint.target = constraint_obj
+            constraint.use_x = True
+            constraint.use_y = True
+            constraint.use_z = False
+
+        if hasattr(self.cabinet,'pre_draw'):
+            self.cabinet.draw()
+        self.set_child_properties(self.cabinet.obj_bp)
+        for cal in self.calculators:
+            cal.calculate()
+        self.refresh_data(False)
+
         # if self.placement == 'LEFT' and self.selected_cabinet:
         #     self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
         #     constraint_obj = self.cabinet.obj_x
