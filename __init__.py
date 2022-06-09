@@ -42,8 +42,6 @@ bl_info = {
     "category": "Asset Library",
 }
 
-DEFAULT_ASSET_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'asset_libraries')
-
 @persistent
 def load_driver_functions(scene):
     """ Load Default Drivers

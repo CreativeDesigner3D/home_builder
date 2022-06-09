@@ -7,6 +7,7 @@ from . import prompts_cabinet
 from . import assemblies_cabinet
 from . import material_pointers_cabinet
 from . import types_countertop
+from . import types_cabinet_exteriors
 from . import const_cabinets as const
 
 class Dishwasher(pc_types.Assembly):
@@ -258,7 +259,6 @@ class Refrigerator(pc_types.Assembly):
         material_pointers_cabinet.update_bottom_material(bottom,finished_back.get_value(),finished_top.get_value())
 
     def draw(self):
-        
         self.create_assembly("Refrigerator")
         self.obj_bp[const.APPLIANCE_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.refrigerator_prompts"      
@@ -272,4 +272,24 @@ class Refrigerator(pc_types.Assembly):
 
         self.add_refrigerator()
         self.add_carcass()
+
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        material_thickness = self.get_prompt("Material Thickness").get_var('material_thickness')
+        carcass_height = self.get_prompt("Carcass Height").get_var('carcass_height')
+        remove_carcass = self.get_prompt("Remove Cabinet Carcass").get_var('remove_carcass')
+
+        doors = types_cabinet_exteriors.Doors()
+        doors.carcass_type = 'Upper'
+        doors.door_swing = 2
+        insert = self.add_assembly(doors)
+        insert.loc_x('material_thickness',[material_thickness])
+        insert.loc_y('depth',[depth])
+        insert.loc_z('height-carcass_height+material_thickness',[height,carcass_height,material_thickness])
+        insert.dim_x('width-(material_thickness*2)',[width,material_thickness])
+        insert.dim_y('fabs(depth)-material_thickness',[depth,material_thickness])
+        insert.dim_z('carcass_height-material_thickness*2',[carcass_height,material_thickness])
+        hide = insert.get_prompt('Hide')
+        hide.set_formula('remove_carcass',[remove_carcass])        
 
