@@ -5,6 +5,7 @@ import math
 import inspect
 import sys
 from pc_lib import pc_utils, pc_unit
+from . import addon_updater_ops
 from . import hb_utils
 from . import pyclone_utils
 from .walls import wall_library
@@ -58,6 +59,18 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
         row.prop_enum(self, "tabs", 'INSTALLED_LIBRARIES',icon='ASSET_MANAGER')
         row.prop_enum(self, "tabs", 'TRAINING',icon='QUESTION')
 
+        if self.tabs == 'VERSION':
+            main_box = layout.box()
+            version = hb_utils.addon_version
+            row = main_box.row()
+            row.label(text="Home Builder Version " + str(version[0]) + "." + str(version[1])+ "." + str(version[2]) + " (BETA)")
+            if addon_updater_ops.updater.update_ready == True:
+                row.separator()
+                addon_updater_ops.update_notice_box_ui(self,context,row)        
+            else:
+                row.separator()
+                row.operator('home_builder.updater_check_now',text="Check for Updates",icon='FILE_REFRESH')
+
         if self.tabs == 'INSTALLED_LIBRARIES':
             main_box = layout.box()
             row = main_box.row()
@@ -70,6 +83,10 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
                 row = col.row()
                 row.label(text="",icon=self.get_library_icon(lib))
                 row.prop(lib,'enabled',text=lib.name)
+
+        if self.tabs == 'TRAINING':
+            main_box = layout.box()
+            main_box.label(text="TODO: Training Videos Comming Soon")
 
 
 class home_builder_OT_todo(bpy.types.Operator):

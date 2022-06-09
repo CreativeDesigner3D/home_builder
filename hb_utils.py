@@ -3,6 +3,8 @@ import os
 import sys
 from . import pyclone_utils
 
+addon_version = ()
+
 def get_object_props(obj):
     return obj.home_builder
 

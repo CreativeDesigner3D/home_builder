@@ -115,6 +115,7 @@ def register():
     pc_lists.register()
     hb_menus.register()
     hb_drop_ops.register()
+    hb_utils.addon_version = bl_info['version']
     bpy.app.handlers.load_post.append(load_driver_functions)
     bpy.app.handlers.load_post.append(load_library)
 

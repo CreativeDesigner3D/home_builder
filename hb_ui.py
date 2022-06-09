@@ -57,7 +57,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
 
         row = main_box.row()
         row.label(text="Home Builder",icon='HOME')
-        row.operator('home_builder.about_home_builder',text="Settings",icon='PREFERENCES')
+        row.operator('home_builder.about_home_builder',text="About",icon='INFO')
 
         col = main_box.column(align=True)
         row = col.row(align=True)
