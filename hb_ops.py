@@ -3,8 +3,10 @@ import os
 import time
 import math
 import inspect
+import sys
 from pc_lib import pc_utils, pc_unit
 from . import hb_utils
+from . import pyclone_utils
 from .walls import wall_library
 
 class home_builder_OT_about_home_builder(bpy.types.Operator):
@@ -77,6 +79,29 @@ class home_builder_OT_todo(bpy.types.Operator):
     def execute(self, context):
         print("NOT IMPLEMENTED: TODO")
         return {'FINISHED'}
+
+
+class home_builder_OT_load_library(bpy.types.Operator):
+    bl_idname = "home_builder.load_library"
+    bl_label = "Reload Library"
+
+    def invoke(self,context,event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=500)
+
+    def execute(self, context):
+        hb_utils.load_libraries(context)
+        hb_utils.load_custom_driver_functions()
+        return {'FINISHED'}
+
+    def draw(self, context):
+        prefs = context.preferences
+        paths = prefs.filepaths
+
+        layout = self.layout
+        layout.label(text="Auto Run Python Scripts needs to be enabled for Home Builder Library Data.")
+        layout.label(text="Check the box below and click OK to continue.")
+        layout.prop(paths, "use_scripts_auto_execute")
 
 
 class home_builder_OT_update_library_path(bpy.types.Operator):
@@ -270,6 +295,7 @@ class home_builder_OT_unit_settings(bpy.types.Operator):
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_todo,
+    home_builder_OT_load_library,
     home_builder_OT_update_library_path,
     home_builder_OT_show_library_material_pointers,
     home_builder_OT_assign_material_to_pointer,

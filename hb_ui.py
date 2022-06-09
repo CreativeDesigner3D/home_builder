@@ -10,29 +10,33 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
     bl_options = {'HIDE_HEADER'}
 
     def draw_library(self,layout,context,library):
-        workspace = context.workspace
-        wm = context.window_manager        
-        activate_id = "home_builder.todo"
-        drop_id = "home_builder.todo"
-        if library.activate_id != "":
-            activate_id = library.activate_id
-        if library.drop_id != "":
-            drop_id = library.drop_id
+        if library:
+            workspace = context.workspace
+            wm = context.window_manager        
+            activate_id = "home_builder.todo"
+            drop_id = "home_builder.todo"
+            if library.activate_id != "":
+                activate_id = library.activate_id
+            if library.drop_id != "":
+                drop_id = library.drop_id
 
-        activate_op_props, drag_op_props = layout.template_asset_view(
-            "home_builder_library",
-            workspace,
-            "asset_library_ref",
-            wm.home_builder,
-            "home_builder_library_assets",
-            workspace.home_builder,
-            "home_builder_library_index",
-            # filter_id_types={"filter_object"},
-            display_options={'NO_LIBRARY'},
-            # display_options={'NO_FILTER','NO_LIBRARY'},
-            activate_operator=activate_id,
-            drag_operator=drop_id,            
-        )
+            activate_op_props, drag_op_props = layout.template_asset_view(
+                "home_builder_library",
+                workspace,
+                "asset_library_ref",
+                wm.home_builder,
+                "home_builder_library_assets",
+                workspace.home_builder,
+                "home_builder_library_index",
+                # filter_id_types={"filter_object"},
+                display_options={'NO_LIBRARY'},
+                # display_options={'NO_FILTER','NO_LIBRARY'},
+                activate_operator=activate_id,
+                drag_operator=drop_id,            
+            )
+        else:
+            layout.separator()
+            layout.operator('home_builder.load_library')
 
     def draw(self, context):
         layout = self.layout
@@ -42,6 +46,13 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
         wm = context.window_manager        
         wm_props = wm.home_builder
         library = hb_utils.get_active_library(context)
+        if library:
+            library_name = library.name
+            library_menu_id = library.library_menu_ui
+        else:
+            library_name = "None"
+            library_menu_id = ""
+
         main_box = layout.box()
 
         row = main_box.row()
@@ -85,16 +96,16 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 col.separator()
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_door_window_library',text=library.name)                
+                row.menu('HOME_BUILDER_MT_door_window_library',text=library_name)                
                 self.draw_library(col,context,library)
-                if library.library_menu_ui != '':
-                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')                
+                if library_menu_id != '':
+                    row.menu(library_menu_id,text="",icon='SETTINGS')                
      
         if hb_scene.library_tabs == 'DECORATIONS':
             col.separator()
             row = col.row(align=True)
             row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_decorations',text=library.name)
+            row.menu('HOME_BUILDER_MT_decorations',text=library_name)
 
             self.draw_library(col,context,library)
 
@@ -107,10 +118,10 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             col.separator()
             row = col.row(align=True)
             row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_cabinets',text=library.name)  
+            row.menu('HOME_BUILDER_MT_cabinets',text=library_name)  
             if hb_scene.cabinet_tabs == 'CATALOGS':
-                if library.library_menu_ui != '':
-                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')
+                if library_menu_id != '':
+                    row.menu(library_menu_id,text="",icon='SETTINGS')
                 
                 self.draw_library(col,context,library)
             else:
@@ -120,9 +131,9 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             col.separator()
             row = col.row(align=True)
             row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_appliances',text=library.name)  
-            if library.library_menu_ui != '':
-                row.menu(library.library_menu_ui,text="",icon='SETTINGS')
+            row.menu('HOME_BUILDER_MT_appliances',text=library_name)  
+            if library_menu_id != '':
+                row.menu(library_menu_id,text="",icon='SETTINGS')
             
             self.draw_library(col,context,library)
 
@@ -130,16 +141,16 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             col.separator()
             row = col.row(align=True)
             row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_fixtures_library',text=library.name)
-            if library.library_menu_ui != '':
-                row.menu(library.library_menu_ui,text="",icon='SETTINGS')            
+            row.menu('HOME_BUILDER_MT_fixtures_library',text=library_name)
+            if library_menu_id != '':
+                row.menu(library_menu_id,text="",icon='SETTINGS')            
             self.draw_library(col,context,library)
 
         if hb_scene.library_tabs == 'MATERIALS':
             col.separator()
             row = col.row(align=True)
             row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_materials_library',text=library.name)   
+            row.menu('HOME_BUILDER_MT_materials_library',text=library_name)   
             row.menu('HOME_BUILDER_MT_materials_pointers',text="",icon='SETTINGS')         
             self.draw_library(col,context,library)
 
@@ -155,18 +166,18 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 col.separator()
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_starters_library',text=library.name) 
-                if library.library_menu_ui != '':
-                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')                 
+                row.menu('HOME_BUILDER_MT_starters_library',text=library_name) 
+                if library_menu_id != '':
+                    row.menu(library_menu_id,text="",icon='SETTINGS')                 
                 self.draw_library(col,context,library)
 
             if hb_scene.build_tabs == 'INSERTS':
                 col.separator()
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_inserts_library',text=library.name)  
-                if library.library_menu_ui != '':
-                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')
+                row.menu('HOME_BUILDER_MT_inserts_library',text=library_name)  
+                if library_menu_id != '':
+                    row.menu(library_menu_id,text="",icon='SETTINGS')
                 
                 self.draw_library(col,context,library)
 
@@ -174,9 +185,9 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 col.separator()
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_parts_library',text=library.name)  
-                if library.library_menu_ui != '':
-                    row.menu(library.library_menu_ui,text="",icon='SETTINGS')
+                row.menu('HOME_BUILDER_MT_parts_library',text=library_name)  
+                if library_menu_id != '':
+                    row.menu(library_menu_id,text="",icon='SETTINGS')
                 self.draw_library(col,context,library)
 
 class HOME_BUILDER_MT_home_builder_menu(bpy.types.Menu):

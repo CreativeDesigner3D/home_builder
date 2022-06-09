@@ -113,7 +113,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         hb_utils.get_object_props(constraint_obj).connected_object = self.current_wall.obj_bp
 
     def set_child_properties(self,obj):
-        hb_utils.update_id_props(obj,self.current_wall.obj_bp)  
+        pc_utils.update_id_props(obj,self.current_wall.obj_bp)  
         if obj.type == 'EMPTY':
             obj.hide_viewport = True    
         if obj.type == 'MESH':
