@@ -97,6 +97,8 @@ class Design_Carcass(pc_types.Assembly):
         tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
         carcass_type = self.get_prompt("Carcass Type")
         carcass_type.set_value(self.carcass_type)
+        is_exposed_interior = self.get_prompt("Is Exposed Interior")
+        is_exposed_interior.set_value(self.exposed_interior)
 
         if carcass_type.get_value() == "Upper":
             carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
@@ -264,7 +266,9 @@ class Design_Blind_Carcass(pc_types.Assembly):
         tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
         carcass_type = self.get_prompt("Carcass Type")
         carcass_type.set_value(self.carcass_type)
-
+        is_exposed_interior = self.get_prompt("Is Exposed Interior")
+        is_exposed_interior.set_value(self.exposed_interior)
+        
         if carcass_type.get_value() == "Upper":
             self.design_carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
             self.design_carcass.set_name("Design Carcass")

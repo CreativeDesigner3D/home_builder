@@ -1,5 +1,6 @@
 import bpy
 import os
+from pc_lib import pc_types
 
 SAMPLE_CABINET_MATERIALS = os.path.join(os.path.dirname(__file__),'library','Sample Cabinet Materials','library.blend')   
 
@@ -285,7 +286,15 @@ def update_design_carcass_pointers(assembly,is_finished_left,is_finished_right,i
         if child.type == 'MESH':
             for pointer in child.pyclone.pointers:
                 if pointer.name == 'Interior':
-                    pointer.pointer_name = "Cabinet Interior Surfaces"
+                    parent_carcass = pc_types.Assembly(assembly.obj_bp.parent)
+                    is_exposed_interior = parent_carcass.get_prompt("Is Exposed Interior")
+                    if is_exposed_interior:
+                        if is_exposed_interior.get_value():
+                            pointer.pointer_name = "Cabinet Exposed Surfaces"
+                        else:
+                            pointer.pointer_name = "Cabinet Interior Surfaces"
+                    else:
+                        pointer.pointer_name = "Cabinet Interior Surfaces"
                 if pointer.name == 'Edges':
                     pointer.pointer_name = "Cabinet Exposed Edges"
                 if pointer.name == 'Top':

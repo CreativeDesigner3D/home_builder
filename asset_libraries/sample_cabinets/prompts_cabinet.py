@@ -100,6 +100,7 @@ def add_base_assembly_prompts(assembly):
 
 def add_carcass_prompts(assembly):
     assembly.add_prompt("Carcass Type",'TEXT',"")
+    assembly.add_prompt("Is Exposed Interior",'CHECKBOX',True)
     assembly.add_prompt("Left Finished End",'CHECKBOX',True)
     assembly.add_prompt("Right Finished End",'CHECKBOX',True)
     assembly.add_prompt("Finished Back",'CHECKBOX',True)

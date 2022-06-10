@@ -427,6 +427,7 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
 
     def draw_carcass_prompts(self,layout,context):
         for carcass in self.cabinet.carcasses:
+            is_exposed_interior = carcass.get_prompt("Is Exposed Interior")
             left_finished_end = carcass.get_prompt("Left Finished End")
             right_finished_end = carcass.get_prompt("Right Finished End")
             finished_back = carcass.get_prompt("Finished Back")
@@ -461,6 +462,8 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
                 row.prop(toe_kick_setback,'distance_value',text="Setback")   
 
             if left_finished_end and right_finished_end and finished_back and finished_top and finished_bottom:
+                row = box.row()
+                row.prop(is_exposed_interior,'checkbox_value',text="Exposed Interior")
                 row = box.row()
                 row.label(text="Finish:")
                 row.prop(left_finished_end,'checkbox_value',text="Left")
