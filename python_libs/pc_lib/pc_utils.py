@@ -286,7 +286,7 @@ def floor_raycast(context, mx, my):
 
     return has_hit, snapped_location, snapped_normal, snapped_rotation, face_index, object, matrix
 
-def get_selection_point(context, region, event, ray_max=10000.0, objects=None, floor=None, exclude_objects=[]):
+def get_selection_point(context, region, event, ray_max=10000.0, objects=None, floor=None, exclude_objects=[],ignore_opening_meshes=False):
     """Run this function on left mouse, execute the ray cast"""
     # get the context arguments
     scene = context.scene
@@ -303,7 +303,9 @@ def get_selection_point(context, region, event, ray_max=10000.0, objects=None, f
         """Loop over (object, matrix) pairs (mesh only)"""
 
         for obj in context.visible_objects:
-
+            if ignore_opening_meshes:
+                if 'IS_OPENING_MESH' in obj:
+                    continue
             if objects:
                 if obj in objects and obj not in exclude_objects:
                     yield (obj, obj.matrix_world.copy())

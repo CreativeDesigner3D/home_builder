@@ -33,7 +33,7 @@ class home_builder_OT_drop_material(bpy.types.Operator):
         context.area.tag_redraw()
         self.mouse_x = event.mouse_x
         self.mouse_y = event.mouse_y
-        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event)
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,ignore_opening_meshes=True)
         bpy.ops.object.select_all(action='DESELECT')
         if selected_obj:
             selected_obj.select_set(True)
