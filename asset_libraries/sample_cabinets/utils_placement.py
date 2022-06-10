@@ -330,6 +330,7 @@ def position_cabinet_next_to_cabinet(cabinet,selected_cabinet,mouse_location,pla
 
     if not wall_bp:
         #CABINET NOT ON WALL
+        cabinet.obj_bp.parent = selected_cabinet.obj_bp.parent
         if placement == 'LEFT':
             x_loc = sel_cabinet_world_x - math.cos(sel_cabinet_z_rot) * cabinet_width
             y_loc = sel_cabinet_world_y - math.sin(sel_cabinet_z_rot) * cabinet_width
