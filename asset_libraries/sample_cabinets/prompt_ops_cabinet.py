@@ -29,7 +29,7 @@ def update_dishwasher(self,context):
 
 def update_refrigerator(self,context):
     self.refrigerator_changed = True
-        
+
 def update_closet_height(self,context):
     ''' EVENT changes height for all closet openings
     '''
@@ -102,6 +102,7 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
 
     default_width = 0
     cabinet = None
+    calculators = []
 
     sink_changed: bpy.props.BoolProperty(name="Sink Changed",default=False)
     sink_category: bpy.props.EnumProperty(name="Sink Category",
@@ -140,6 +141,7 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
         #THIS IS BECAUSE POPUP DIALOGS CANNOT DISPLAY UILISTS ON INVOKE
         self.product_tabs = 'MAIN'
         self.cabinet = None
+        self.calculators = []
 
     def update_product_size(self):
         self.cabinet.obj_x.location.x = self.width
@@ -259,6 +261,8 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
         self.update_faucet(context)        
         self.update_materials(context)
         self.cabinet.update_range_hood_location()
+        for calculator in self.calculators:
+            calculator.calculate()
         return True
 
     def execute(self, context):
@@ -294,6 +298,7 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
         self.height = math.fabs(self.cabinet.obj_z.location.z)
         self.width = math.fabs(self.cabinet.obj_x.location.x)
         self.default_width = self.cabinet.obj_x.location.x
+        self.get_calculators(self.cabinet.obj_bp)
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=500)
 

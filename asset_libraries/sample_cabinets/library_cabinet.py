@@ -279,3 +279,43 @@ class Upper_Stacked(types_cabinet.Stacked_Cabinet):
         self.bottom_carcass.exterior = types_cabinet_exteriors.Doors()
         self.bottom_carcass.exterior.door_swing = 2
         self.is_upper = True
+
+
+class Base_Cabinet(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_1_door
+        self.height = props.base_cabinet_height   
+        self.depth = props.base_cabinet_depth     
+        self.carcass = types_cabinet_carcass.Base_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Opening()
+        self.carcass.exposed_interior = False
+        self.include_countertop = True       
+
+
+class Tall_Cabinet(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_1_door
+        self.height = props.tall_cabinet_height   
+        self.depth = props.tall_cabinet_depth           
+        self.carcass = types_cabinet_carcass.Tall_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Opening()
+        self.carcass.exposed_interior = False      
+
+
+class Upper_Cabinet(types_cabinet.Standard_Cabinet):
+    
+    def __init__(self):
+        props = utils_cabinet.get_scene_props(bpy.context.scene)
+        self.width = props.width_2_door        
+        self.height = props.upper_cabinet_height   
+        self.depth = props.upper_cabinet_depth   
+        self.carcass = types_cabinet_carcass.Upper_Design_Carcass()
+        self.carcass.interior = None
+        self.carcass.exterior = types_cabinet_exteriors.Opening()
+        self.carcass.exposed_interior = False            

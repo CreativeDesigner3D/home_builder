@@ -525,3 +525,27 @@ class Door_Drawer(Cabinet_Exterior):
         # self.add_drawer_box(r_drawer_front)
 
         self.set_prompts()
+
+
+class Opening(Cabinet_Exterior):
+
+    def draw(self):        
+        self.create_assembly("Opening")
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')  
+        z = self.obj_z.pyclone.get_var('location.z','z')  
+
+        opening = assemblies_cabinet.add_closet_opening(self)
+
+        opening.obj_prompts.hide_viewport = False
+        opening.set_name('Cabinet Opening')
+        opening.loc_x(value=0)
+        opening.loc_y(value=0)
+        opening.loc_z(value=0)
+        opening.rot_x(value = 0)
+        opening.rot_y(value = 0)
+        opening.rot_z(value = 0)
+        opening.dim_x('x',[x])
+        opening.dim_y('y',[y])
+        opening.dim_z('z',[z])
