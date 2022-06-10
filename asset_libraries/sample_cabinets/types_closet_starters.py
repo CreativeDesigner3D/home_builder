@@ -942,7 +942,7 @@ class Closet_Inside_Corner(Closet):
         self.obj_bp[const.CLOSET_INSIDE_CORNER_TAG] = True
         # self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_inside_corner_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets_corner_commands"
         self.obj_y['IS_MIRROR'] = True
 
         props = utils_cabinet.get_scene_props(bpy.context.scene)
@@ -1237,7 +1237,7 @@ class Closet_Inside_Corner_Filler(Closet):
         # self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
         self.obj_bp["IS_BASE_BP"] = True
         self.obj_bp["PROMPT_ID"] = "home_builder.closet_inside_corner_prompts" 
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets_corner_commands"
         self.obj_y['IS_MIRROR'] = True
 
         props = utils_cabinet.get_scene_props(bpy.context.scene)

@@ -17,7 +17,7 @@ class Mesh_Wall(pc_types.Assembly):
         #ASSIGN PROPERTY
         self.obj_bp["IS_WALL_BP"] = True
         self.obj_bp["PROMPT_ID"] = "home_builder.wall_prompts" 
-        self.obj_bp["MENU_ID"] = "HOMEBUILDER_MT_wall_menu"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_wall_commands"
 
         #Set Default Dimensions
         self.obj_x.location.x = pc_unit.inch(120) #Length
@@ -30,6 +30,8 @@ class Mesh_Wall(pc_types.Assembly):
 
         size = (0,0,0)
         obj_mesh = pc_utils.create_cube_mesh("Wall Mesh",size)
+        obj_mesh.color = [0.252832, 0.500434, 0.735662, 1.000000]
+        # obj_mesh.show_wire = True
         self.add_object(obj_mesh)
 
         #Assign Mesh Hooks

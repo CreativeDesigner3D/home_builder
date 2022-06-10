@@ -311,6 +311,9 @@ class Stacked_Cabinet(Cabinet):
     def draw(self):
         self.create_assembly("Cabinet")
         self.obj_bp[const.CABINET_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.cabinet_prompts" 
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_commands"
+        self.obj_y['IS_MIRROR'] = True        
         self.carcasses = []
 
         prompts_cabinet.add_cabinet_prompts(self)
@@ -384,6 +387,9 @@ class Blind_Corner_Cabinet(Cabinet):
         self.create_assembly("Cabinet")
         self.corner_type = "Blind"
         self.obj_bp[const.CABINET_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.cabinet_prompts" 
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_commands"
+        self.obj_y['IS_MIRROR'] = True        
         self.carcasses = []
 
         self.obj_x.location.x = self.width

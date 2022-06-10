@@ -1,5 +1,7 @@
 import bpy
 from . import utils_cabinet
+from . import const_cabinets as const
+from pc_lib import pc_utils
 
 class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
     bl_label = "Cabinet Libraries"
@@ -33,6 +35,21 @@ class HOME_BUILDER_MT_closet_commands(bpy.types.Menu):
         layout.operator('hb_sample_cabinets.change_closet_offsets',icon='TRACKING_CLEAR_FORWARDS')  
         layout.operator('hb_sample_cabinets.change_closet_openings',icon='UV_ISLANDSEL')  
         
+
+class HOME_BUILDER_MT_closets_corner_commands(bpy.types.Menu):
+    bl_label = "Closet Corner Commands"
+
+    def draw(self, context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_INSIDE_CORNER_TAG)
+        layout = self.layout        
+
+
+class HOME_BUILDER_MT_appliance_commands(bpy.types.Menu):
+    bl_label = "Appliance Commands"
+
+    def draw(self, context):
+        appliance_bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        layout = self.layout
 
 
 class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
@@ -309,6 +326,8 @@ classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_MT_cabinet_commands,
     HOME_BUILDER_MT_closet_commands,
+    HOME_BUILDER_MT_closets_corner_commands,
+    HOME_BUILDER_MT_appliance_commands,
     HOME_BUILDER_PT_cabinet_sizes,
     HOME_BUILDER_PT_cabinet_construction,
     HOME_BUILDER_PT_cabinet_material_thickness,

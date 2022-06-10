@@ -77,7 +77,8 @@ class Dishwasher(pc_types.Assembly):
 
         self.create_assembly("Dishwasher")
         self.obj_bp[const.APPLIANCE_TAG] = True
-        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.dishwasher_prompts"       
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.dishwasher_prompts"   
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_appliance_commands"    
         self.obj_y['IS_MIRROR'] = True
 
         self.add_dishwasher()
@@ -166,6 +167,7 @@ class Range(pc_types.Assembly):
         self.create_assembly("Range")
         self.obj_bp[const.APPLIANCE_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.range_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_appliance_commands"
         self.obj_y['IS_MIRROR'] = True
         self.add_prompt("Add Range Hood",'CHECKBOX',False)
         self.add_range()
@@ -294,7 +296,8 @@ class Refrigerator(pc_types.Assembly):
     def draw(self):
         self.create_assembly("Refrigerator")
         self.obj_bp[const.APPLIANCE_TAG] = True
-        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.refrigerator_prompts"      
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.refrigerator_prompts"    
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_appliance_commands"  
         self.obj_y['IS_MIRROR'] = True
 
         self.add_prompt("Refrigerator Y Location",'DISTANCE',pc_unit.inch(1))

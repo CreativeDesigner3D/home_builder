@@ -1,5 +1,8 @@
 import bpy
 from . import utils_doors_windows
+from . import const_doors_windows as const
+from pc_lib import pc_utils
+
 class HOME_BUILDER_MT_doors_windows_settings(bpy.types.Menu):
     bl_label = "Cabinet Libraries"
 
@@ -8,6 +11,23 @@ class HOME_BUILDER_MT_doors_windows_settings(bpy.types.Menu):
         layout.popover(panel="HOME_BUILDER_PT_door_window_parts",text="Door and Window Parts",icon='DRIVER_DISTANCE')
         layout.separator()
         layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
+
+
+class HOME_BUILDER_MT_window_commands(bpy.types.Menu):
+    bl_label = "Window Commands"
+
+    def draw(self, context):
+        window_bp = pc_utils.get_bp_by_tag(context.object,const.WINDOW_TAG)
+        layout = self.layout
+
+
+class HOME_BUILDER_MT_door_commands(bpy.types.Menu):
+    bl_label = "Door Commands"
+
+    def draw(self, context):
+        door_bp = pc_utils.get_bp_by_tag(context.object,const.ENTRY_DOOR_TAG)
+        layout = self.layout
+
 
 class HOME_BUILDER_PT_door_window_parts(bpy.types.Panel):
     bl_space_type = 'FILE_BROWSER'
@@ -55,6 +75,8 @@ class HOME_BUILDER_PT_door_window_parts(bpy.types.Panel):
 
 classes = (
     HOME_BUILDER_MT_doors_windows_settings,
+    HOME_BUILDER_MT_window_commands,
+    HOME_BUILDER_MT_door_commands,
     HOME_BUILDER_PT_door_window_parts,
 )
 
