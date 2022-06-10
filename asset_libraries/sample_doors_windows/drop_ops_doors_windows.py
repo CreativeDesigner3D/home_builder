@@ -145,7 +145,7 @@ class home_builder_OT_place_door_window(bpy.types.Operator):
             
     def position_object(self,selected_point,selected_obj):
         if selected_obj:
-            wall_bp = selected_obj.parent
+            wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
             if self.assembly.obj_bp and wall_bp:
                 self.assembly.obj_bp.parent = wall_bp
                 self.assembly.obj_bp.matrix_world[0][3] = selected_point[0]
