@@ -293,7 +293,7 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     #CLOSET OPTIONS
     use_fixed_closet_heights: bpy.props.BoolProperty(name="Use Fixed Closet Heights",
                                            description="Check this option to use the 32mm system and force panel heights to change in 32mm increments.",
-                                           default=True) 
+                                           default=False) 
 
     add_bottom_filler_shelf: bpy.props.BoolProperty(name="Add Bottom Filler Shelf",
                                            description="Check this option to add a bottom shelf when turning on filler panels.",

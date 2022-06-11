@@ -2218,22 +2218,23 @@ class hb_closet_parts_OT_closet_single_fixed_shelf_prompts(bpy.types.Operator):
     calculators = []
 
     def check(self, context): 
-        opening_top = self.insert.get_prompt("Opening 1 Height")
-        opening_bottom = self.insert.get_prompt("Opening 2 Height")
-        if self.set_height_location == 'TOP':
-            opening_top.equal = False
-            opening_bottom.equal = True
-        else:
-            opening_top.equal = True
-            opening_bottom.equal = False  
-
         hb_props = utils_cabinet.get_scene_props(context.scene)
-        if hb_props.use_fixed_closet_heights:
-            for i in range(1,6):
-                opening = self.insert.get_prompt("Opening " + str(i) + " Height")
-                if opening:
-                    height = eval("float(self.opening_" + str(i) + "_height)/1000")
-                    opening.set_value(height)        
+        if hb_props.use_fixed_closet_heights:        
+            opening_top = self.insert.get_prompt("Opening 1 Height")
+            opening_bottom = self.insert.get_prompt("Opening 2 Height")
+            if self.set_height_location == 'TOP':
+                opening_top.equal = False
+                opening_bottom.equal = True
+            else:
+                opening_top.equal = True
+                opening_bottom.equal = False  
+
+
+                for i in range(1,6):
+                    opening = self.insert.get_prompt("Opening " + str(i) + " Height")
+                    if opening:
+                        height = eval("float(self.opening_" + str(i) + "_height)/1000")
+                        opening.set_value(height)        
         for calculator in self.calculators:
             calculator.calculate()
         return True
@@ -2284,46 +2285,52 @@ class hb_closet_parts_OT_closet_single_fixed_shelf_prompts(bpy.types.Operator):
 
     def draw_prompts(self,layout,name="Height"):
         unit_settings = bpy.context.scene.unit_settings
-        row = layout.row()
-        row.prop(self,'set_height_location',expand=True)
-        opening_top = self.insert.get_prompt("Opening 1 Height")
-        opening_bottom = self.insert.get_prompt("Opening 2 Height")
-        if self.set_height_location == 'TOP':
-            row = layout.row()
-            row.label(text="Top Opening Height:")
-            row.prop(self,'opening_1_height',text="")
-            row = layout.row()
-            row.label(text="Bottom Opening Height:")
-            row.label(text=pc_unit.unit_to_string(unit_settings,opening_bottom.distance_value))                  
-        else:
-            row = layout.row()
-            row.label(text="Top Opening Height:")
-            row.label(text=pc_unit.unit_to_string(unit_settings,opening_top.distance_value))     
-            row = layout.row()
-            row.label(text="Bottom Opening Height:")
-            row.prop(self,'opening_2_height',text="")               
+        for i in range(1,10):
+            opening = self.insert.get_prompt("Opening " + str(i) + " " + name)
+            if opening:
+                row = layout.row()
+                if opening.equal == False:
+                    row.prop(opening,'equal',text="")
+                else:
+                    if self.get_number_of_equal_openings(name=name) != 1:
+                        row.prop(opening,'equal',text="")
+                    else:
+                        row.label(text="",icon='BLANK1')                
+                row.label(text="Opening " + str(i) + " " + name + ":")
+                if opening.equal:
+                    value = pc_unit.unit_to_string(unit_settings,opening.distance_value)
+                    row.label(text=value)
+                else:
+                    if name == 'Height':
+                        row.prop(opening,'distance_value',text="")
+                    else:
+                        row.prop(opening,'distance_value',text="")            
 
     def draw(self, context):
+        hb_props = utils_cabinet.get_scene_props(context.scene)
         layout = self.layout
-        unit_settings = bpy.context.scene.unit_settings
-        row = layout.row()
-        row.prop(self,'set_height_location',expand=True)
-        opening_top = self.insert.get_prompt("Opening 1 Height")
-        opening_bottom = self.insert.get_prompt("Opening 2 Height")
-        if self.set_height_location == 'TOP':
+        if hb_props.use_fixed_closet_heights:          
+            unit_settings = bpy.context.scene.unit_settings
             row = layout.row()
-            row.label(text="Top Opening Height:")
-            row.prop(self,'opening_1_height',text="")
-            row = layout.row()
-            row.label(text="Bottom Opening Height:")
-            row.label(text=pc_unit.unit_to_string(unit_settings,opening_bottom.distance_value))                  
+            row.prop(self,'set_height_location',expand=True)
+            opening_top = self.insert.get_prompt("Opening 1 Height")
+            opening_bottom = self.insert.get_prompt("Opening 2 Height")
+            if self.set_height_location == 'TOP':
+                row = layout.row()
+                row.label(text="Top Opening Height:")
+                row.prop(self,'opening_1_height',text="")
+                row = layout.row()
+                row.label(text="Bottom Opening Height:")
+                row.label(text=pc_unit.unit_to_string(unit_settings,opening_bottom.distance_value))                  
+            else:
+                row = layout.row()
+                row.label(text="Top Opening Height:")
+                row.label(text=pc_unit.unit_to_string(unit_settings,opening_top.distance_value))     
+                row = layout.row()
+                row.label(text="Bottom Opening Height:")
+                row.prop(self,'opening_2_height',text="")    
         else:
-            row = layout.row()
-            row.label(text="Top Opening Height:")
-            row.label(text=pc_unit.unit_to_string(unit_settings,opening_top.distance_value))     
-            row = layout.row()
-            row.label(text="Bottom Opening Height:")
-            row.prop(self,'opening_2_height',text="")           
+            self.draw_prompts(layout,name="Height")       
 
 
 class hb_closet_inserts_OT_division_prompts(bpy.types.Operator):
