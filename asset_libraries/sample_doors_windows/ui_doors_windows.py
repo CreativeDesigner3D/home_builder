@@ -17,16 +17,18 @@ class HOME_BUILDER_MT_window_commands(bpy.types.Menu):
     bl_label = "Window Commands"
 
     def draw(self, context):
-        window_bp = pc_utils.get_bp_by_tag(context.object,const.WINDOW_TAG)
+        bp = pc_utils.get_bp_by_tag(context.object,const.WINDOW_TAG)
         layout = self.layout
+        layout.operator('home_builder.delete_assembly',text="Delete Window",icon='X').obj_name = bp.name
 
 
 class HOME_BUILDER_MT_door_commands(bpy.types.Menu):
     bl_label = "Door Commands"
 
     def draw(self, context):
-        door_bp = pc_utils.get_bp_by_tag(context.object,const.ENTRY_DOOR_TAG)
+        bp = pc_utils.get_bp_by_tag(context.object,const.ENTRY_DOOR_TAG)
         layout = self.layout
+        layout.operator('home_builder.delete_assembly',text="Delete Entry Door",icon='X').obj_name = bp.name
 
 
 class HOME_BUILDER_PT_door_window_parts(bpy.types.Panel):

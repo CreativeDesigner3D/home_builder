@@ -309,6 +309,19 @@ class home_builder_OT_unit_settings(bpy.types.Operator):
     def execute(self, context):
         return {'FINISHED'}
 
+
+class home_builder_OT_delete_assembly(bpy.types.Operator):
+    bl_idname = "home_builder.delete_assembly"
+    bl_label = "Delete Assembly"
+    
+    obj_name: bpy.props.StringProperty(name="Object Name")
+
+    def execute(self, context):
+        obj_bp = bpy.data.objects[self.obj_name]
+        pc_utils.delete_object_and_children(obj_bp)
+        return {'FINISHED'}
+
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_todo,
@@ -319,6 +332,7 @@ classes = (
     home_builder_OT_update_materials_for_pointer,
     home_builder_OT_disconnect_constraint,
     home_builder_OT_unit_settings,
+    home_builder_OT_delete_assembly,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

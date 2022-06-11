@@ -546,6 +546,38 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class hb_sample_cabinets_OT_delete_closet_insert(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.delete_closet_insert"
+    bl_label = "Delete Closet insert"
+
+    insert = None
+
+    @classmethod
+    def poll(cls, context):
+        if not context.object:
+            return False
+        bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
+        if bp:
+            return True
+        else:
+            return False
+
+    def execute(self, context):    
+        self.get_assemblies(context)
+        opening_bp = self.insert.obj_bp.parent
+        pc_utils.delete_object_and_children(self.insert.obj_bp) 
+        if opening_bp:
+            del(opening_bp["IS_FILLED"])
+            for child in opening_bp.children:
+                if 'IS_OPENING_MESH' in child:
+                    child.hide_viewport = False
+        return {'FINISHED'}
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
+        self.insert = pc_types.Assembly(bp)
+
+
 class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.build_library"
     bl_label = "Build Library"
@@ -650,6 +682,7 @@ classes = (
     hb_sample_cabinets_OT_add_closet_opening,
     hb_sample_cabinets_OT_delete_closet_opening,
     hb_sample_cabinets_OT_duplicate_closet_insert,
+    hb_sample_cabinets_OT_delete_closet_insert,
     hb_sample_cabinets_OT_build_library,
 )
 

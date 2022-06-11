@@ -22,19 +22,27 @@ class HOME_BUILDER_MT_cabinet_commands(bpy.types.Menu):
     bl_label = "Cabinet Commands"
 
     def draw(self, context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_TAG)
         layout = self.layout
         layout.operator('hb_sample_cabinets.cabinet_prompts',icon='WINDOW')        
+        layout.separator()
+        layout.operator('home_builder.delete_assembly',text="Delete Cabinet",icon='X').obj_name = bp.name
 
 
 class HOME_BUILDER_MT_closet_commands(bpy.types.Menu):
     bl_label = "Closet Commands"
 
     def draw(self, context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
+        # insert_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
         layout = self.layout
         layout.operator('hb_closet_starters.closet_prompts',icon='WINDOW')  
         layout.operator('hb_sample_cabinets.change_closet_offsets',icon='TRACKING_CLEAR_FORWARDS')  
         layout.operator('hb_sample_cabinets.change_closet_openings',icon='UV_ISLANDSEL')  
         layout.operator('hb_sample_cabinets.duplicate_closet_insert',icon='DUPLICATE')
+        layout.separator()
+        layout.operator('hb_sample_cabinets.delete_closet_insert',text="Delete Insert",icon='X')
+        layout.operator('home_builder.delete_assembly',text="Delete Starter",icon='X').obj_name = bp.name
         
 
 class HOME_BUILDER_MT_closets_corner_commands(bpy.types.Menu):
@@ -43,14 +51,16 @@ class HOME_BUILDER_MT_closets_corner_commands(bpy.types.Menu):
     def draw(self, context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_INSIDE_CORNER_TAG)
         layout = self.layout        
+        layout.operator('home_builder.delete_assembly',text="Delete Corner Starter",icon='X').obj_name = bp.name
 
 
 class HOME_BUILDER_MT_appliance_commands(bpy.types.Menu):
     bl_label = "Appliance Commands"
 
     def draw(self, context):
-        appliance_bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
         layout = self.layout
+        layout.operator('home_builder.delete_assembly',text="Delete Appliance",icon='X').obj_name = bp.name
 
 
 class HOME_BUILDER_PT_cabinet_sizes(bpy.types.Panel):
