@@ -305,3 +305,9 @@ def add_wire_basket(assembly):
     material_pointers_cabinet.assign_pointer_to_assembly(part,"Wire Baskets")
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part          
+
+def add_cage(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Cage.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    assembly.add_assembly(part)
+    return part    

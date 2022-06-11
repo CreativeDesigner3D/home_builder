@@ -1,5 +1,6 @@
 import bpy
 import os
+import math
 import inspect
 import subprocess
 import codecs
@@ -18,6 +19,8 @@ from . import library_cabinet
 from . import utils_cabinet
 from . import utils_placement
 from . import types_closet_starters
+from . import types_cabinet
+from . import assemblies_cabinet
 from . import const_cabinets as const
 
 class Cabinet_Library_Item(bpy.types.PropertyGroup):
@@ -578,6 +581,247 @@ class hb_sample_cabinets_OT_delete_closet_insert(bpy.types.Operator):
         self.insert = pc_types.Assembly(bp)
 
 
+class hb_sample_cabinets_OT_place_wall_cabinet(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.place_wall_cabinet"
+    bl_label = "Place Wall Cabinet"
+
+    cabinet_name: bpy.props.StringProperty(name="Cabinet Name",default="")
+    
+    allow_fills: bpy.props.BoolProperty(name="Allow Fills",default=True)
+    allow_quantities: bpy.props.BoolProperty(name="Allow Quantities",default=True)
+
+    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
+    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
+    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+
+    position: bpy.props.EnumProperty(name="Position",
+                                     items=[('SELECTED_POINT',"Selected Point","Turn off automatic positioning"),
+                                            ('FILL',"Fill","Fill"),
+                                            ('FILL_LEFT',"Fill Left","Fill Left"),
+                                            ('LEFT',"Left","Bump Left"),
+                                            ('CENTER',"Center","Center"),
+                                            ('RIGHT',"Right","Bump Right"),
+                                            ('FILL_RIGHT',"Fill Right","Fill Right")],
+                                     default='SELECTED_POINT')
+
+    quantity: bpy.props.IntProperty(name="Quantity",default=1)
+    left_offset: bpy.props.FloatProperty(name="Left Offset", default=0,subtype='DISTANCE')
+    right_offset: bpy.props.FloatProperty(name="Right Offset", default=0,subtype='DISTANCE')
+
+    default_width = 0
+    selected_location = 0
+
+    cabinet = None
+    qty_cage = None
+
+    @classmethod
+    def poll(cls, context):
+        if not context.object:
+            return False
+        obj_bp = pc_utils.get_bp_by_tag(context.object,const.WALL_TAG)
+        if obj_bp:
+            return True
+        else:
+            return False
+
+    def reset_variables(self):
+        self.quantity = 1
+        self.cabinet = None
+        self.position = 'SELECTED_POINT'
+        self.qty_cage = None
+
+    def set_product_defaults(self):
+        self.cabinet.obj_bp.location.x = self.selected_location + self.left_offset
+        self.cabinet.obj_x.location.x = self.default_width - (self.left_offset + self.right_offset)
+
+    def select_obj_and_children(self,obj):
+        obj.hide_viewport = False
+        obj.select_set(True)
+        for child in obj.children:
+            obj.hide_viewport = False
+            child.select_set(True)
+            self.select_obj_and_children(child)
+
+    def hide_empties_and_boolean_meshes(self,obj):
+        if obj.type == 'EMPTY' or obj.hide_render:
+            obj.hide_viewport = True
+        for child in obj.children:
+            self.hide_empties_and_boolean_meshes(child)
+    
+    def copy_cabinet(self,context,cabinet):
+        bpy.ops.object.select_all(action='DESELECT')
+        self.select_obj_and_children(cabinet.obj_bp)
+        bpy.ops.object.duplicate_move()
+        obj = context.active_object
+        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)
+        return pc_types.Assembly(cabinet_bp)
+
+    def check(self, context):
+        # wall_bp = home_builder_utils.get_wall_bp(self.cabinet.obj_bp)
+        # if wall_bp:
+        left_x = utils_placement.get_left_collision_location(self.cabinet)
+        right_x = utils_placement.get_right_collision_location(self.cabinet)
+        offsets = self.left_offset + self.right_offset
+        self.set_product_defaults()
+        if self.position == 'FILL':
+            self.cabinet.obj_bp.location.x = left_x + self.left_offset
+            self.cabinet.obj_x.location.x = (right_x - left_x - offsets) / self.quantity
+        if self.position == 'FILL_LEFT':
+            self.cabinet.obj_bp.location.x = left_x + self.left_offset
+            self.cabinet.obj_x.location.x = (self.default_width + (self.selected_location - left_x) - offsets) / self.quantity
+        if self.position == 'LEFT':
+            # if self.cabinet.obj_bp.mv.placement_type == 'Corner':
+            #     self.cabinet.obj_bp.rotation_euler.z = math.radians(0)
+            self.cabinet.obj_bp.location.x = left_x + self.left_offset
+            self.cabinet.obj_x.location.x = self.width
+        if self.position == 'CENTER':
+            self.cabinet.obj_x.location.x = self.width
+            self.cabinet.obj_bp.location.x = left_x + (right_x - left_x)/2 - ((self.cabinet.obj_x.location.x/2) * self.quantity)
+        if self.position == 'RIGHT':
+            # if self.cabinet.obj_bp.mv.placement_type == 'Corner':
+            #     self.cabinet.obj_bp.rotation_euler.z = math.radians(-90)
+            self.cabinet.obj_x.location.x = self.width
+            self.cabinet.obj_bp.location.x = (right_x - self.cabinet.obj_x.location.x) - self.right_offset
+        if self.position == 'FILL_RIGHT':
+            self.cabinet.obj_bp.location.x = self.selected_location + self.left_offset
+            self.cabinet.obj_x.location.x = ((right_x - self.selected_location) - offsets) / self.quantity
+        self.update_quantity()
+        return True
+
+    def create_qty_cage(self):
+        width = self.cabinet.obj_x.pyclone.get_var('location.x','width')
+        height = self.cabinet.obj_z.pyclone.get_var('location.z','height')
+        depth = self.cabinet.obj_y.pyclone.get_var('location.y','depth')
+
+        self.qty_cage = assemblies_cabinet.add_cage(self.cabinet)
+        self.qty_cage.obj_bp["IS_REFERENCE"] = True
+        self.qty_cage.loc_x(value = 0)
+        self.qty_cage.loc_y(value = 0)
+        self.qty_cage.loc_z(value = 0)
+        self.qty_cage.rot_x(value = 0)
+        self.qty_cage.rot_y(value = 0)
+        self.qty_cage.rot_z(value = 0)      
+        self.qty_cage.dim_x('width',[width])
+        self.qty_cage.dim_y('depth',[depth])
+        self.qty_cage.dim_z('height',[height])   
+    
+    def update_quantity(self):
+        qty = self.qty_cage.get_prompt("Quantity")
+        a_left = self.qty_cage.get_prompt("Array Left")
+        qty.set_value(self.quantity)
+        if self.position == 'RIGHT':
+            a_left.set_value(True)
+        else:
+            a_left.set_value(False)
+
+    def execute(self, context):        
+        new_products = []  
+        previous_product = None
+        width = self.cabinet.obj_x.location.x 
+        pc_utils.delete_object_and_children(self.qty_cage.obj_bp)  
+        if self.quantity > 1:
+            for i in range(self.quantity - 1):
+                if previous_product:
+                    new_product = self.copy_cabinet(context,previous_product)
+                else:
+                    new_product = self.copy_cabinet(context,self.cabinet)
+                if self.position == 'RIGHT':
+                    new_product.obj_bp.location.x -= width
+                else:
+                    new_product.obj_bp.location.x += width
+                new_products.append(new_product)
+                previous_product = new_product
+
+        for new_p in new_products:
+            self.hide_empties_and_boolean_meshes(new_p.obj_bp)
+            new_p.obj_x.hide_viewport = False
+            new_p.obj_y.hide_viewport = False
+            new_p.obj_z.hide_viewport = False
+            new_p.obj_x.empty_display_size = .001
+            new_p.obj_y.empty_display_size = .001
+            new_p.obj_z.empty_display_size = .001                
+            # home_builder_utils.show_assembly_xyz(new_p)
+
+        self.hide_empties_and_boolean_meshes(self.cabinet.obj_bp)
+        self.cabinet.obj_x.hide_viewport = False
+        self.cabinet.obj_y.hide_viewport = False
+        self.cabinet.obj_z.hide_viewport = False
+        self.cabinet.obj_x.empty_display_size = .001
+        self.cabinet.obj_y.empty_display_size = .001
+        self.cabinet.obj_z.empty_display_size = .001            
+        # home_builder_utils.show_assembly_xyz(self.cabinet)
+
+        return {'FINISHED'}
+
+    def get_calculators(self,obj):
+        for cal in obj.pyclone.calculators:
+            self.calculators.append(cal)
+        for child in obj.children:
+            self.get_calculators(child)
+
+    def invoke(self,context,event):
+        self.reset_variables()
+        self.get_assemblies(context)
+        self.create_qty_cage()
+        self.cabinet_name = self.cabinet.obj_bp.name
+        self.depth = math.fabs(self.cabinet.obj_y.location.y)
+        self.height = math.fabs(self.cabinet.obj_z.location.z)
+        self.width = math.fabs(self.cabinet.obj_x.location.x)
+        self.selected_location = self.cabinet.obj_bp.location.x
+        self.default_width = self.cabinet.obj_x.location.x
+        bpy.ops.object.select_all(action='DESELECT')
+        for child in self.qty_cage.obj_bp.children:
+            if child.type == 'MESH':
+                child.select_set(True)          
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=400)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_TAG)
+        self.cabinet = types_cabinet.Cabinet(bp)
+
+    def draw(self, context):
+        layout = self.layout
+
+        #IF CORNER ALLOW FILLS FALSE
+        if self.cabinet.obj_x.lock_location[0]:
+            self.allow_fills = False
+
+        box = layout.box()
+        row = box.row(align=True)
+        row.label(text="Position Options:",icon='EMPTY_ARROWS')
+        row = box.row(align=False)
+        row.prop_enum(self,'position', 'SELECTED_POINT',icon='RESTRICT_SELECT_OFF',text="Selected Point")
+        if self.allow_fills:
+            row.prop_enum(self,'position', 'FILL',icon='ARROW_LEFTRIGHT',text="Fill")
+        row = box.row(align=True)
+        if self.allow_fills:
+            row.prop_enum(self, "position", 'FILL_LEFT', icon='REW', text="Fill Left") 
+        row.prop_enum(self, "position", 'LEFT', icon='TRIA_LEFT', text="Left") 
+        row.prop_enum(self, "position", 'CENTER', icon='TRIA_DOWN', text="Center")
+        row.prop_enum(self, "position", 'RIGHT', icon='TRIA_RIGHT', text="Right") 
+        if self.allow_fills:  
+            row.prop_enum(self, "position", 'FILL_RIGHT', icon='FF', text="Fill Right")
+        if self.allow_quantities:
+            row = box.row(align=True)
+            row.prop(self,'quantity')
+        split = box.split(factor=0.5)
+        col = split.column(align=True)
+        col.label(text="Dimensions:")
+        if self.position in {'SELECTED_POINT','LEFT','RIGHT','CENTER'}:
+            col.prop(self,"width",text="Width")
+        else:
+            col.label(text='Width: ' + str(round(pc_unit.meter_to_active_unit(self.cabinet.obj_x.location.x),4)))
+        col.prop(self.cabinet.obj_y,"location",index=1,text="Depth")
+        col.prop(self.cabinet.obj_z,"location",index=2,text="Height")
+
+        col = split.column(align=True)
+        col.label(text="Offset:")
+        col.prop(self,"left_offset",text="Left")
+        col.prop(self,"right_offset",text="Right")
+        col.prop(self.cabinet.obj_bp,"location",index=2,text="Height From Floor")
+
+
 class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.build_library"
     bl_label = "Build Library"
@@ -683,6 +927,7 @@ classes = (
     hb_sample_cabinets_OT_delete_closet_opening,
     hb_sample_cabinets_OT_duplicate_closet_insert,
     hb_sample_cabinets_OT_delete_closet_insert,
+    hb_sample_cabinets_OT_place_wall_cabinet,
     hb_sample_cabinets_OT_build_library,
 )
 
