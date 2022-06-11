@@ -96,8 +96,9 @@ class Shelves(Closet_Insert):
         self.create_assembly()
         self.add_closet_insert_prompts()
         self.obj_bp[const.CLOSET_SHELVES_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_shelves_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -154,8 +155,9 @@ class Hanging_Rod(Closet_Insert):
         self.create_assembly()
         self.add_closet_insert_prompts()      
         self.obj_bp[const.CLOSET_HANGING_ROD] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.hanging_rod_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -224,8 +226,9 @@ class Slanted_Shoe_Shelf(Closet_Insert):
         self.create_assembly()
         self.add_closet_insert_prompts()    
         self.obj_bp[const.CLOSET_SLANTED_SHOE_SHELVES] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_shoe_shelf_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -319,8 +322,9 @@ class Cubbies(Closet_Insert):
         self.create_assembly()
         self.add_closet_insert_prompts()        
         self.obj_bp[const.CLOSET_CUBBIES_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_cubby_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -532,9 +536,10 @@ class Base_Doors(Doors):
         self.create_assembly()
         self.add_closet_insert_prompts()    
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_door_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -685,9 +690,10 @@ class Tall_Doors(Doors):
         self.create_assembly()
         self.add_closet_insert_prompts()    
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_door_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -804,9 +810,10 @@ class Upper_Doors(Doors):
         self.create_assembly()
         self.add_closet_insert_prompts()    
         self.obj_bp["IS_CLOSET_DOORS_BP"] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.closet_door_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -947,9 +954,10 @@ class Drawers(Doors):
         self.create_assembly()    
         self.add_closet_insert_prompts()         
         self.obj_bp[const.CLOSET_DRAWERS_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.closet_drawer_prompts'
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -1089,8 +1097,9 @@ class Single_Drawer(Doors):
         self.create_assembly()
         self.add_closet_insert_prompts()                     
         self.obj_bp[const.CLOSET_DRAWERS_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.closet_drawer_prompts'
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -1175,8 +1184,9 @@ class Wire_Baskets(Closet_Insert):
         self.create_assembly()
         self.add_closet_insert_prompts()      
         self.obj_bp[const.CLOSET_WIRE_BASKETS_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.closet_wire_baskets_prompts'
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -1319,8 +1329,9 @@ class Vertical_Splitter(Closet_Insert):
         self.add_closet_insert_prompts()   
         self.obj_bp["IS_SPLITTER_INSERT"] = True
         self.obj_bp[const.VERTICAL_SPLITTER_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "home_builder.splitter_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -1416,8 +1427,9 @@ class Horizontal_Splitter(Closet_Insert):
         self.create_assembly()
         self.add_closet_insert_prompts()  
         self.obj_bp[const.HORIZONTAL_SPLITTER_TAG] = True
-        self.obj_bp["IS_CLOSET_INSERT"] = True
+        self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_inserts.division_prompts"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)

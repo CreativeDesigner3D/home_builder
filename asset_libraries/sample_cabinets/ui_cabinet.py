@@ -34,6 +34,7 @@ class HOME_BUILDER_MT_closet_commands(bpy.types.Menu):
         layout.operator('hb_closet_starters.closet_prompts',icon='WINDOW')  
         layout.operator('hb_sample_cabinets.change_closet_offsets',icon='TRACKING_CLEAR_FORWARDS')  
         layout.operator('hb_sample_cabinets.change_closet_openings',icon='UV_ISLANDSEL')  
+        layout.operator('hb_sample_cabinets.duplicate_closet_insert',icon='DUPLICATE')
         
 
 class HOME_BUILDER_MT_closets_corner_commands(bpy.types.Menu):

@@ -307,8 +307,10 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
         self.set_placed_properties(self.cabinet.obj_bp) 
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
-        if is_recursive:
-            bpy.ops.home_builder.place_cabinet(filepath=self.filepath)
+        #Reset Object Base Point Name for Duplicate Command
+        self.obj_bp_name = ""        
+        # if is_recursive:
+        #     bpy.ops.home_builder.place_cabinet(filepath=self.filepath)
         return {'FINISHED'}        
 
 
@@ -594,6 +596,8 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         self.set_placed_properties(self.cabinet.obj_bp) 
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
+        #Reset Object Base Point Name for Duplicate Command
+        self.obj_bp_name = ""        
         # if is_recursive:
         #     bpy.ops.home_builder.place_cabinet(filepath=self.filepath)
         return {'FINISHED'}        
@@ -839,6 +843,8 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         self.set_placed_properties(self.closet.obj_bp) 
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
+        #Reset Object Base Point Name for Duplicate Command
+        self.obj_bp_name = ""        
         ## keep placing until event_is_cancel_command
         # if is_recursive:
         #     bpy.ops.home_builder.place_closet(filepath=self.filepath)
@@ -852,7 +858,7 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
     
     filepath: bpy.props.StringProperty(name="Filepath",default="Error")
 
-    obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
+    obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name",default="")
     snap_cursor_to_cabinet: bpy.props.BoolProperty(name="Snap Cursor to Base Point",default=False)
 
     insert = None
@@ -872,6 +878,7 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
         self.exclude_objects = []
 
     def execute(self, context):
+        print('OBJ BP NAME',self.obj_bp_name)
         self.region = pc_utils.get_3d_view_region(context)
         self.reset_properties()
         self.get_insert(context)
@@ -1076,6 +1083,8 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
         self.set_placed_properties(self.insert.obj_bp) 
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
+        #Reset Object Base Point Name for Duplicate Command
+        self.obj_bp_name = ""
         # if is_recursive and self.obj_bp_name == "":
         #     bpy.ops.home_builder.place_closet_insert(filepath=self.filepath)
         return {'FINISHED'}

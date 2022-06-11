@@ -496,6 +496,56 @@ class hb_sample_cabinets_OT_delete_closet_opening(bpy.types.Operator):
         self.closet = types_closet_starters.Closet_Starter(bp)
 
 
+class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.duplicate_closet_insert"
+    bl_label = "Duplicate Closet Insert"
+
+    obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
+
+    @classmethod
+    def poll(cls, context):
+        obj_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
+        if obj_bp:
+            return True
+        else:
+            return False
+
+    def select_obj_and_children(self,obj):
+        obj.hide_viewport = False
+        obj.select_set(True)
+        for child in obj.children:
+            obj.hide_viewport = False
+            child.select_set(True)
+            self.select_obj_and_children(child)
+
+    def delete_drivers(self,obj):
+        if obj.animation_data:
+            for driver in obj.animation_data.drivers:
+                obj.driver_remove(driver.data_path)
+
+    def execute(self, context):
+        obj_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
+        cabinet = pc_types.Assembly(obj_bp)
+        bpy.ops.object.select_all(action='DESELECT')
+        self.select_obj_and_children(cabinet.obj_bp)
+        bpy.ops.object.duplicate_move()
+        pc_utils.hide_empties(cabinet.obj_bp)
+
+        new_obj_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
+        new_cabinet = pc_types.Assembly(new_obj_bp)
+        new_cabinet.obj_bp.parent = None
+        self.delete_drivers(new_cabinet.obj_bp)
+        self.delete_drivers(new_cabinet.obj_x)
+        self.delete_drivers(new_cabinet.obj_y)
+        self.delete_drivers(new_cabinet.obj_z)
+
+        pc_utils.hide_empties(new_cabinet.obj_bp)
+
+        bpy.ops.hb_sample_cabinets.place_closet_insert(obj_bp_name=new_cabinet.obj_bp.name)
+
+        return {'FINISHED'}
+
+
 class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.build_library"
     bl_label = "Build Library"
@@ -599,6 +649,7 @@ classes = (
     hb_sample_cabinets_OT_change_closet_openings,
     hb_sample_cabinets_OT_add_closet_opening,
     hb_sample_cabinets_OT_delete_closet_opening,
+    hb_sample_cabinets_OT_duplicate_closet_insert,
     hb_sample_cabinets_OT_build_library,
 )
 
