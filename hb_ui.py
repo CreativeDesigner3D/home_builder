@@ -204,7 +204,7 @@ class HOME_BUILDER_MT_door_window_library(bpy.types.Menu):
         layout = self.layout
         props = context.window_manager.home_builder
         for library in props.asset_libraries:
-            if library.library_type == 'DOOR_WINDOWS' and library.enabled:
+            if library.library_type == 'DOORS_WINDOWS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
 
 class HOME_BUILDER_MT_cabinets(bpy.types.Menu):
