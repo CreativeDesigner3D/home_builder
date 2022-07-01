@@ -164,18 +164,18 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
             finished_top = carcass.get_prompt("Finished Top")
             finished_bottom = carcass.get_prompt("Finished Bottom")
 
-            # if carcass.design_carcass:
-            material_pointers_cabinet.update_design_carcass_pointers(carcass.design_carcass,
-                                                                    left_finished_end.get_value(),
-                                                                    right_finished_end.get_value(),
-                                                                    finished_back.get_value(),
-                                                                    finished_top.get_value(),
-                                                                    finished_bottom.get_value())
-                # if carcass.design_base_assembly:                                                     
-            material_pointers_cabinet.update_design_base_assembly_pointers(carcass.design_base_assembly,
-                                                                    left_finished_end.get_value(),
-                                                                    right_finished_end.get_value(),
-                                                                    finished_back.get_value())                                                                     
+            if carcass.design_carcass:
+                material_pointers_cabinet.update_design_carcass_pointers(carcass.design_carcass,
+                                                                        left_finished_end.get_value(),
+                                                                        right_finished_end.get_value(),
+                                                                        finished_back.get_value(),
+                                                                        finished_top.get_value(),
+                                                                        finished_bottom.get_value())
+            if carcass.design_base_assembly:                                                     
+                material_pointers_cabinet.update_design_base_assembly_pointers(carcass.design_base_assembly,
+                                                                        left_finished_end.get_value(),
+                                                                        right_finished_end.get_value(),
+                                                                        finished_back.get_value())                                                                     
             # else:
             #     if finished_back and left_finished_end and right_finished_end:
             #         home_builder_pointers.update_side_material(carcass.left_side,left_finished_end.get_value(),finished_back.get_value(),finished_top.get_value(),finished_bottom.get_value())
