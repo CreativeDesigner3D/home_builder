@@ -53,6 +53,7 @@ def load_library(dummy):
     """
     Load Asset Libraries
     """
+    hb_utils.load_libraries_from_xml(bpy.context)
     hb_utils.load_libraries(bpy.context)
 
 

@@ -4,7 +4,7 @@ import time
 import math
 import inspect
 import sys
-from pc_lib import pc_utils, pc_unit
+from pc_lib import pc_utils, pc_unit, pc_types
 from . import addon_updater_ops
 from . import hb_utils
 from . import pyclone_utils
@@ -76,17 +76,52 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
             row = main_box.row()
             row.label(text="Installed Libraries")
             row.label(text=" ")
-            row.operator('home_builder.todo',text="Install Library",icon='IMPORT')
+            row.operator('home_builder.add_external_library',text="Add Library",icon='IMPORT')
             
-            col = main_box.column(align=True)
-            for lib in wm_props.asset_libraries:
-                row = col.row()
-                row.label(text="",icon=self.get_library_icon(lib))
-                row.prop(lib,'enabled',text=lib.name)
+            row = main_box.row()
+            row.alignment = 'LEFT'
+            row.prop(wm_props,'show_built_in_asset_libraries',text="Built-In Libraries",icon='DISCLOSURE_TRI_DOWN' if wm_props.show_built_in_asset_libraries else 'DISCLOSURE_TRI_RIGHT',emboss=False)
+            if wm_props.show_built_in_asset_libraries:
+                col = main_box.column(align=True)
+                for lib in wm_props.asset_libraries:
+                    row = col.row()
+                    row.label(text="",icon=self.get_library_icon(lib))
+                    row.prop(lib,'enabled',text=lib.name)
+
+            for ex_lib in wm_props.library_packages:
+                row = main_box.row()
+                # row.alignment = 'LEFT'
+                row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
+                row.prop(ex_lib,'enabled',text="")
+                row.prop(ex_lib,'package_path',text="Path")
+                if ex_lib.expand:
+                    row = main_box.row()
+                    row.label(text="",icon='BLANK1')
+                    row.label(text="Library 1")
 
         if self.tabs == 'TRAINING':
             main_box = layout.box()
             main_box.label(text="TODO: Training Videos Comming Soon")
+
+
+class home_builder_OT_update_library_xml(bpy.types.Operator):
+    bl_idname = "home_builder.update_library_xml"
+    bl_label = "Update Library XMl"
+
+    def execute(self, context):
+        wm_props = context.window_manager.home_builder
+        file_path = hb_utils.get_library_path_xml()
+        xml = pc_types.HB_XML()
+        root = xml.create_tree()
+        paths = xml.add_element(root,'LibraryPaths')
+        packages = xml.add_element(paths,'Packages')
+        for ex_lib in wm_props.library_packages:
+            if os.path.exists(ex_lib.package_path):
+                lib_package = xml.add_element(packages,'Package',ex_lib.package_path)
+                xml.add_element_with_text(lib_package,'Enabled',str(ex_lib.enabled))
+
+        xml.write(file_path)
+        return {'FINISHED'}
 
 
 class home_builder_OT_todo(bpy.types.Operator):
@@ -119,6 +154,16 @@ class home_builder_OT_load_library(bpy.types.Operator):
         layout.label(text="Auto Run Python Scripts needs to be enabled for Home Builder Library Data.")
         layout.label(text="Check the box below and click OK to continue.")
         layout.prop(paths, "use_scripts_auto_execute")
+
+
+class home_builder_OT_add_external_library(bpy.types.Operator):
+    bl_idname = "home_builder.add_external_library"
+    bl_label = "Add External Library"
+
+    def execute(self, context):
+        wm_props = context.window_manager.home_builder
+        lib = wm_props.library_packages.add()
+        return {'FINISHED'}
 
 
 class home_builder_OT_update_library_path(bpy.types.Operator):
@@ -324,8 +369,10 @@ class home_builder_OT_delete_assembly(bpy.types.Operator):
 
 classes = (
     home_builder_OT_about_home_builder,
+    home_builder_OT_update_library_xml,
     home_builder_OT_todo,
     home_builder_OT_load_library,
+    home_builder_OT_add_external_library,
     home_builder_OT_update_library_path,
     home_builder_OT_show_library_material_pointers,
     home_builder_OT_assign_material_to_pointer,

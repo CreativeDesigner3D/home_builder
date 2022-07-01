@@ -1,6 +1,7 @@
 import bpy
 import os
 import sys
+import xml.etree.ElementTree as ET
 from . import pyclone_utils
 
 addon_version = ()
@@ -121,65 +122,94 @@ def add_material_pointers(pointers):
         p.material_name = pointer[3]  
         p.library_path = pointer[4]    
 
+def get_library_path_xml():
+    path = os.path.join(bpy.utils.user_resource('SCRIPTS'), "home_builder")
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
+    return os.path.join(path,"home_builder_paths.xml")
+
+def load_libraries_from_xml(context):
+    wm_props = context.window_manager.home_builder
+    xml_file = get_library_path_xml()
+    if os.path.exists(xml_file):
+        root = ET.parse(xml_file).getroot()
+        for node in root:
+            if "LibraryPaths" in node.tag:
+                for c_node in node:
+                    if "Packages" in c_node.tag:
+                        for nc_node in c_node:
+                            if "Package" in nc_node.tag:
+                                path = nc_node.attrib["Name"]
+                                if os.path.exists(path):
+                                    lib = wm_props.library_packages.add()
+                                    lib.name = path
+                                    lib.package_path = path
+                                for nnc_node in nc_node:
+                                    if "Enabled" in nnc_node.tag:
+                                        lib.enabled = True if nnc_node.tag == "True" else False
+
 def load_libraries(context):
-        path = os.path.join(os.path.dirname(__file__),'asset_libraries')
+    path = os.path.join(os.path.dirname(__file__),'asset_libraries')
 
-        prefs = context.preferences
-        asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
+    prefs = context.preferences
+    asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
 
-        if not asset_lib:
-            bpy.ops.preferences.asset_library_add()
-            asset_lib = prefs.filepaths.asset_libraries[-1]
-            asset_lib.name = "home_builder_library"
-            asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')
-        else:
-            asset_lib.name = "home_builder_library"
-            asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')        
+    if not asset_lib:
+        bpy.ops.preferences.asset_library_add()
+        asset_lib = prefs.filepaths.asset_libraries[-1]
+        asset_lib.name = "home_builder_library"
+        asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')
+    else:
+        asset_lib.name = "home_builder_library"
+        asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')        
 
-        for workspace in bpy.data.workspaces:
-            workspace.asset_library_ref = "home_builder_library"
+    for workspace in bpy.data.workspaces:
+        workspace.asset_library_ref = "home_builder_library"
 
-        wm_props = context.window_manager.home_builder
-        dirs = os.listdir(path)
-        mat_library_path = os.path.join(os.path.dirname(__file__),'materials','library.blend')
-        pointer_list = []
-        pointer_list.append(("Walls","Room Materials","Built In","White Wall Paint",mat_library_path))
-        pointer_list.append(("Floor","Room Materials","Built In","Wood Floor",mat_library_path))
-        pointer_list.append(("Ceiling","Room Materials","Built In","White Walls",mat_library_path))
-        for folder in dirs:
-            if os.path.isdir(os.path.join(path,folder)):
-                files = os.listdir(os.path.join(path,folder))
-                for file in files:
-                    if file == '__init__.py':            
-                        sys.path.append(path)
-                        mod = __import__(folder)
-                        if hasattr(mod,'register'):
-                            try:
-                                mod.register()
-                            except:
-                                print("MOD ALREADY REGISTERED")
-                            if hasattr(mod,"LIBRARIES"):
-                                libs = list(mod.LIBRARIES)
-                                for lib in libs:
-                                    asset_lib = wm_props.asset_libraries.add()
-                                    asset_lib.name = lib["library_name"]
-                                    asset_lib.library_type = lib["library_type"]
-                                    asset_lib.library_path = lib["library_path"]
-                                    if "library_menu_id" in lib:
-                                        asset_lib.library_menu_ui = lib["library_menu_id"]
-                                    if "library_activate_id" in lib:
-                                        asset_lib.activate_id = lib["library_activate_id"]
-                                    if "libary_drop_id" in lib:
-                                        asset_lib.drop_id = lib["libary_drop_id"]
+    wm_props = context.window_manager.home_builder
+    dirs = os.listdir(path)
+    mat_library_path = os.path.join(os.path.dirname(__file__),'materials','library.blend')
+    pointer_list = []
+    pointer_list.append(("Walls","Room Materials","Built In","White Wall Paint",mat_library_path))
+    pointer_list.append(("Floor","Room Materials","Built In","Wood Floor",mat_library_path))
+    pointer_list.append(("Ceiling","Room Materials","Built In","White Walls",mat_library_path))
+    for folder in dirs:
+        print("FOLDER",folder)
+        if os.path.isdir(os.path.join(path,folder)):
+            files = os.listdir(os.path.join(path,folder))
+            for file in files:
+                if file == '__init__.py':            
+                    sys.path.append(path)
+                    mod = __import__(folder)
+                    if hasattr(mod,'register'):
+                        try:
+                            mod.register()
+                        except:
+                            print("MOD ALREADY REGISTERED")
+                        if hasattr(mod,"LIBRARIES"):
+                            libs = list(mod.LIBRARIES)
+                            for lib in libs:
+                                asset_lib = wm_props.asset_libraries.add()
+                                asset_lib.name = lib["library_name"]
+                                asset_lib.library_type = lib["library_type"]
+                                asset_lib.library_path = lib["library_path"]
+                                if "library_menu_id" in lib:
+                                    asset_lib.library_menu_ui = lib["library_menu_id"]
+                                if "library_activate_id" in lib:
+                                    asset_lib.activate_id = lib["library_activate_id"]
+                                if "libary_drop_id" in lib:
+                                    asset_lib.drop_id = lib["libary_drop_id"]
 
-                            if hasattr(mod,"MATERIAL_POINTERS"):
-                                for pointers in mod.MATERIAL_POINTERS:
-                                    for p in pointers:
-                                        for p2 in pointers[p]:
-                                            lib_path = os.path.dirname(p2[1])
-                                            pointer_list.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
-                            
-        add_material_pointers(pointer_list)  
+                        if hasattr(mod,"MATERIAL_POINTERS"):
+                            for pointers in mod.MATERIAL_POINTERS:
+                                for p in pointers:
+                                    for p2 in pointers[p]:
+                                        lib_path = os.path.dirname(p2[1])
+                                        pointer_list.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
+                        
+    add_material_pointers(pointer_list)  
 
 def load_custom_driver_functions():
     import inspect

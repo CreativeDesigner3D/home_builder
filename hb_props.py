@@ -55,6 +55,15 @@ class Asset_Library(PropertyGroup):
     drop_id: StringProperty(name="Drop ID")
     enabled: BoolProperty(name="Enabled",default=True)
 
+def update_library_package_path(self,context):
+    print('Package Path',self.package_path)
+    bpy.ops.home_builder.update_library_xml()
+
+class Library_Package(PropertyGroup):
+    enabled: BoolProperty(name="Enabled",default=True)
+    expand: BoolProperty(name="Expand",default=False)
+    package_path: bpy.props.StringProperty(name="Package Path",subtype='DIR_PATH',update=update_library_package_path)
+    asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
 
 class Home_Builder_Object_Props(PropertyGroup):
 
@@ -148,6 +157,9 @@ class Home_Builder_Workspace_Props(PropertyGroup):
 class Home_Builder_Window_Manager_Props(PropertyGroup):
     home_builder_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
     asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
+    library_packages: bpy.props.CollectionProperty(type=Library_Package)
+
+    show_built_in_asset_libraries: bpy.props.BoolProperty(name="Show Built In Asset Libraries",default=False)
 
     active_entry_door_window_library_name: bpy.props.StringProperty(name="Active Entry Door Window Library Name")
     active_cabinet_library_name: bpy.props.StringProperty(name="Active Cabinet Library Name")
@@ -185,6 +197,7 @@ class Home_Builder_Window_Manager_Props(PropertyGroup):
 classes = (
     Material_Pointer,
     Asset_Library,
+    Library_Package,
     Home_Builder_Object_Props,
     Home_Builder_Scene_Props,
     Home_Builder_Workspace_Props,
