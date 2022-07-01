@@ -28,7 +28,7 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
         return {'FINISHED'}
 
     def get_library_icon(self,library):
-        if library.library_type == 'DOOR_WINDOWS':
+        if library.library_type == 'DOORS_WINDOWS':
             return  'MESH_GRID'
         if library.library_type == 'CABINETS':
             return  'META_CUBE'
@@ -46,6 +46,7 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
             return  'STICKY_UVS_DISABLE'
         if library.library_type == 'MATERIALS':
             return  'MATERIAL_DATA'
+        return 'BLANK1'
 
     def draw(self, context):
         layout = self.layout
@@ -85,6 +86,7 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
                 col = main_box.column(align=True)
                 for lib in wm_props.asset_libraries:
                     row = col.row()
+                    print(lib.library_type)
                     row.label(text="",icon=self.get_library_icon(lib))
                     row.prop(lib,'enabled',text=lib.name)
 
