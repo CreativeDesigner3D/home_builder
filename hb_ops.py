@@ -92,14 +92,20 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
 
             for ex_lib in wm_props.library_packages:
                 row = main_box.row()
-                # row.alignment = 'LEFT'
-                row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
-                row.prop(ex_lib,'enabled',text="")
-                row.prop(ex_lib,'package_path',text="Path")
+                if os.path.exists(ex_lib.package_path):
+                    dir_name = os.path.dirname(ex_lib.package_path) 
+                    folder_name = os.path.basename(dir_name)                    
+                    row.alignment = 'LEFT'
+                    row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
+                    row.prop(ex_lib,'enabled',text=folder_name)
+                else:
+                    row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
+                    row.prop(ex_lib,'enabled',text="")
+                    row.prop(ex_lib,'package_path',text="Set Path")
                 if ex_lib.expand:
                     row = main_box.row()
                     row.label(text="",icon='BLANK1')
-                    row.label(text="Library 1")
+                    row.prop(ex_lib,'package_path',text="Set Path")
 
         if self.tabs == 'TRAINING':
             main_box = layout.box()
