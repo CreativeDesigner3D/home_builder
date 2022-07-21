@@ -102,6 +102,12 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.dim.get_prompt("Line Thickness").set_value(pc_unit.inch(.5))
         self.dim.update_dim_text()        
 
+        for obj in self.current_wall.obj_bp.children:
+            self.exclude_objects.append(obj)
+
+        for obj in self.dim.obj_bp.children:
+            self.exclude_objects.append(obj)
+            
     def connect_walls(self):
         constraint_obj = self.previous_wall.obj_x
         constraint = self.current_wall.obj_bp.constraints.new('COPY_LOCATION')
@@ -177,11 +183,21 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
         selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
 
+        connected_wall_bp = None
+        if selected_obj:
+            wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
+            if wall_bp and self.previous_wall == None:
+                connected_wall_bp = wall_bp
+
         self.position_object(selected_point,selected_obj)
         self.set_end_angles()            
 
         if self.event_is_place_first_point(event):
             self.starting_point = (selected_point[0],selected_point[1],0)
+            if connected_wall_bp:
+                self.previous_wall = pc_types.Assembly(connected_wall_bp)
+                self.connect_walls()
+                self.typed_value = ""                
             return {'RUNNING_MODAL'}
             
         if self.event_is_place_next_point(event):
