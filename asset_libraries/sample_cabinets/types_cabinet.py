@@ -249,12 +249,82 @@ class Standard_Cabinet(Cabinet):
     
     def __init__(self):
         pass
+    
+    def get_object_from_path(self,path):
+        pass
 
     def draw(self):
         self.create_assembly("Cabinet")
         self.obj_bp[const.CABINET_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.cabinet_prompts" 
         self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_commands"
+
+        # self.obj_x.location.x = self.width
+        # self.obj_y.location.y = -self.depth
+        # self.obj_z.location.z = self.height
+
+        # prompts_cabinet.add_cabinet_prompts(self)
+        # prompts_cabinet.add_filler_prompts(self)
+        # prompts_cabinet.add_thickness_prompts(self)
+
+        # geo_part_path = os.path.join(paths_cabinet.get_geo_parts_paths(),"GeoPart1.blend")
+        
+        # width = self.obj_x.pyclone.get_var('location.x','width')
+        # height = self.obj_z.pyclone.get_var('location.z','height')
+        # depth = self.obj_y.pyclone.get_var('location.y','depth')
+        # mat_thickness = self.get_prompt("Material Thickness").get_var('mat_thickness')
+
+        # ls_obj = self.add_object_from_file(geo_part_path)
+        # ls_obj.name = "Left Side"
+        # length = ls_obj.pyclone.get_prompt("Length")
+        # length.set_formula('height',[height])
+        # part_width = ls_obj.pyclone.get_prompt("Width")
+        # part_width.set_formula('fabs(depth)',[depth])        
+        # thickness = ls_obj.pyclone.get_prompt("Thickness")
+        # thickness.set_formula('mat_thickness',[mat_thickness])        
+        # ls_obj.pyclone.rot_y(value=math.radians(-90))
+        # ls_obj.pyclone.rot_z(value=math.radians(180))
+
+        # rs_obj = self.add_object_from_file(geo_part_path)
+        # rs_obj.name = "Right Side"
+        # rs_obj.pyclone.loc_x('width-mat_thickness',[width,mat_thickness])
+        # length = rs_obj.pyclone.get_prompt("Length")
+        # length.set_formula('height',[height])        
+        # part_width = rs_obj.pyclone.get_prompt("Width")
+        # part_width.set_formula('fabs(depth)',[depth])           
+        # thickness = rs_obj.pyclone.get_prompt("Thickness")
+        # thickness.set_formula('mat_thickness',[mat_thickness])              
+        # rs_obj.pyclone.rot_y(value=math.radians(-90))
+        # rs_obj.pyclone.rot_z(value=math.radians(180))
+
+        # top_obj = self.add_object_from_file(geo_part_path)
+        # top_obj.name = "Top"
+        # top_obj.pyclone.loc_x('mat_thickness',[mat_thickness])
+        # top_obj.pyclone.loc_y('depth',[depth])
+        # top_obj.pyclone.loc_z('height',[height])
+        # length = top_obj.pyclone.get_prompt("Length")
+        # length.set_formula('width-(mat_thickness*2)',[width,mat_thickness])  
+        # part_width = top_obj.pyclone.get_prompt("Width")
+        # part_width.set_formula('fabs(depth)',[depth])                 
+        # thickness = top_obj.pyclone.get_prompt("Thickness")
+        # thickness.set_formula('-mat_thickness',[mat_thickness])              
+        # top_obj.pyclone.rot_y(value=math.radians(0))
+        # top_obj.pyclone.rot_z(value=math.radians(0))
+
+        # top_obj = self.add_object_from_file(geo_part_path)
+        # top_obj.name = "Bottom"
+        # top_obj.pyclone.loc_x('mat_thickness',[mat_thickness])
+        # top_obj.pyclone.loc_y('depth',[depth])
+        # length = top_obj.pyclone.get_prompt("Length")
+        # length.set_formula('width-(mat_thickness*2)',[width,mat_thickness])  
+        # part_width = top_obj.pyclone.get_prompt("Width")
+        # part_width.set_formula('fabs(depth)',[depth])                 
+        # thickness = top_obj.pyclone.get_prompt("Thickness")
+        # thickness.set_formula('mat_thickness',[mat_thickness])              
+        # top_obj.pyclone.rot_y(value=math.radians(0))
+        # top_obj.pyclone.rot_z(value=math.radians(0))
+
+
         self.obj_y['IS_MIRROR'] = True
         self.carcasses = []
 
