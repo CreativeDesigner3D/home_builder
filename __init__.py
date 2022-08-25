@@ -25,6 +25,7 @@ from .pyclone_ops import pc_object
 from .pyclone_ops import pc_prompts
 from .walls import wall_ops
 from .pyclone_ui import pc_view3d_ui_sidebar_assemblies
+from .pyclone_ui import pc_view3d_ui_sidebar_object
 from .pyclone_ui import pc_view3d_ui_menu
 from .pyclone_ui import pc_lists
 
@@ -110,6 +111,7 @@ def register():
     hb_props.register()
     pyclone_props.register()
     pc_view3d_ui_sidebar_assemblies.register()
+    pc_view3d_ui_sidebar_object.register()
     hb_ui.register()
     hb_ops.register()
     wall_ops.register()
@@ -131,6 +133,7 @@ def unregister():
     pc_prompts.unregister()
     pc_view3d_ui_menu.unregister() 
     pc_view3d_ui_sidebar_assemblies.unregister()
+    pc_view3d_ui_sidebar_object.unregister()
     hb_props.unregister()
     hb_ui.unregister()
     hb_ops.unregister()
