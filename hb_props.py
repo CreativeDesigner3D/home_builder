@@ -156,6 +156,8 @@ class Home_Builder_Workspace_Props(PropertyGroup):
 
 class Home_Builder_Window_Manager_Props(PropertyGroup):
     home_builder_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
+
+    custom_asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
     asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
     library_packages: bpy.props.CollectionProperty(type=Library_Package)
 
@@ -163,6 +165,7 @@ class Home_Builder_Window_Manager_Props(PropertyGroup):
 
     active_entry_door_window_library_name: bpy.props.StringProperty(name="Active Entry Door Window Library Name")
     active_cabinet_library_name: bpy.props.StringProperty(name="Active Cabinet Library Name")
+    active_custom_cabinet_library_name: bpy.props.StringProperty(name="Active Custom Cabinet Library Name")
     active_appliance_library_name: bpy.props.StringProperty(name="Active Appliance Library Name")
     active_fixture_library_name: bpy.props.StringProperty(name="Active Bath Fixture Library Name")
     active_starter_library_name: bpy.props.StringProperty(name="Active Closet Starter Library Name")

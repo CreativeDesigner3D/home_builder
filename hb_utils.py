@@ -16,6 +16,8 @@ def get_library(wm_props,library_type):
     active_wm_library_prop_name = ""
     if library_type == 'CABINETS':
         active_wm_library_prop_name = 'active_cabinet_library_name'
+    if library_type == 'CUSTOM_CABINETS':
+        active_wm_library_prop_name = 'active_custom_cabinet_library_name'
     if library_type == 'APPLIANCES':
         active_wm_library_prop_name = 'active_appliance_library_name'
     if library_type == 'DOORS_WINDOWS':
@@ -35,21 +37,42 @@ def get_library(wm_props,library_type):
 
     active_wm_library_name = eval('wm_props.' + active_wm_library_prop_name)
 
-    if active_wm_library_name == '':
+    if library_type == 'CUSTOM_CABINETS':
+
+        if active_wm_library_name == '':
+            for library in wm_props.custom_asset_libraries:
+                exec("wm_props." + active_wm_library_prop_name + " = library.name")
+                return library
+        else:
+            for library in wm_props.custom_asset_libraries:
+                if library.name == active_wm_library_name:
+                    return library
+
+        #IF REACHED THIS FAR CHECK AGAIN
+        for library in wm_props.custom_asset_libraries:
+            exec("wm_props." + active_wm_library_prop_name + " = library.name")
+            return library
+
+    else:
+
+        if active_wm_library_name == '':
+            for library in wm_props.asset_libraries:
+                if library.library_type == library_type:
+                    exec("wm_props." + active_wm_library_prop_name + " = library.name")
+                    return library
+        else:
+            for library in wm_props.asset_libraries:
+                if library.library_type == library_type and library.name == active_wm_library_name:
+                    return library
+    
+        #IF REACHED THIS FAR CHECK AGAIN
         for library in wm_props.asset_libraries:
             if library.library_type == library_type:
                 exec("wm_props." + active_wm_library_prop_name + " = library.name")
-                return library
-    else:
-        for library in wm_props.asset_libraries:
-            if library.library_type == library_type and library.name == active_wm_library_name:
-                return library
-    
-    #IF REACHED THIS FAR CHECK AGAIN
-    for library in wm_props.asset_libraries:
-        if library.library_type == library_type:
-            exec("wm_props." + active_wm_library_prop_name + " = library.name")
-            return library    
+                return library    
+
+def get_custom_cabinet_library_path():
+    return os.path.join(os.path.dirname(__file__),'custom_asset_libraries')
 
 def get_active_library(context):
     hb_scene = context.scene.home_builder
@@ -57,7 +80,10 @@ def get_active_library(context):
     wm_props = wm.home_builder
 
     if hb_scene.library_tabs == 'CABINETS':
-        return get_library(wm_props,'CABINETS')
+        if hb_scene.cabinet_tabs == 'CATALOGS':
+            return get_library(wm_props,'CABINETS')
+        else:
+            return get_library(wm_props,'CUSTOM_CABINETS')
 
     if hb_scene.library_tabs == 'APPLIANCES':
         return get_library(wm_props,'APPLIANCES')
@@ -152,6 +178,7 @@ def load_libraries_from_xml(context):
 
 def load_libraries(context):
     path = os.path.join(os.path.dirname(__file__),'asset_libraries')
+    custom_cabinet_path = os.path.join(os.path.dirname(__file__),'custom_asset_libraries')
 
     prefs = context.preferences
     asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
@@ -176,7 +203,6 @@ def load_libraries(context):
     pointer_list.append(("Floor","Room Materials","Built In","Wood Floor",mat_library_path))
     pointer_list.append(("Ceiling","Room Materials","Built In","White Walls",mat_library_path))
     for folder in dirs:
-        print("FOLDER",folder)
         if os.path.isdir(os.path.join(path,folder)):
             files = os.listdir(os.path.join(path,folder))
             for file in files:
@@ -208,8 +234,19 @@ def load_libraries(context):
                                     for p2 in pointers[p]:
                                         lib_path = os.path.dirname(p2[1])
                                         pointer_list.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
-                        
-    add_material_pointers(pointer_list)  
+    
+    #LOAD CUSTOM LIBRARIES
+    custom_dirs = os.listdir(custom_cabinet_path)
+    for dir in custom_dirs:
+        cat_path = os.path.join(custom_cabinet_path,dir)
+        if os.path.isdir(cat_path):
+            asset_lib = wm_props.custom_asset_libraries.add()
+            asset_lib.name = dir
+            asset_lib.library_type = 'CUSTOM_CABINETS'
+            asset_lib.library_path = os.path.join(cat_path,"library.blend")
+            print("CUSTOM CABINET",asset_lib)
+
+    add_material_pointers(pointer_list)
 
 def load_custom_driver_functions():
     import inspect
