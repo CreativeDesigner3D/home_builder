@@ -370,6 +370,26 @@ class HOME_BUILDER_MT_materials_pointers(bpy.types.Menu):
             layout.operator('home_builder.show_library_material_pointers',text=library).library_name = library
 
 
+class HOME_BUILDER_PT_walls(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_label = "Home Builder Walls"
+    bl_category = "View"
+
+    def draw(self, context):
+        props = context.scene.home_builder
+        layout = self.layout
+        box = layout.box()
+        row = box.row()
+        row.scale_y = 1.3
+        row.operator('home_builder.collect_walls')
+        if len(props.walls) > 0:
+            box.template_list("HOMEBUILDER_UL_walls"," ", props, "walls", props, "wall_index",rows=5,type='DEFAULT')
+        if props.wall_index + 1 <= len(props.walls):
+            wall = props.walls[props.wall_index]
+            box.prop(wall.obj_bp,'name')
+
+
 classes = (
     HOME_BUILDER_PT_library,
     HOME_BUILDER_MT_door_window_library,
@@ -384,6 +404,7 @@ classes = (
     HOME_BUILDER_MT_materials_library,
     HOME_BUILDER_MT_materials_pointers,
     HOME_BUILDER_MT_home_builder_menu,
+    HOME_BUILDER_PT_walls,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

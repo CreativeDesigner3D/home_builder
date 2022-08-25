@@ -39,6 +39,15 @@ def update_library_tab(self,context):
         if workspace.home_builder_library_index > len(wm_props.home_builder_library_assets):
             print("INDEX GREATER THAN LENGTH")
 
+def update_library_package_path(self,context):
+    print('Package Path',self.package_path)
+    bpy.ops.home_builder.update_library_xml()
+
+def update_wall_index(self,context):
+    bpy.ops.object.select_all(action='DESELECT')
+    wall = self.walls[self.wall_index]
+    wall.wall_mesh.select_set(True)
+
 
 class Material_Pointer(PropertyGroup):
     library_path: StringProperty(name="Library Path")
@@ -55,15 +64,23 @@ class Asset_Library(PropertyGroup):
     drop_id: StringProperty(name="Drop ID")
     enabled: BoolProperty(name="Enabled",default=True)
 
-def update_library_package_path(self,context):
-    print('Package Path',self.package_path)
-    bpy.ops.home_builder.update_library_xml()
+
+class Wall(PropertyGroup):
+    wall_mesh: PointerProperty(name="Wall Mesh",
+                               type=bpy.types.Object,
+                               description="This is the wall mesh.")
+
+    obj_bp: PointerProperty(name="Wall Base Point",
+                            type=bpy.types.Object,
+                            description="This is the wall base point.")
+
 
 class Library_Package(PropertyGroup):
     enabled: BoolProperty(name="Enabled",default=True)
     expand: BoolProperty(name="Expand",default=False)
     package_path: bpy.props.StringProperty(name="Package Path",subtype='DIR_PATH',update=update_library_package_path)
     asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
+
 
 class Home_Builder_Object_Props(PropertyGroup):
 
@@ -121,6 +138,9 @@ class Home_Builder_Scene_Props(PropertyGroup):
                           update=update_library_tab)
 
     material_pointers: CollectionProperty(name="Material Pointers",type=Material_Pointer)
+
+    walls: bpy.props.CollectionProperty(name="Walls",type=Wall)
+    wall_index: bpy.props.IntProperty(name="Wall Index",update=update_wall_index)  
 
     wall_height: FloatProperty(name="Wall Height",default=pc_unit.inch(96),subtype='DISTANCE')
     wall_thickness: FloatProperty(name="Wall Thickness",default=pc_unit.inch(6),subtype='DISTANCE')
@@ -199,6 +219,7 @@ class Home_Builder_Window_Manager_Props(PropertyGroup):
 
 classes = (
     Material_Pointer,
+    Wall,
     Asset_Library,
     Library_Package,
     Home_Builder_Object_Props,

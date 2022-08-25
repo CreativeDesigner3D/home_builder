@@ -830,6 +830,168 @@ class home_builder_OT_floor_prompts(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_collect_walls(bpy.types.Operator):
+    bl_idname = "home_builder.collect_walls"
+    bl_label = "Collect Walls"
+    bl_description = "This collects all of the walls in the current scene"
+    bl_options = {'UNDO'}
+
+    def execute(self,context):
+        props = hb_utils.get_scene_props(context.scene)
+        for wall in props.walls:
+            props.walls.remove(0)
+        for obj in context.scene.objects:
+            if 'IS_WALL_BP' in obj:
+                wall = props.walls.add()
+                wall.obj_bp = obj
+                for child in wall.obj_bp.children:
+                    if child.type == 'MESH':
+                        wall.wall_mesh = child
+
+        return {'FINISHED'}    
+
+
+class home_builder_OT_show_hide_walls(bpy.types.Operator):
+    bl_idname = "home_builder.show_hide_walls"
+    bl_label = "Show Hide Walls"
+    bl_description = "This toggles the walls visibility"
+    bl_options = {'UNDO'}
+
+    wall_obj_bp: bpy.props.StringProperty(name="Wall Base Point Name")
+
+    def hide_children(self,obj,context):
+        if obj.name in context.view_layer.objects:
+            if obj.type in {'MESH','CURVE'}:
+                if obj.hide_get():
+                    obj.hide_set(False)
+                else:
+                    obj.hide_set(True)
+        for child in obj.children:
+            self.hide_children(child,context)
+
+    def execute(self,context):
+        wall_bp = bpy.data.objects[self.wall_obj_bp]
+        self.hide_children(wall_bp,context)
+        return {'FINISHED'}    
+
+
+class home_builder_OT_delete_wall(bpy.types.Operator):
+    bl_idname = "home_builder.delete_wall"
+    bl_label = "Delete Wall"
+    bl_description = "This toggles the walls visibility"
+    bl_options = {'UNDO'}
+
+    wall_obj_bp_name: bpy.props.StringProperty(name="Wall Base Point Name")
+
+    def execute(self,context):
+        if self.wall_obj_bp_name in bpy.data.objects:
+            obj_bp = bpy.data.objects[self.wall_obj_bp_name]
+            wall = pc_types.Assembly(obj_bp)
+            prev_wall_bp = pc_utils.get_connected_left_wall_bp(wall)
+            if prev_wall_bp:
+                prev_wall_bp.home_builder.connected_object = None
+                prev_wall = pc_types.Assembly(prev_wall_bp)
+                prev_wall.get_prompt("Right Angle").set_value(0)
+            pc_utils.delete_object_and_children(obj_bp)
+        return {'FINISHED'}    
+
+
+class home_builder_OT_hide_wall(bpy.types.Operator):
+    bl_idname = "home_builder.hide_wall"
+    bl_label = "Hide Wall"
+    bl_description = "This toggles the walls visibility"
+    bl_options = {'UNDO'}
+
+    wall_obj_bp: bpy.props.StringProperty(name="Wall Base Point Name")
+
+    def hide_children(self,obj,context):
+        if obj.name in context.view_layer.objects:
+            if obj.type in {'MESH','CURVE'}:
+                obj.hide_set(True)
+        for child in obj.children:
+            self.hide_children(child,context)
+
+    def execute(self,context):
+        wall_bp = bpy.data.objects[self.wall_obj_bp]
+        self.hide_children(wall_bp,context)
+        return {'FINISHED'}    
+
+
+class home_builder_OT_show_wall(bpy.types.Operator):
+    bl_idname = "home_builder.show_wall"
+    bl_label = "Show Wall"
+    bl_description = "This toggles the walls visibility"
+    bl_options = {'UNDO'}
+
+    wall_obj_bp: bpy.props.StringProperty(name="Wall Base Point Name")
+
+    def hide_children(self,obj,context):
+        if obj.name in context.view_layer.objects:
+            if obj.type in {'MESH','CURVE'}:
+                obj.hide_set(False)
+        for child in obj.children:
+            self.hide_children(child,context)
+
+    def execute(self,context):
+        wall_bp = bpy.data.objects[self.wall_obj_bp]
+        self.hide_children(wall_bp,context)
+        return {'FINISHED'}    
+
+
+class home_builder_OT_show_wall_front_view(bpy.types.Operator):
+    bl_idname = "home_builder.show_wall_front_view"
+    bl_label = "Show Wall Front View"
+
+    wall_bp_name: bpy.props.StringProperty("Wall BP Name")
+
+    def execute(self, context):
+        for wall in context.scene.home_builder.walls:
+            bpy.ops.home_builder.show_wall(wall_obj_bp=wall.obj_bp.name)       
+
+        area = None
+        for a in context.window.screen.areas:
+            if a.type == 'VIEW_3D':
+                area = a
+        r3d = area.spaces[0].region_3d
+        wall_bp = bpy.data.objects[self.wall_bp_name]
+        wall = pc_types.Assembly(wall_bp)
+        wall_loc_x = wall.obj_bp.location.x
+        wall_loc_y = wall.obj_bp.location.y
+        wall_loc_z = (wall.obj_z.location.z/2)
+        wall_z_rot = round(math.degrees(wall.obj_bp.rotation_euler.z))
+        r3d.view_location = (wall_loc_x,wall_loc_y,wall_loc_z)
+        if wall_z_rot == 0:
+            r3d.view_rotation = (.7071,.7071,0,0)
+        if wall_z_rot == 90:
+            r3d.view_rotation = (.5,.5,.5,.5)
+        if wall_z_rot == -90:
+            r3d.view_rotation = (.5,.5,-.5,-.5)
+        if wall_z_rot == 180:
+            r3d.view_rotation = (0,0,.7071,.7071)
+
+        for wall in context.scene.home_builder.walls:
+            if wall.obj_bp.name != self.wall_bp_name:
+                bpy.ops.home_builder.hide_wall(wall_obj_bp=wall.obj_bp.name)
+
+        if r3d.is_perspective:
+            bpy.ops.view3d.view_persportho()
+            
+        context.view_layer.update()
+        return {'FINISHED'}
+
+
+class HOMEBUILDER_UL_walls(bpy.types.UIList):
+    
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        if item.obj_bp:
+            layout.label(text=item.obj_bp.name)
+            layout.operator('home_builder.show_wall_front_view',text="View").wall_bp_name = item.obj_bp.name
+            if item.wall_mesh.hide_get():
+                layout.operator('home_builder.show_hide_walls',text="",icon='HIDE_ON').wall_obj_bp = item.obj_bp.name
+            else:
+                layout.operator('home_builder.show_hide_walls',text="",icon='HIDE_OFF').wall_obj_bp = item.obj_bp.name
+
+
 class HOMEBUILDER_MT_wall_menu(bpy.types.Menu):
     bl_label = "Wall Commands"
 
@@ -851,9 +1013,8 @@ class HOMEBUILDER_MT_wall_menu(bpy.types.Menu):
             #     layout.separator()
 
             layout.operator('home_builder.edit_part',text="Edit Wall",icon='EDITMODE_HLT')
-            # layout.separator()
-            #TODO: Create Delete Wall Command that keeps connected wall locations
-            # layout.operator('home_builder.delete_assembly',text="Delete",icon='X').obj_name = wall_bp.name
+            layout.separator()
+            layout.operator('home_builder.delete_wall',text="Delete Wall",icon='X').obj_name = wall_bp.name
 
 classes = (
     home_builder_OT_wall_prompts,
@@ -862,6 +1023,13 @@ classes = (
     home_builder_OT_add_room_light,
     home_builder_OT_light_prompts,
     home_builder_OT_floor_prompts,
+    home_builder_OT_collect_walls,
+    home_builder_OT_show_hide_walls,
+    home_builder_OT_delete_wall,
+    home_builder_OT_hide_wall,
+    home_builder_OT_show_wall,
+    home_builder_OT_show_wall_front_view,
+    HOMEBUILDER_UL_walls,
     HOMEBUILDER_MT_wall_menu
 )
 
