@@ -11,11 +11,13 @@ from . import addon_updater_ops
 from . import hb_utils
 from . import pyclone_utils
 from . import hb_utils
+from . import hb_paths
 from .walls import wall_library
 
 class home_builder_OT_about_home_builder(bpy.types.Operator):
     bl_idname = "home_builder.about_home_builder"
     bl_label = "About Home Builder"
+    bl_description = "Show the about home builder interface"
 
     tabs: bpy.props.EnumProperty(name="Library Tabs",
                        items=[('VERSION',"Version","Show the Home Builder Version"),
@@ -33,20 +35,18 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
     def get_library_icon(self,library):
         if library.library_type == 'DOORS_WINDOWS':
             return  'MESH_GRID'
-        if library.library_type == 'CABINETS':
+        if library.library_type == 'PRODUCTS':
             return  'META_CUBE'
-        if library.library_type == 'APPLIANCES':
-            return  'MOD_FLUIDSIM'
         if library.library_type == 'DECORATIONS':
             return  'SCENE_DATA'
-        if library.library_type == 'FIXTURES':
-            return  'MATPLANE'
         if library.library_type == 'STARTERS':
             return  'STICKY_UVS_LOC'
         if library.library_type == 'INSERTS':
             return  'STICKY_UVS_VERT'
         if library.library_type == 'PARTS':
             return  'STICKY_UVS_DISABLE'
+        if library.library_type == 'BUILD_LIBRARY':
+            return  'USER'            
         if library.library_type == 'MATERIALS':
             return  'MATERIAL_DATA'
         return 'BLANK1'
@@ -118,6 +118,7 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
 class home_builder_OT_update_library_xml(bpy.types.Operator):
     bl_idname = "home_builder.update_library_xml"
     bl_label = "Update Library XMl"
+    bl_description = "This updates the library xml that stores information about what libraries are active"
 
     def execute(self, context):
         wm_props = context.window_manager.home_builder
@@ -138,6 +139,7 @@ class home_builder_OT_update_library_xml(bpy.types.Operator):
 class home_builder_OT_todo(bpy.types.Operator):
     bl_idname = "home_builder.todo"
     bl_label = "TODO"
+    bl_description = "This command has not been implemented yet"
 
     def execute(self, context):
         print("NOT IMPLEMENTED: TODO")
@@ -170,6 +172,7 @@ class home_builder_OT_load_library(bpy.types.Operator):
 class home_builder_OT_add_external_library(bpy.types.Operator):
     bl_idname = "home_builder.add_external_library"
     bl_label = "Add External Library"
+    bl_description = "Add a new library"
 
     def execute(self, context):
         wm_props = context.window_manager.home_builder
@@ -180,6 +183,7 @@ class home_builder_OT_add_external_library(bpy.types.Operator):
 class home_builder_OT_update_library_path(bpy.types.Operator):
     bl_idname = "home_builder.update_library_path"
     bl_label = "Update Library Path"
+    bl_description = "Change the active library category"
 
     asset_type: bpy.props.StringProperty(name="Asset Type")
     asset_path: bpy.props.StringProperty(name="Asset Path")
@@ -190,32 +194,17 @@ class home_builder_OT_update_library_path(bpy.types.Operator):
         scene_props = context.scene.home_builder
 
         sel_library = None
-        if scene_props.library_tabs == 'CABINETS' and scene_props.cabinet_tabs == 'CUSTOM':
-            for library in wm_props.custom_asset_libraries:
-                if library.library_path == self.asset_path:
-                    sel_library = library
-                    break
-        else:
-            for library in wm_props.asset_libraries:
-                if library.library_path == self.asset_path:
-                    sel_library = library
-                    break
+
+        for library in wm_props.asset_libraries:
+            if library.library_path == self.asset_path:
+                sel_library = library
+                break
 
         prefs = context.preferences
         asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")  
 
-        if scene_props.library_tabs == 'ROOMS':
-            if scene_props.room_tabs == 'DOORS_WINDOWS':
-                wm_props.active_entry_door_window_library_name = sel_library.name
-
-        if scene_props.library_tabs == 'APPLIANCES':
-            wm_props.active_appliance_library_name = sel_library.name 
-
-        if scene_props.library_tabs == 'CABINETS':
-            if scene_props.cabinet_tabs == 'CATALOGS':
-                wm_props.active_cabinet_library_name = sel_library.name 
-            else:
-                wm_props.active_custom_cabinet_library_name = sel_library.name 
+        if scene_props.library_tabs == 'PRODUCTS':
+            wm_props.active_product_library_name = sel_library.name
 
         if scene_props.library_tabs == 'BUILD':
             if scene_props.build_tabs == 'STARTERS':
@@ -224,9 +213,8 @@ class home_builder_OT_update_library_path(bpy.types.Operator):
                 wm_props.active_insert_library_name = sel_library.name
             if scene_props.build_tabs == 'PARTS':
                 wm_props.active_part_library_name = sel_library.name
-
-        if scene_props.library_tabs == 'FIXTURES':
-            wm_props.active_fixture_library_name = sel_library.name 
+            if scene_props.build_tabs == 'LIBRARY':
+                wm_props.active_build_library_name = sel_library.name
 
         if scene_props.library_tabs == 'DECORATIONS':
             wm_props.active_decorations_library_name = sel_library.name
@@ -241,38 +229,44 @@ class home_builder_OT_update_library_path(bpy.types.Operator):
 class home_builder_OT_show_library_material_pointers(bpy.types.Operator):
     bl_idname = "home_builder.show_library_material_pointers"
     bl_label = "Library Material Pointers"
+    bl_description = "Show the material pointers for the library"
 
     library_name: bpy.props.StringProperty(name="Library Name")
 
     def invoke(self,context,event):
         wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=500)
+        return wm.invoke_props_dialog(self, width=550)
 
     def execute(self, context):  
         return {'FINISHED'}
 
     def draw(self, context):
         wm_props = context.window_manager.home_builder
-        asset = wm_props.get_active_asset(context)
+        # asset = wm_props.get_active_asset(context)
 
         layout = self.layout
         scene_props = context.scene.home_builder
         box = layout.box()
-        row = box.row()
-        row.label(text=self.library_name)
-        row.label(text="Selected Material: " + asset.file_data.name)
+        # row = box.row()
+        # row.label(text=self.library_name)
+        # row.label(text="Selected Material: " + asset.file_data.name)
         col = box.column(align=True)
         for pointer in scene_props.material_pointers:
             if pointer.library_name == self.library_name:
                 row = col.row()
-                props = row.operator('home_builder.assign_material_to_pointer',text=pointer.name)
-                props.pointer_name = pointer.name     
-                row.label(text=pointer.category_name + " - " + pointer.material_name,icon='MATERIAL')             
+                # row.alignment = 'LEFT'
+                # props = row.operator('home_builder.assign_material_to_pointer',text=pointer.name)
+                # props.pointer_name = pointer.name     
+                row.label(text=pointer.name,icon='DOT')
+                row.label(text=pointer.category_name,icon='FILEBROWSER')
+                row.label(text=pointer.material_name,icon='MATERIAL')
+                # row.label(text=pointer.category_name + " - " + pointer.material_name,icon='MATERIAL')             
         
 
 class home_builder_OT_assign_material_to_pointer(bpy.types.Operator):
     bl_idname = "home_builder.assign_material_to_pointer"
     bl_label = "Assign Material to Pointer"
+    bl_description = "This assigns a material to the pointer and will update all of the materials in the scene"
 
     library_name: bpy.props.StringProperty(name="Library Name")
     pointer_name: bpy.props.StringProperty(name="Pointer Name")
@@ -295,6 +289,7 @@ class home_builder_OT_assign_material_to_pointer(bpy.types.Operator):
 class home_builder_OT_update_materials_for_pointer(bpy.types.Operator):
     bl_idname = "home_builder.update_materials_for_pointer"
     bl_label = "Update Materials for Pointer"
+    bl_description = "This updates all of the materials in the scene from the pointers"
 
     pointer_name: bpy.props.StringProperty(name="Pointer Name")
 
@@ -334,6 +329,7 @@ class home_builder_OT_update_materials_for_pointer(bpy.types.Operator):
 class home_builder_OT_disconnect_constraint(bpy.types.Operator):
     bl_idname = "home_builder.disconnect_constraint"
     bl_label = "Disconnect Constraint"
+    bl_description = "This disconnects the constraint to allow you to move the object"
     
     obj_name: bpy.props.StringProperty(name="Base Point Name")
 
@@ -379,6 +375,7 @@ class home_builder_OT_unit_settings(bpy.types.Operator):
 class home_builder_OT_delete_assembly(bpy.types.Operator):
     bl_idname = "home_builder.delete_assembly"
     bl_label = "Delete Assembly"
+    bl_description = "This deletes the assembly"
     
     obj_name: bpy.props.StringProperty(name="Object Name")
 
@@ -388,10 +385,10 @@ class home_builder_OT_delete_assembly(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class home_builder_OT_save_custom_cabinet(bpy.types.Operator):
-    bl_idname = "home_builder.save_custom_cabinet"
-    bl_label = "Save Custom Cabinet"
-    bl_description = "This will save the assembly to the custom cabinet library"
+class home_builder_OT_save_assembly_to_build_library(bpy.types.Operator):
+    bl_idname = "home_builder.save_assembly_to_build_library"
+    bl_label = "Save Assembly to Build Library"
+    bl_description = "This will save the assembly to the build library"
     bl_options = {'UNDO'}
 
     assembly_bp_name: bpy.props.StringProperty(name="Collection Name")
@@ -435,7 +432,7 @@ class home_builder_OT_save_custom_cabinet(bpy.types.Operator):
             self.select_collection_objects(child)
 
     def get_path(self,context):
-        return hb_utils.get_custom_cabinet_library_path()
+        return hb_paths.get_build_library_path()
 
     def create_assembly_thumbnail_script(self,source_dir,source_file,assembly_name,obj_list):
         file = codecs.open(os.path.join(bpy.app.tempdir,"thumb_temp.py"),'w',encoding='utf-8')
@@ -563,10 +560,10 @@ class home_builder_OT_save_custom_cabinet(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class home_builder_OT_create_new_custom_library_category(bpy.types.Operator):
-    bl_idname = "home_builder.create_new_custom_library_category"
-    bl_label = "Create New Custom Cabinet Category"
-    bl_description = "This will create a new category to save custom cabinets to"
+class home_builder_OT_create_new_build_library_category(bpy.types.Operator):
+    bl_idname = "home_builder.create_new_build_library_category"
+    bl_label = "Create New Build Library Category"
+    bl_description = "This will create a new category in the build library"
     bl_options = {'UNDO'}
 
     category_name: bpy.props.StringProperty(name="Category Name")
@@ -585,14 +582,14 @@ class home_builder_OT_create_new_custom_library_category(bpy.types.Operator):
     def execute(self, context):
         wm_props = context.window_manager.home_builder
 
-        library_path = hb_utils.get_custom_cabinet_library_path()
+        library_path = hb_paths.get_build_library_path()
         new_path = os.path.join(library_path,self.category_name)
         if not os.path.exists(new_path):
             os.makedirs(new_path)
 
-        asset_lib = wm_props.custom_asset_libraries.add()
+        asset_lib = wm_props.asset_libraries.add()
         asset_lib.name = self.category_name
-        asset_lib.library_type = 'CUSTOM_CABINETS'
+        asset_lib.library_type = 'BUILD_LIBRARY'
         asset_lib.library_path = os.path.join(new_path,"library.blend")
 
         bpy.ops.home_builder.update_library_path(asset_path=asset_lib.library_path)
@@ -611,8 +608,8 @@ classes = (
     home_builder_OT_disconnect_constraint,
     home_builder_OT_unit_settings,
     home_builder_OT_delete_assembly,
-    home_builder_OT_save_custom_cabinet,
-    home_builder_OT_create_new_custom_library_category
+    home_builder_OT_save_assembly_to_build_library,
+    home_builder_OT_create_new_build_library_category
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

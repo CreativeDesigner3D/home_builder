@@ -62,6 +62,114 @@ class HB_XML():
             
         self.format_xml_file(path)
 
+class GeoPart:
+
+    coll = None
+    obj = None
+    node_group = None
+
+    def __init__(self,obj=None,filepath=""):
+        if obj:
+            self.obj = obj
+
+        if filepath:
+            self.coll = bpy.context.view_layer.active_layer_collection.collection
+
+            self.obj = pc_utils.create_empty_mesh("Door")
+            self.coll.objects.link(self.obj)
+
+            # with bpy.data.libraries.load(filepath) as (data_from, data_to):
+            #     data_to.objects = data_from.objects
+            ngroup = None
+            if "Door" in bpy.data.node_groups:
+                ngroup = bpy.data.node_groups["Door"]
+
+            else:
+                with bpy.data.libraries.load(filepath) as (data_from, data_to):
+                    data_to.node_groups = ["Door"]
+                    
+                for node_group in data_to.node_groups:
+                    ngroup = node_group
+                    # if "geo_part" in obj and obj["geo_part"] == True:
+                    #     self.obj = obj
+                    
+                    # self.coll.objects.link(obj)
+
+            mod = self.obj.modifiers.new("Door",'NODES')
+            mod.node_group = ngroup
+            self.node_group = mod.node_group
+            
+    def get_prompt(self,name):
+        if name in self.obj.pyclone.prompts:
+            return self.obj.pyclone.prompts[name]
+        
+        for calculator in self.obj.pyclone.calculators:
+            if name in calculator.prompts:
+                return calculator.prompts[name]
+
+    def loc_x(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.obj.location.x = value
+        else:
+            self.obj.pyclone.loc_x(expression,variables)
+
+    def loc_y(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.obj.location.y = value
+        else:
+            self.obj.pyclone.loc_y(expression,variables)
+
+    def loc_z(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.obj.location.z = value
+        else:
+            self.obj.pyclone.loc_z(expression,variables)           
+
+    def rot_x(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.obj.rotation_euler.x = value
+        else:
+            self.obj.pyclone.rot_x(expression,variables)             
+
+    def rot_y(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.obj.rotation_euler.y = value
+        else:
+            self.obj.pyclone.rot_y(expression,variables)      
+
+    def rot_z(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.obj.rotation_euler.z = value
+        else:
+            self.obj.pyclone.rot_z(expression,variables)      
+
+    def dim_x(self,expression="",variables=[],value=0):
+        part_length = self.get_prompt("Part Length")
+        if part_length and expression == "":
+            part_length.set_value(value)
+        else:
+            part_length.set_formula(expression,variables)  
+
+    def dim_y(self,expression="",variables=[],value=0):
+        part_width = self.get_prompt("Part Width")
+        if part_width and expression == "":
+            part_width.set_value(value)
+        else:
+            part_width.set_formula(expression,variables)  
+
+    def hide(self,expression="",variables=[],value=0):
+        hide = self.get_prompt("Hide")
+        if hide and expression == "":
+            hide.set_value(value)
+        else:
+            hide.set_formula(expression,variables)     
+
+    def prompt(self,prompt_name="",expression="",variables=[],value=0):
+        prompt = self.get_prompt(prompt_name)
+        if prompt and expression == "":
+            prompt.set_value(value)
+        else:
+            prompt.set_formula(expression,variables)   
 
 class Assembly:
 
@@ -207,6 +315,12 @@ class Assembly:
         collection = bpy.data.collections[name]
         collection.pyclone.assembly_bp = self.obj_bp
         return collection
+
+    def create_geo_part(self,name):
+        obj = pc_utils.create_empty_mesh(name)
+        self.coll.objects.link(obj)
+        obj.parent = self.obj_bp
+        return obj
 
     def create_cube(self,name="Cube",size=(0,0,0)):
         """ This will create a cube mesh and assign mesh hooks

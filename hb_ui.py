@@ -16,10 +16,14 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             wm = context.window_manager        
             activate_id = "home_builder.todo"
             drop_id = "home_builder.todo"
-            if library.activate_id != "":
-                activate_id = library.activate_id
-            if library.drop_id != "":
-                drop_id = library.drop_id
+            if library.library_type == 'BUILD_LIBRARY':
+                activate_id = "home_builder.todo"
+                drop_id = "home_builder.place_custom_cabinet"
+            else:
+                if library.activate_id != "":
+                    activate_id = library.activate_id
+                if library.drop_id != "":
+                    drop_id = library.drop_id
 
             activate_op_props, drag_op_props = layout.template_asset_view(
                 "home_builder_library",
@@ -93,12 +97,10 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
         row = col.row(align=True)
         row.scale_y = 1.2
         row.prop_enum(hb_scene, "library_tabs", 'ROOMS') 
-        row.prop_enum(hb_scene, "library_tabs", 'APPLIANCES') 
-        row.prop_enum(hb_scene, "library_tabs", 'CABINETS') 
+        row.prop_enum(hb_scene, "library_tabs", 'PRODUCTS') 
         row.prop_enum(hb_scene, "library_tabs", 'BUILD')
         row = col.row(align=True)
         row.scale_y = 1.2
-        row.prop_enum(hb_scene, "library_tabs", 'FIXTURES') 
         row.prop_enum(hb_scene, "library_tabs", 'DECORATIONS') 
         row.prop_enum(hb_scene, "library_tabs", 'MATERIALS') 
 
@@ -107,7 +109,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row = col.row(align=True)
             row.scale_y = 1.3
             row.prop_enum(hb_scene, "room_tabs", 'WALLS', icon='MOD_BUILD') #MOD_EDGESPLIT
-            row.prop_enum(hb_scene, "room_tabs", 'DOORS_WINDOWS', icon='MESH_GRID')
+            row.prop_enum(hb_scene, "room_tabs", 'CURRENT_ROOM', icon='MESH_GRID')
             if hb_scene.room_tabs == 'WALLS':
                 col.separator()
                 row = col.row(align=True)
@@ -122,14 +124,18 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 box.prop(hb_scene,'wall_height')
                 box.prop(hb_scene,'wall_thickness')
             
-            if hb_scene.room_tabs == 'DOORS_WINDOWS':
-                col.separator()
-                row = col.row(align=True)
-                row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_door_window_library',text=library_name)                
-                self.draw_library(col,context,library)
-                if library_menu_id != '':
-                    row.menu(library_menu_id,text="",icon='SETTINGS')                
+            if hb_scene.room_tabs == 'CURRENT_ROOM':
+
+                layout = self.layout
+                box = layout.box()
+                row = box.row()
+                row.scale_y = 1.3
+                row.operator('home_builder.collect_walls')
+                if len(hb_scene.walls) > 0:
+                    box.template_list("HOMEBUILDER_UL_walls"," ", hb_scene, "walls", hb_scene, "wall_index",rows=5,type='DEFAULT')
+                if hb_scene.wall_index + 1 <= len(hb_scene.walls):
+                    wall = hb_scene.walls[hb_scene.wall_index]
+                    box.prop(wall.obj_bp,'name')
      
         if hb_scene.library_tabs == 'DECORATIONS':
             col.separator()
@@ -139,70 +145,15 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
 
             self.draw_library(col,context,library)
 
-        if hb_scene.library_tabs == 'CABINETS':
+        if hb_scene.library_tabs == 'PRODUCTS':
             col = main_box.column(align=True)
             row = col.row(align=True)
-            row.scale_y = 1.3
-            row.prop_enum(hb_scene, "cabinet_tabs", 'CATALOGS',icon='ASSET_MANAGER') 
-            row.prop_enum(hb_scene, "cabinet_tabs", 'CUSTOM',icon='TOOL_SETTINGS')       
-            col.separator()
-            if hb_scene.cabinet_tabs == 'CATALOGS':
-                row = col.row(align=True)
-                row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_cabinets',text=library_name)                  
-                if library_menu_id != '':
-                    row.menu(library_menu_id,text="",icon='SETTINGS')
-                
-                self.draw_library(col,context,library)
-
-            else:
-                if context.object:
-                    obj_bp = pc_utils.get_bp_by_tag(context.object,'IS_ASSEMBLY_BP')
-                    if obj_bp:
-                        box = col.box()
-                        if library:
-                            row = box.row()
-                            row.scale_y = 1.3
-                            row.operator('home_builder.save_custom_cabinet',text="Save " + obj_bp.name,icon='PASTEDOWN') 
-                            row.operator('pc_assembly.select_parent',text="",icon='SORT_DESC')
-                        else:
-                            row = box.row()
-                            row.operator('home_builder.create_new_custom_library_category',text="Create Library Category",icon='ADD')                          
-                    else:
-                        box = col.box()
-                        row = box.row()
-                        row.label(text='No Assembly Selected')   
-                else:
-                    box = col.box()
-                    row = box.row()
-                    row.label(text='No Assembly Selected')  
-
-                col.separator()                                           
-                row = col.row(align=True)
-                row.scale_y = 1.3                 
-                row.menu('HOME_BUILDER_MT_custom_cabinets',text=library_name)
-                row.operator('home_builder.create_new_custom_library_category',text="",icon='ADD')
-
-                self.draw_custom_library(col,context,library)
-
-        if hb_scene.library_tabs == 'APPLIANCES':
-            col.separator()
-            row = col.row(align=True)
             row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_appliances',text=library_name)  
+            row.menu('HOME_BUILDER_MT_products',text=library_name)                  
             if library_menu_id != '':
                 row.menu(library_menu_id,text="",icon='SETTINGS')
             
-            self.draw_library(col,context,library)
-
-        if hb_scene.library_tabs == 'FIXTURES':
-            col.separator()
-            row = col.row(align=True)
-            row.scale_y = 1.3                 
-            row.menu('HOME_BUILDER_MT_fixtures_library',text=library_name)
-            if library_menu_id != '':
-                row.menu(library_menu_id,text="",icon='SETTINGS')            
-            self.draw_library(col,context,library)
+            self.draw_library(col,context,library)           
 
         if hb_scene.library_tabs == 'MATERIALS':
             col.separator()
@@ -219,6 +170,8 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row.prop_enum(hb_scene, "build_tabs", 'STARTERS',icon='MOD_LINEART') 
             row.prop_enum(hb_scene, "build_tabs", 'INSERTS',icon='CON_SAMEVOL')                  
             row.prop_enum(hb_scene, "build_tabs", 'PARTS',icon='SNAP_FACE') 
+            row.separator()
+            row.prop_enum(hb_scene, "build_tabs", 'LIBRARY',icon='ASSET_MANAGER') 
 
             if hb_scene.build_tabs == 'STARTERS':
                 col.separator()
@@ -248,31 +201,67 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                     row.menu(library_menu_id,text="",icon='SETTINGS')
                 self.draw_library(col,context,library)
 
+            if hb_scene.build_tabs == 'LIBRARY':
+                if context.object:
+                    obj_bp = pc_utils.get_bp_by_tag(context.object,'IS_ASSEMBLY_BP')
+                    if obj_bp:
+                        box = col.box()
+                        if library:
+                            row = box.row()
+                            row.scale_y = 1.3
+                            row.operator('home_builder.save_assembly_to_build_library',text="Save " + obj_bp.name,icon='PASTEDOWN') 
+                            row.operator('pc_assembly.select_parent',text="",icon='SORT_DESC')
+                        else:
+                            row = box.row()
+                            row.operator('home_builder.create_new_build_library_category',text="Create Library Category",icon='ADD')                          
+                    else:
+                        box = col.box()
+                        row = box.row()
+                        row.label(text='No Assembly Selected')   
+                else:
+                    box = col.box()
+                    row = box.row()
+                    row.label(text='No Assembly Selected')  
+
+                col.separator()                                           
+                row = col.row(align=True)
+                row.scale_y = 1.3                 
+                row.menu('HOME_BUILDER_MT_build_library',text=library_name)
+                row.operator('home_builder.create_new_build_library_category',text="",icon='ADD')
+
+                self.draw_library(col,context,library)                
+
+
 class HOME_BUILDER_MT_home_builder_menu(bpy.types.Menu):
     bl_label = "Home Builder"
 
     def draw(self, _context):
         layout = self.layout
+        layout.menu('HOME_BUILDER_MT_materials_pointers',text="Material Pointers",icon='MATERIAL')
         layout.operator('home_builder.unit_settings',text="Change Units",icon='SETTINGS')
 
-class HOME_BUILDER_MT_door_window_library(bpy.types.Menu):
-    bl_label = "Door Window Libraries"
+
+class HOME_BUILDER_MT_build_library(bpy.types.Menu):
+    bl_label = "Build Libraries"
 
     def draw(self, context):
         layout = self.layout
         props = context.window_manager.home_builder
         for library in props.asset_libraries:
-            if library.library_type == 'DOORS_WINDOWS' and library.enabled:
-                props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
+            if library.library_type == 'BUILD_LIBRARY' and library.enabled:
+                props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path 
 
-class HOME_BUILDER_MT_custom_cabinets(bpy.types.Menu):
-    bl_label = "Custom Cabinet Libraries"
+
+class HOME_BUILDER_MT_products(bpy.types.Menu):
+    bl_label = "Product Libraries"
 
     def draw(self, context):
         layout = self.layout
         props = context.window_manager.home_builder
-        for library in props.custom_asset_libraries:
-            props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path 
+        for library in props.asset_libraries:
+            if library.library_type == 'PRODUCTS' and library.enabled:
+                props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
+
 
 class HOME_BUILDER_MT_cabinets(bpy.types.Menu):
     bl_label = "Cabinet Libraries"
@@ -284,15 +273,6 @@ class HOME_BUILDER_MT_cabinets(bpy.types.Menu):
             if library.library_type == 'CABINETS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
 
-class HOME_BUILDER_MT_appliances(bpy.types.Menu):
-    bl_label = "Appliance Libraries"
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.window_manager.home_builder
-        for library in props.asset_libraries:
-            if library.library_type == 'APPLIANCES' and library.enabled:
-                props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
 
 class HOME_BUILDER_MT_decorations(bpy.types.Menu):
     bl_label = "Decoration Libraries"
@@ -304,15 +284,6 @@ class HOME_BUILDER_MT_decorations(bpy.types.Menu):
             if library.library_type == 'DECORATIONS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path                     
 
-class HOME_BUILDER_MT_fixtures_library(bpy.types.Menu):
-    bl_label = "Fixtures Libraries"
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.window_manager.home_builder
-        for library in props.asset_libraries:
-            if library.library_type == 'FIXTURES' and library.enabled:
-                props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
 
 class HOME_BUILDER_MT_starters_library(bpy.types.Menu):
     bl_label = "Starters Libraries"
@@ -324,6 +295,7 @@ class HOME_BUILDER_MT_starters_library(bpy.types.Menu):
             if library.library_type == 'STARTERS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
 
+
 class HOME_BUILDER_MT_inserts_library(bpy.types.Menu):
     bl_label = "Insert Libraries"
 
@@ -333,6 +305,7 @@ class HOME_BUILDER_MT_inserts_library(bpy.types.Menu):
         for library in props.asset_libraries:
             if library.library_type == 'INSERTS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
+
 
 class HOME_BUILDER_MT_parts_library(bpy.types.Menu):
     bl_label = "Part Libraries"
@@ -344,6 +317,7 @@ class HOME_BUILDER_MT_parts_library(bpy.types.Menu):
             if library.library_type == 'PARTS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
 
+
 class HOME_BUILDER_MT_materials_library(bpy.types.Menu):
     bl_label = "Materials Libraries"
 
@@ -353,6 +327,7 @@ class HOME_BUILDER_MT_materials_library(bpy.types.Menu):
         for library in props.asset_libraries:
             if library.library_type == 'MATERIALS' and library.enabled:
                 props = layout.operator('home_builder.update_library_path',text=library.name).asset_path = library.library_path  
+
 
 class HOME_BUILDER_MT_materials_pointers(bpy.types.Menu):
     bl_label = "Materials Libraries"
@@ -392,12 +367,10 @@ class HOME_BUILDER_PT_walls(bpy.types.Panel):
 
 classes = (
     HOME_BUILDER_PT_library,
-    HOME_BUILDER_MT_door_window_library,
-    HOME_BUILDER_MT_custom_cabinets,
+    HOME_BUILDER_MT_build_library,
+    HOME_BUILDER_MT_products,
     HOME_BUILDER_MT_cabinets,
-    HOME_BUILDER_MT_appliances,
     HOME_BUILDER_MT_decorations,
-    HOME_BUILDER_MT_fixtures_library,
     HOME_BUILDER_MT_starters_library,
     HOME_BUILDER_MT_inserts_library,
     HOME_BUILDER_MT_parts_library,

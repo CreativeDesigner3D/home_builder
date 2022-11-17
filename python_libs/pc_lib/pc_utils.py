@@ -232,6 +232,11 @@ def create_object_from_verts_and_faces(verts, faces, name):
 
     return obj_new
 
+def create_empty_mesh(name):
+    mesh = bpy.data.meshes.new(name)
+    obj_new = bpy.data.objects.new(mesh.name, mesh)
+    return obj_new    
+
 def calc_distance(point1, point2):
     """ This gets the distance between two points (X,Y,Z)
     """

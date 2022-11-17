@@ -23,6 +23,7 @@ def update_library_tab(self,context):
     prefs = context.preferences
     asset_lib = prefs.filepaths.asset_libraries.get('home_builder_library')
     library = hb_utils.get_active_library(context)
+    print("THIS ACTIVE LIBRARY",library)
     if library:
         asset_lib.path = library.library_path
 
@@ -108,9 +109,7 @@ class Home_Builder_Scene_Props(PropertyGroup):
 
     library_tabs: EnumProperty(name="Library Tabs",
                           items=[('ROOMS',"Rooms","Show the Room Library"),
-                                 ('APPLIANCES',"Appliances","Show the Appliance Library"),
-                                 ('CABINETS',"Cabinets","Show the Appliance Library"),
-                                 ('FIXTURES',"Fixtures","Show the Fixture Library"),
+                                 ('PRODUCTS',"Products","Show the Product Library"),
                                  ('BUILD',"Build","Show the Build Library"),
                                  ('DECORATIONS',"Decorations","Show the Decoration Library"),
                                  ('MATERIALS',"Materials","Show the Materials")],
@@ -119,21 +118,16 @@ class Home_Builder_Scene_Props(PropertyGroup):
 
     room_tabs: EnumProperty(name="Room Tabs",
                           items=[('WALLS',"Walls","Show the Walls"),
-                                 ('DOORS_WINDOWS',"Doors and Windows","Show the Doors and Windows"),
+                                 ('CURRENT_ROOM',"Current Room","Show the Current Room Options"),
                                  ('OBSTACLES',"Obstacles","Show the Obstacles")],
                           default='WALLS',
-                          update=update_library_tab)
-
-    cabinet_tabs: EnumProperty(name="Cabinet Tabs",
-                          items=[('CATALOGS',"Catalogs","Show the Cabinet Catalogs"),
-                                 ('CUSTOM',"Custom","Show the Custom Cabinets")],
-                          default='CATALOGS',
                           update=update_library_tab)
 
     build_tabs: EnumProperty(name="Build Tabs",
                           items=[('STARTERS',"Starters","Show the Closet Starters"),
                                  ('INSERTS',"Inserts","Show the Closet Inserts"),
-                                 ('PARTS',"Parts","Show the Closet Parts")],
+                                 ('PARTS',"Parts","Show the Closet Parts"),
+                                 ('LIBRARY',"Library","Show the User Library")],
                           default='STARTERS',
                           update=update_library_tab)
 
@@ -177,17 +171,13 @@ class Home_Builder_Workspace_Props(PropertyGroup):
 class Home_Builder_Window_Manager_Props(PropertyGroup):
     home_builder_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
 
-    custom_asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
     asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
     library_packages: bpy.props.CollectionProperty(type=Library_Package)
 
     show_built_in_asset_libraries: bpy.props.BoolProperty(name="Show Built In Asset Libraries",default=False)
 
-    active_entry_door_window_library_name: bpy.props.StringProperty(name="Active Entry Door Window Library Name")
-    active_cabinet_library_name: bpy.props.StringProperty(name="Active Cabinet Library Name")
-    active_custom_cabinet_library_name: bpy.props.StringProperty(name="Active Custom Cabinet Library Name")
-    active_appliance_library_name: bpy.props.StringProperty(name="Active Appliance Library Name")
-    active_fixture_library_name: bpy.props.StringProperty(name="Active Bath Fixture Library Name")
+    active_product_library_name: bpy.props.StringProperty(name="Active Product Library Name")
+    active_build_library_name: bpy.props.StringProperty(name="Active Build Library Name")
     active_starter_library_name: bpy.props.StringProperty(name="Active Closet Starter Library Name")
     active_insert_library_name: bpy.props.StringProperty(name="Active Closet Insert Library Name")
     active_part_library_name: bpy.props.StringProperty(name="Active Closet Part Library Name")
