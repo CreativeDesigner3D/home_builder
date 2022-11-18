@@ -8,6 +8,7 @@ from . import const_cabinets as const
 from . import prompts_cabinet
 from . import utils_cabinet
 from . import material_pointers_cabinet
+from . import types_fronts
 
 class Cabinet_Exterior(pc_types.Assembly):
     carcass_type = '' #Base, Tall, Upper
@@ -48,12 +49,12 @@ class Cabinet_Exterior(pc_types.Assembly):
 
         return to, bo, lo, ro
 
-    def add_door_pull(self,front,pointer):
+    def add_door_pull(self,front):
         pull_length = self.get_prompt("Pull Length")  
         if not pull_length:
             return #DON'T ADD PULLS TO APPLIED ENDS
 
-        pull_path = paths_cabinet.get_handle_path_by_pointer(pointer)
+        pull_path = paths_cabinet.get_current_handle_path()
         pull_obj = pc_utils.get_object(pull_path) 
         front.add_object(pull_obj)
 
@@ -86,11 +87,11 @@ class Cabinet_Exterior(pc_types.Assembly):
         pull_obj.pyclone.loc_y('IF(door_width>0,door_width-pull_horizontal_location,door_width+pull_horizontal_location)',[door_width,pull_horizontal_location])
         pull_obj.pyclone.hide('IF(OR(hide,turn_off_pulls),True,False)',[hide,turn_off_pulls])
 
-        pull_obj['IS_CABINET_PULL'] = True
+        pull_obj[const.CABINET_HANDLE_TAG] = True
         material_pointers_cabinet.assign_pointer_to_object(pull_obj,"Cabinet Pull Finish")  
         # home_builder_utils.get_object_props(pull_obj).pointer_name = pointer.name
 
-    def add_drawer_pull(self,front,pointer):
+    def add_drawer_pull(self,front):
         drawer_front_width = front.obj_y.pyclone.get_var('location.y',"drawer_front_width")
         drawer_front_height = front.obj_x.pyclone.get_var('location.x',"drawer_front_height")
         front_thickness = front.obj_z.pyclone.get_var('location.z',"front_thickness")
@@ -99,10 +100,9 @@ class Cabinet_Exterior(pc_types.Assembly):
         center_pull = self.get_prompt("Center Pull On Front").get_var('center_pull')
         vert_loc = self.get_prompt("Drawer Pull Vertical Location").get_var('vert_loc')
 
-        pull_path = paths_cabinet.get_handle_path_by_pointer(pointer)
+        pull_path = paths_cabinet.get_current_handle_path()
         pull_obj = pc_utils.get_object(pull_path) 
-        pull_obj['IS_CABINET_PULL'] = True
-        # home_builder_utils.get_object_props(pull_obj).pointer_name = "Drawer Pulls"
+        pull_obj[const.CABINET_HANDLE_TAG] = True
         front.add_object(pull_obj)
         # pull_obj.parent = front.obj_bp
         pull_obj.pyclone.loc_x('IF(center_pull,(drawer_front_height/2),drawer_front_height-vert_loc)',[drawer_front_height,center_pull,vert_loc])
@@ -181,7 +181,7 @@ class Cabinet_Exterior(pc_types.Assembly):
             props.calculator_name = front_height_calculator.name
             props.obj_name = self.obj_prompts.name        
 
-class Doors(Cabinet_Exterior):
+class Old_Doors(Cabinet_Exterior):
 
     door_swing = 0 # Left = 0, Right = 1, Double = 2
 
@@ -309,7 +309,7 @@ class Doors(Cabinet_Exterior):
         # # self.add_door_pull(r_door,pull_pointer)   
 
 
-class Drawers(Cabinet_Exterior):
+class Drawers(types_fronts.Fronts):
     carcass_type = '' #Base, Tall, Upper
 
     drawer_qty = 3
@@ -339,15 +339,12 @@ class Drawers(Cabinet_Exterior):
         
         drawer_z_loc = front_empty.pyclone.get_var('location.z',"drawer_z_loc")
 
-        # front_pointer = props.cabinet_door_pointers["Drawer Fronts"]
-        pull_pointer = props.drawer_handle
-
         drawer_front = assemblies_cabinet.add_door_assembly(self)
         top_o = drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
         bottom_o = drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
         left_o = drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
         right_o = drawer_front.add_prompt("Right Overlay",'DISTANCE',0)
-        drawer_front.obj_bp['IS_CABINET_DRAWER_FRONT_PANEL'] = True
+        drawer_front.obj_bp[const.DRAWER_FRONT_TAG] = True
         drawer_front.set_name('Drawer Front')
         drawer_front.loc_x('-left_overlay',[left_overlay])
         drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
@@ -364,14 +361,14 @@ class Drawers(Cabinet_Exterior):
         # if index == self.drawer_qty:
         #     bottom_o.set_formula('to_var',[to_var])
      
-        self.add_drawer_pull(drawer_front,pull_pointer)
+        self.add_drawer_pull(drawer_front)
         # self.add_drawer_box(drawer_front,front_empty)
 
         return front_empty
 
     def draw(self):
         self.create_assembly("Drawers")
-        self.obj_bp["IS_DRAWERS_BP"] = True
+        self.obj_bp[const.DRAWER_INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         self.obj_bp["EXTERIOR_NAME"] = "DRAWERS"
 
@@ -408,26 +405,17 @@ class Drawers(Cabinet_Exterior):
         self.set_prompts()        
 
 
-class Door_Drawer(Cabinet_Exterior):
+class Door_Drawer(types_fronts.Fronts):
 
+    door_type = "Base"
     door_swing = 0 # Left = 0, Right = 1, Double = 2
     two_drawers = False
-
-    # def set_pull_props(self,obj):
-    #     obj['IS_CABINET_PULL'] = True
-    #     home_builder_pointers.assign_pointer_to_object(obj,"Cabinet Pull Finish")  
-    #     if self.carcass_type == 'Base':
-    #         home_builder_utils.get_object_props(obj).pointer_name = "Base Cabinet Pulls"
-    #     if self.carcass_type == 'Tall':
-    #         home_builder_utils.get_object_props(obj).pointer_name = "Tall Cabinet Pulls"
-    #     if self.carcass_type == 'Upper':
-    #         home_builder_utils.get_object_props(obj).pointer_name = "Upper Cabinet Pulls"
 
     def draw(self):
         props = utils_cabinet.get_scene_props(bpy.context.scene)
 
         self.create_assembly("Door Drawer")
-        self.obj_bp["IS_DOORS_BP"] = True
+        self.obj_bp[const.DOOR_DRAWER_INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         # self.obj_bp["EXTERIOR_NAME"] = "DOORS"
         
@@ -458,6 +446,9 @@ class Door_Drawer(Cabinet_Exterior):
         door_swing_prompt = self.get_prompt("Door Swing")
         door_swing_prompt.set_value(self.door_swing)
 
+        door_type_prompt = self.get_prompt("Door Type")
+        door_type_prompt.set_value(self.door_type)
+        
         #VARS
         x = self.obj_x.pyclone.get_var('location.x','x')
         z = self.obj_z.pyclone.get_var('location.z','z')        
@@ -476,21 +467,9 @@ class Door_Drawer(Cabinet_Exterior):
         lo_var = lo.get_var("lo_var")
         ro_var = ro.get_var("ro_var")
 
-        # front_pointer = None
-        drawer_pull_pointer = props.drawer_handle
-        pull_pointer = None
-        if self.carcass_type == 'Base':
-            # front_pointer = props.cabinet_door_pointers["Base Cabinet Doors"]
-            pull_pointer = props.base_handle
-        if self.carcass_type == 'Tall':
-            # front_pointer = props.cabinet_door_pointers["Tall Cabinet Doors"]
-            pull_pointer = props.tall_handle
-        if self.carcass_type == 'Upper':
-            # front_pointer = props.cabinet_door_pointers["Upper Cabinet Doors"]
-            pull_pointer = props.upper_handle
-
         #LEFT DOOR
         l_door = assemblies_cabinet.add_door_assembly(self)
+        l_door.obj_bp[const.DOOR_FRONT_TAG] = True
         l_door.loc_x('-lo_var',[lo_var])
         l_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
         l_door.loc_z('-bo_var',[bo_var])
@@ -502,10 +481,11 @@ class Door_Drawer(Cabinet_Exterior):
         l_door.dim_z('front_thickness',[front_thickness])
         hide = l_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==1,True,False)',[door_swing])
-        self.add_door_pull(l_door,pull_pointer)
+        self.add_door_pull(l_door)
 
         #RIGHT DOOR
         r_door = assemblies_cabinet.add_door_assembly(self)
+        r_door.obj_bp[const.DOOR_FRONT_TAG] = True
         r_door.loc_x('x+ro_var',[x,ro_var])
         r_door.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
         r_door.loc_z('-bo_var',[bo_var])
@@ -517,14 +497,14 @@ class Door_Drawer(Cabinet_Exterior):
         r_door.dim_z('front_thickness',[front_thickness])
         hide = r_door.get_prompt("Hide") 
         hide.set_formula('IF(door_swing==0,True,False)',[door_swing])
-        self.add_door_pull(r_door,pull_pointer)
+        self.add_door_pull(r_door)
 
         l_drawer_front = assemblies_cabinet.add_door_assembly(self)
         top_o = l_drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
         bottom_o = l_drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
         left_o = l_drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
         right_o = l_drawer_front.add_prompt("Right Overlay",'DISTANCE',0)        
-        l_drawer_front.obj_bp['IS_CABINET_DRAWER_FRONT_PANEL'] = True
+        l_drawer_front.obj_bp[const.DRAWER_FRONT_TAG] = True
         l_drawer_front.set_name('Drawer Front')
         l_drawer_front.loc_x('-lo_var',[lo_var])
         l_drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
@@ -534,7 +514,7 @@ class Door_Drawer(Cabinet_Exterior):
         l_drawer_front.dim_x('top_df_height_var',[top_df_height_var])
         l_drawer_front.dim_y('IF(add_two_drawer_fronts_var,(((x+lo_var+ro_var)-vertical_gap)/2)*-1,(x+lo_var+ro_var)*-1)',[add_two_drawer_fronts_var,x,lo_var,ro_var,vertical_gap])
         l_drawer_front.dim_z('front_thickness',[front_thickness])
-        self.add_drawer_pull(l_drawer_front,drawer_pull_pointer)
+        self.add_drawer_pull(l_drawer_front)
         left_o.set_formula('lo_var',[lo_var])
         right_o.set_formula('IF(add_two_drawer_fronts_var,0,ro_var)',[add_two_drawer_fronts_var,ro_var])
         # self.add_drawer_box(l_drawer_front)
@@ -544,7 +524,7 @@ class Door_Drawer(Cabinet_Exterior):
         bottom_o = r_drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
         left_o = r_drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
         right_o = r_drawer_front.add_prompt("Right Overlay",'DISTANCE',0)        
-        r_drawer_front.obj_bp['IS_CABINET_DRAWER_FRONT_PANEL'] = True
+        r_drawer_front.obj_bp[const.DRAWER_FRONT_TAG] = True
         r_drawer_front.set_name('Drawer Front')
         r_drawer_front.loc_x('(x/2)+(vertical_gap/2)',[x,vertical_gap])
         r_drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
@@ -556,7 +536,7 @@ class Door_Drawer(Cabinet_Exterior):
         r_drawer_front.dim_z('front_thickness',[front_thickness])
         hide = r_drawer_front.get_prompt('Hide')
         hide.set_formula('IF(add_two_drawer_fronts_var,False,True)',[add_two_drawer_fronts_var])
-        self.add_drawer_pull(r_drawer_front,drawer_pull_pointer)
+        self.add_drawer_pull(r_drawer_front)
         left_o.set_formula('0',[])
         right_o.set_formula('ro_var',[ro_var])        
         # self.add_drawer_box(r_drawer_front)
@@ -586,3 +566,52 @@ class Opening(Cabinet_Exterior):
         opening.dim_x('x',[x])
         opening.dim_y('y',[y])
         opening.dim_z('z',[z])
+
+
+class Doors(types_fronts.Fronts):
+
+    door_swing = 0 # Left = 0, Right = 1, Double = 2, Top = 3, Bottom = 4
+    door_type = "Base" # Base, Tall, Upper
+
+    def draw(self):    
+        self.create_assembly()
+        self.set_name("Doors")
+        self.add_prompts()
+        # self.add_closet_insert_prompts()    
+        self.obj_bp[const.DOOR_INSERT_TAG] = True
+        self.obj_bp["IS_EXTERIOR_BP"] = True
+        # self.obj_bp["PROMPT_ID"] = "home_builder.closet_door_prompts"
+        # self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_insert_commands"
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)
+
+        to, bo, lo, ro = self.add_overlay_prompts()
+
+        to_var = to.get_var("to_var")
+        bo_var = bo.get_var("bo_var")
+        lo_var = lo.get_var("lo_var")
+        ro_var = ro.get_var("ro_var")
+
+        door_swing_prompt = self.get_prompt("Door Swing")
+        door_swing_prompt.set_value(self.door_swing)
+
+        door_type_prompt = self.get_prompt("Door Type")
+        door_type_prompt.set_value(self.door_type)
+
+        #LEFT DOOR
+        l_door = assemblies_cabinet.add_door_assembly(self)
+        self.add_door_panel(l_door,"Left",to_var,bo_var,ro_var,lo_var)
+        
+        #RIGHT DOOR
+        r_door = assemblies_cabinet.add_door_assembly(self)
+        self.add_door_panel(r_door,"Right",to_var,bo_var,ro_var,lo_var)
+
+        #TOP DOOR
+        r_door = assemblies_cabinet.add_door_assembly(self)
+        self.add_door_panel(r_door,"Top",to_var,bo_var,ro_var,lo_var)
+
+        #BOTTOM DOOR
+        r_door = assemblies_cabinet.add_door_assembly(self)
+        self.add_door_panel(r_door,"Bottom",to_var,bo_var,ro_var,lo_var)           

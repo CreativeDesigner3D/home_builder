@@ -22,6 +22,7 @@ from . import types_closet_starters
 from . import types_cabinet
 from . import assemblies_cabinet
 from . import const_cabinets as const
+from . import types_fronts
 
 class Cabinet_Library_Item(bpy.types.PropertyGroup):
     library_type: StringProperty(name="Library Type")
@@ -822,6 +823,91 @@ class hb_sample_cabinets_OT_place_wall_cabinet(bpy.types.Operator):
         col.prop(self.cabinet.obj_bp,"location",index=2,text="Height From Floor")
 
 
+class hb_sample_cabinets_OT_update_all_pulls_in_room(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.update_all_pulls_in_room"
+    bl_label = "Update All Pulls in Room"
+
+    def execute(self, context):
+        pull_objs = []
+        for obj in context.visible_objects:
+            if const.CABINET_HANDLE_TAG in obj:
+                pull_objs.append(obj)
+
+        for pull in pull_objs:
+            insert_bp = pc_utils.get_bp_by_tag(pull,const.DOOR_INSERT_TAG)
+            if not insert_bp:
+                insert_bp = pc_utils.get_bp_by_tag(pull,const.DOOR_DRAWER_INSERT_TAG)
+            if not insert_bp:
+                insert_bp = pc_utils.get_bp_by_tag(pull,const.DRAWER_INSERT_TAG)
+            
+            if insert_bp:
+                insert = types_fronts.Fronts(insert_bp)
+                panel = pc_types.Assembly(pull.parent)
+                if const.DOOR_FRONT_TAG in panel.obj_bp:
+                    insert.add_door_pull(panel)
+                if const.DRAWER_FRONT_TAG in panel.obj_bp:
+                    insert.add_drawer_pull(panel)            
+
+        pc_utils.delete_obj_list(pull_objs)
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_update_selected_pulls_in_room(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.update_selected_pulls_in_room"
+    bl_label = "Update Selected Pulls in Room"
+
+    def execute(self, context):
+
+        pull_objs = []
+        for obj in context.selected_objects:
+            if const.CABINET_HANDLE_TAG in obj:
+                pull_objs.append(obj)
+
+        for pull in pull_objs:
+            door_bp = pc_utils.get_bp_by_tag(pull,const.DOOR_INSERT_TAG)
+            if door_bp:
+                door = types_fronts.Fronts(door_bp)
+                door_panel = pc_types.Assembly(pull.parent)
+                door.add_door_pull(door_panel)
+
+            drawer_bp = pc_utils.get_bp_by_tag(pull,const.DRAWER_INSERT_TAG)
+            if drawer_bp:
+                drawer = types_fronts.Fronts(drawer_bp)
+                panel = pc_types.Assembly(pull.parent)
+                drawer.add_drawer_pull(panel)
+
+        pc_utils.delete_obj_list(pull_objs)
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_update_selected_pulls_in_room(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.update_selected_pulls_in_room"
+    bl_label = "Update Selected Pulls in Room"
+
+    def execute(self, context):
+
+        pull_objs = []
+        for obj in context.selected_objects:
+            if const.CABINET_HANDLE_TAG in obj:
+                pull_objs.append(obj)
+
+        for pull in pull_objs:
+            door_bp = pc_utils.get_bp_by_tag(pull,const.DOOR_INSERT_TAG)
+            if door_bp:
+                door = types_fronts.Fronts(door_bp)
+                door_panel = pc_types.Assembly(pull.parent)
+                door.add_door_pull(door_panel)
+
+            drawer_bp = pc_utils.get_bp_by_tag(pull,const.DRAWER_INSERT_TAG)
+            if drawer_bp:
+                drawer = types_fronts.Fronts(drawer_bp)
+                panel = pc_types.Assembly(pull.parent)
+                drawer.add_drawer_pull(panel)
+
+        pc_utils.delete_obj_list(pull_objs)
+        return {'FINISHED'}
+
+
 class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.build_library"
     bl_label = "Build Library"
@@ -928,6 +1014,8 @@ classes = (
     hb_sample_cabinets_OT_duplicate_closet_insert,
     hb_sample_cabinets_OT_delete_closet_insert,
     hb_sample_cabinets_OT_place_wall_cabinet,
+    hb_sample_cabinets_OT_update_all_pulls_in_room,
+    hb_sample_cabinets_OT_update_selected_pulls_in_room,
     hb_sample_cabinets_OT_build_library,
 )
 

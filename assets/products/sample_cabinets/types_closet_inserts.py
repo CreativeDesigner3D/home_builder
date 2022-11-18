@@ -450,7 +450,7 @@ class Doors(Closet_Insert):
         if not pull_length:
             return #DON'T ADD PULLS TO APPLIED ENDS
 
-        pull_path = paths_cabinet.get_handle_path_by_pointer(pointer)
+        pull_path = paths_cabinet.get_current_handle_path()
         pull_obj = pc_utils.get_object(pull_path) 
         front.add_object(pull_obj)
 
@@ -497,7 +497,7 @@ class Doors(Closet_Insert):
         center_pull = self.get_prompt("Center Pull On Front").get_var('center_pull')
         vert_loc = self.get_prompt("Drawer Pull Vertical Location").get_var('vert_loc')
 
-        pull_path = paths_cabinet.get_handle_path_by_pointer(pointer)
+        pull_path = paths_cabinet.get_current_handle_path()
         pull_obj = pc_utils.get_object(pull_path) 
         pull_obj['IS_CABINET_PULL'] = True
         # home_builder_utils.get_object_props(pull_obj).pointer_name = "Drawer Pulls"

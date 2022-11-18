@@ -212,34 +212,31 @@ class HOME_BUILDER_PT_cabinet_hardware(bpy.types.Panel):
         box = layout.box()
         box.label(text="Cabinet Handle Library")
         row = box.row()
+        row.operator('hb_sample_cabinets.update_all_pulls_in_room',text="Update All",icon='FILE_REFRESH')
+        row.operator('hb_sample_cabinets.update_selected_pulls_in_room',text="Update Selected",icon='FILE_REFRESH')
+
+        row = box.row()
         row.prop(props,'cabinet_handle_category',text="")    
 
         row = box.row()
         row.template_icon_view(props,"cabinet_handle",show_labels=True)   
 
-        box = layout.box()
-        box.label(text="Cabinet Library Pointers")   
         row = box.row()
-        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_handle"
-        row.label(text="Base Handle: " + props.base_handle.category_name + " - " + props.base_handle.item_name)  
-                       
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "tall_handle"
-        row.label(text="Tall Handle: " + props.tall_handle.category_name + " - " + props.tall_handle.item_name)  
-
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "upper_handle"
-        row.label(text="Upper Handle: " + props.upper_handle.category_name + " - " + props.upper_handle.item_name)  
-
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_handle_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_handle"
-        row.label(text="Drawer Handle: " + props.drawer_handle.category_name + " - " + props.drawer_handle.item_name)                                         
+        op_props = row.operator('home_builder.update_checkbox_prompt_in_scene',text="Turn Off Handles",icon='HIDE_ON')
+        op_props.prompt_name = "Turn Off Pulls"
+        op_props.prompt_value = True
+        op_props = row.operator('home_builder.update_checkbox_prompt_in_scene',text="Show All Handles",icon='HIDE_OFF')
+        op_props.prompt_name = "Turn Off Pulls"
+        op_props.prompt_value = False
 
         box = layout.box()
         box.label(text="Cabinet Handle Location:")
         row = box.row(align=True)
         row.label(text="Center Pulls on Drawers:")        
-        row.prop(props,'center_pulls_on_drawer_front',text="")        
+        row.prop(props,'center_pulls_on_drawer_front',text="")      
+        op_props = row.operator('home_builder.update_checkbox_prompt_in_scene',text="",icon='FILE_REFRESH',emboss=False)
+        op_props.prompt_name = "Center Pulls on Fronts"
+        op_props.prompt_value = False          
         if not props.center_pulls_on_drawer_front:
             row = box.row(align=True)
             row.label(text="Drawer Pull Vertical Location:")        
@@ -273,28 +270,32 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
         box = layout.box()
         box.label(text="Cabinet Front Library")
         row = box.row()
+        row.operator('hb_sample_cabinets.update_all_pulls_in_room',text="Update All",icon='FILE_REFRESH')
+        row.operator('hb_sample_cabinets.update_selected_pulls_in_room',text="Update Selected",icon='FILE_REFRESH')     
+
+        row = box.row()
         row.prop(props,'cabinet_door_category',text="")    
 
         row = box.row()
         row.template_icon_view(props,"cabinet_door",show_labels=True)   
 
-        box = layout.box()
-        box.label(text="Cabinet Front Pointers")   
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_door"
-        row.label(text="Base Door: " + props.base_door.category_name + " - " + props.base_door.item_name)  
+        # box = layout.box()
+        # box.label(text="Cabinet Front Pointers")   
+        # row = box.row()
+        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_door"
+        # row.label(text="Base Door: " + props.base_door.category_name + " - " + props.base_door.item_name)  
 
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "tall_door"
-        row.label(text="Tall Door: " + props.tall_door.category_name + " - " + props.tall_door.item_name)  
+        # row = box.row()
+        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "tall_door"
+        # row.label(text="Tall Door: " + props.tall_door.category_name + " - " + props.tall_door.item_name)  
 
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "upper_door"
-        row.label(text="Upper Door: " + props.upper_door.category_name + " - " + props.upper_door.item_name)  
+        # row = box.row()
+        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "upper_door"
+        # row.label(text="Upper Door: " + props.upper_door.category_name + " - " + props.upper_door.item_name)  
 
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_front"
-        row.label(text="Drawer Front: " + props.drawer_front.category_name + " - " + props.drawer_front.item_name)       
+        # row = box.row()
+        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_front"
+        # row.label(text="Drawer Front: " + props.drawer_front.category_name + " - " + props.drawer_front.item_name)       
 
 
 class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):

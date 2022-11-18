@@ -389,6 +389,8 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
 
 class HB_Cabinet_Object_Props(PropertyGroup):
 
+    part_name: bpy.props.StringProperty(name="Part Name")
+    
     ebw1: bpy.props.BoolProperty(name="Edgeband Width 1",default=False)
     ebw2: bpy.props.BoolProperty(name="Edgeband Width 2",default=False)
     ebl1: bpy.props.BoolProperty(name="Edgeband Length 1",default=False)

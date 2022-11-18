@@ -27,7 +27,7 @@ def add_cooktop_prompts(assembly):
     assembly.add_prompt("Add Range Hood",'CHECKBOX',False)
 
 def add_door_prompts(assembly):
-    door_swing = assembly.add_prompt("Door Swing",'COMBOBOX',0,["Left","Right","Double"])
+    door_swing = assembly.add_prompt("Door Swing",'COMBOBOX',0,["Left","Right","Double","Top","Bottom"])
     door_swing.combobox_columns = 3
     assembly.add_prompt("Door Rotation",'ANGLE',120)
     assembly.add_prompt("Open Door",'PERCENTAGE',0)

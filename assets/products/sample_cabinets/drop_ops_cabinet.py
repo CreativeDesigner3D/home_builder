@@ -135,6 +135,9 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
         if cabinet_type.get_value() == 'Upper':
             self.height_above_floor = scene_props.height_above_floor - self.cabinet.obj_z.location.z
 
+        for cal in self.calculators:
+            cal.calculate()
+            
     def get_calculators(self,obj):
         for calculator in obj.pyclone.calculators:
             self.calculators.append(calculator)
