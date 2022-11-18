@@ -288,9 +288,9 @@ class home_builder_OT_assign_material_to_slot(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class home_builder_OT_place_custom_cabinet(bpy.types.Operator):
-    bl_idname = "home_builder.place_custom_cabinet"
-    bl_label = "Place Custom Cabinet"
+class home_builder_OT_drop_build_library(bpy.types.Operator):
+    bl_idname = "home_builder.drop_build_library"
+    bl_label = "Drop Build Library"
     bl_options = {'UNDO'}
     
     filepath: bpy.props.StringProperty(name="Filepath",default="Error")
@@ -405,7 +405,7 @@ classes = (
     home_builder_OT_drop_decoration,
     home_builder_OT_assign_material_dialog,
     home_builder_OT_assign_material_to_slot,
-    home_builder_OT_place_custom_cabinet,
+    home_builder_OT_drop_build_library,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)

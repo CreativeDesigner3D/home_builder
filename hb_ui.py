@@ -16,39 +16,6 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             wm = context.window_manager        
             activate_id = "home_builder.todo"
             drop_id = "home_builder.todo"
-            if library.library_type == 'BUILD_LIBRARY':
-                activate_id = "home_builder.todo"
-                drop_id = "home_builder.place_custom_cabinet"
-            else:
-                if library.activate_id != "":
-                    activate_id = library.activate_id
-                if library.drop_id != "":
-                    drop_id = library.drop_id
-
-            activate_op_props, drag_op_props = layout.template_asset_view(
-                "home_builder_library",
-                workspace,
-                "asset_library_ref",
-                wm.home_builder,
-                "home_builder_library_assets",
-                workspace.home_builder,
-                "home_builder_library_index",
-                # filter_id_types={"filter_object"},
-                display_options={'NO_LIBRARY'},
-                # display_options={'NO_FILTER','NO_LIBRARY'},
-                activate_operator=activate_id,
-                drag_operator=drop_id,            
-            )
-        else:
-            layout.separator()
-            layout.operator('home_builder.load_library')
-
-    def draw_custom_library(self,layout,context,library):
-        if library:
-            workspace = context.workspace
-            wm = context.window_manager        
-            activate_id = "home_builder.todo"
-            drop_id = "home_builder.place_custom_cabinet"
             if library.activate_id != "":
                 activate_id = library.activate_id
             if library.drop_id != "":
@@ -142,7 +109,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row = col.row(align=True)
             row.scale_y = 1.3                 
             row.menu('HOME_BUILDER_MT_decorations',text=library_name)
-
+            row.menu('HOME_BUILDER_MT_decoration_library_commands',text="",icon='SETTINGS')
             self.draw_library(col,context,library)
 
         if hb_scene.library_tabs == 'PRODUCTS':
@@ -160,7 +127,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row = col.row(align=True)
             row.scale_y = 1.3                 
             row.menu('HOME_BUILDER_MT_materials_library',text=library_name)   
-            row.menu('HOME_BUILDER_MT_materials_pointers',text="",icon='SETTINGS')         
+            row.menu('HOME_BUILDER_MT_material_library_commands',text="",icon='SETTINGS')
             self.draw_library(col,context,library)
 
         if hb_scene.library_tabs == 'BUILD':
@@ -213,7 +180,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                             row.operator('pc_assembly.select_parent',text="",icon='SORT_DESC')
                         else:
                             row = box.row()
-                            row.operator('home_builder.create_new_build_library_category',text="Create Library Category",icon='ADD')                          
+                            row.operator('home_builder.create_new_library_category',text="Create Library Category",icon='ADD').library_type = 'BUILD_LIBRARY'                          
                     else:
                         box = col.box()
                         row = box.row()
@@ -227,7 +194,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
                 row.menu('HOME_BUILDER_MT_build_library',text=library_name)
-                row.operator('home_builder.create_new_build_library_category',text="",icon='ADD')
+                row.operator('home_builder.create_new_library_category',text="",icon='ADD').library_type = 'BUILD_LIBRARY' 
 
                 self.draw_library(col,context,library)                
 
@@ -345,6 +312,31 @@ class HOME_BUILDER_MT_materials_pointers(bpy.types.Menu):
             layout.operator('home_builder.show_library_material_pointers',text=library).library_name = library
 
 
+class HOME_BUILDER_MT_decoration_library_commands(bpy.types.Menu):
+    bl_label = "Decoration Library Commands"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('home_builder.create_new_library_category',text="Create New Category",icon='FILE_FOLDER').library_type = 'DECORATIONS' 
+        layout.operator('home_builder.save_decoration',text="Save Selected Object to Library",icon='ADD')
+
+
+class HOME_BUILDER_MT_material_library_commands(bpy.types.Menu):
+    bl_label = "Material Library Commands"
+
+    def draw(self, context):
+        layout = self.layout
+        wm_props = context.window_manager.home_builder
+        library = wm_props.get_active_library(context)
+        library_filepath = library.library_path
+        if os.path.exists(library_filepath):
+            props = layout.operator('wm.open_mainfile',text="Open Library File",icon='ASSET_MANAGER')
+            props.filepath = library_filepath
+            props.display_file_selector = False
+        layout.operator('home_builder.create_new_library_category',text="Create New Category",icon='FILE_FOLDER').library_type = 'MATERIALS' 
+        layout.operator('home_builder.save_material',text="Save Active Material to Library",icon='ADD')
+
+
 class HOME_BUILDER_PT_walls(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -377,6 +369,8 @@ classes = (
     HOME_BUILDER_MT_materials_library,
     HOME_BUILDER_MT_materials_pointers,
     HOME_BUILDER_MT_home_builder_menu,
+    HOME_BUILDER_MT_decoration_library_commands,
+    HOME_BUILDER_MT_material_library_commands,
     HOME_BUILDER_PT_walls,
 )
 

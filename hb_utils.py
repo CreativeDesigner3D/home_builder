@@ -215,6 +215,7 @@ def load_libraries(context):
             asset_lib.name = dir
             asset_lib.library_type = 'BUILD_LIBRARY'
             asset_lib.library_path = os.path.join(cat_path,"library.blend")
+            asset_lib.drop_id = 'home_builder.drop_build_library'
 
     #DECO LIBRARIES
     custom_dirs = os.listdir(deco_library_path)
