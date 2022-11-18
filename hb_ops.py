@@ -933,6 +933,121 @@ class home_builder_OT_create_new_library_category(bpy.types.Operator):
         bpy.ops.home_builder.update_library_path(asset_path=asset_lib.library_path)
         return {'FINISHED'}
 
+
+class home_builder_OT_assign_material_dialog(bpy.types.Operator):
+    bl_idname = "home_builder.assign_material_dialog"
+    bl_label = "Assign Material Dialog"
+    bl_description = "This is a dialog to assign materials to Home Builder objects"
+    bl_options = {'UNDO'}
+    
+    #READONLY
+    material_name: bpy.props.StringProperty(name="Material Name")
+    object_name: bpy.props.StringProperty(name="Object Name")
+    
+    obj = None
+    material = None
+    
+    def check(self, context):
+        return True
+    
+    def invoke(self, context, event):
+        self.material = bpy.data.materials[self.material_name]
+        self.obj = bpy.data.objects[self.object_name]
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=480)
+        
+    def draw(self,context):
+        scene_props = pc_utils.get_hb_scene_props(context.scene)
+        # obj_props = home_builder_utils.get_object_props(self.obj)
+        layout = self.layout
+        box = layout.box()
+        row = box.row()
+        row.label(text=self.obj.name,icon='OBJECT_DATA')
+        props = row.operator('home_builder.assign_material_to_all_slots',text="Override All",icon='DOWNARROW_HLT')
+        props.object_name = self.obj.name
+        props.material_name = self.material.name
+
+        pointer_list = []
+
+        # if len(scene_props.material_pointer_groups) - 1 >= obj_props.material_group_index:
+        #     mat_group = scene_props.material_pointer_groups[obj_props.material_group_index]
+        # else:
+        #     mat_group = scene_props.material_pointer_groups[0]
+
+        for index, mat_slot in enumerate(self.obj.material_slots):
+            row = box.split(factor=.80)
+            pointer = None
+
+            if index + 1 <= len(self.obj.pyclone.pointers):
+                pointer = self.obj.pyclone.pointers[index]
+
+            if mat_slot.name == "":
+                row.label(text='No Material')
+            else:
+                if pointer:
+                    row.prop(mat_slot,"name",text=pointer.name,icon='MATERIAL')
+                else:
+                    row.prop(mat_slot,"name",text=" ",icon='MATERIAL')
+
+            if pointer and pointer.pointer_name not in pointer_list and pointer.pointer_name != "":
+                pointer_list.append(pointer.pointer_name)
+
+            props = row.operator('home_builder.assign_material_to_slot',text="Override",icon='BACK')
+            props.object_name = self.obj.name
+            props.material_name = self.material.name
+            props.index = index
+
+        if len(pointer_list) > 0:
+            box = layout.box()
+            row = box.row()
+            row.label(text="Update Material Pointers",icon='MATERIAL')
+            for pointer in pointer_list:
+                row = box.split(factor=.80)
+                mat_pointer = scene_props.material_pointers[pointer] 
+                row.label(text=pointer + ": " + mat_pointer.category_name + "/" + mat_pointer.material_name)    
+                props = row.operator('home_builder.assign_material_to_pointer',text="Update All",icon='FILE_REFRESH')
+                props.pointer_name = pointer
+        
+    def execute(self,context):
+        return {'FINISHED'}        
+
+
+class home_builder_OT_assign_material_to_slot(bpy.types.Operator):
+    bl_idname = "home_builder.assign_material_to_slot"
+    bl_label = "Assign Material to Slot"
+    bl_description = "This will assign a material to a material slot"
+    bl_options = {'UNDO'}
+    
+    #READONLY
+    material_name: bpy.props.StringProperty(name="Material Name")
+    object_name: bpy.props.StringProperty(name="Object Name")
+    
+    index: bpy.props.IntProperty(name="Index")
+    
+    def execute(self,context):
+        obj = bpy.data.objects[self.object_name]
+        mat = bpy.data.materials[self.material_name]
+        obj.material_slots[self.index].material = mat
+        return {'FINISHED'}
+
+
+class home_builder_OT_assign_material_to_all_slots(bpy.types.Operator):
+    bl_idname = "home_builder.assign_material_to_all_slots"
+    bl_label = "Assign Material to All Slots"
+    bl_description = "This will assign a material to all material slots"
+    bl_options = {'UNDO'}
+    
+    #READONLY
+    material_name: bpy.props.StringProperty(name="Material Name")
+    object_name: bpy.props.StringProperty(name="Object Name")
+    
+    def execute(self,context):
+        obj = bpy.data.objects[self.object_name]
+        mat = bpy.data.materials[self.material_name]
+        for slot in obj.material_slots:
+            slot.material = mat
+        return {'FINISHED'}
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_update_library_xml,
@@ -951,6 +1066,9 @@ classes = (
     home_builder_OT_save_decoration,
     home_builder_OT_save_material,
     home_builder_OT_create_new_library_category,
+    home_builder_OT_assign_material_dialog,
+    home_builder_OT_assign_material_to_slot,
+    home_builder_OT_assign_material_to_all_slots,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        
