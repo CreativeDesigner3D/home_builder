@@ -23,7 +23,6 @@ def update_library_tab(self,context):
     prefs = context.preferences
     asset_lib = prefs.filepaths.asset_libraries.get('home_builder_library')
     library = hb_utils.get_active_library(context)
-    print("THIS ACTIVE LIBRARY",library)
     if library:
         asset_lib.path = library.library_path
 
@@ -34,14 +33,13 @@ def update_library_tab(self,context):
             bpy.ops.asset.library_refresh()
 
         #TODO FIGURE OUT HOW TO FIX WHEN INDEX IS GREATER THAN LENGTH
-        workspace = context.workspace.home_builder
-        wm_props = context.window_manager.home_builder
-        print('INDEX',workspace.home_builder_library_index,'LENGTH',len(wm_props.home_builder_library_assets))
-        if workspace.home_builder_library_index > len(wm_props.home_builder_library_assets):
-            print("INDEX GREATER THAN LENGTH")
+        # workspace = context.workspace.home_builder
+        # wm_props = context.window_manager.home_builder
+        # print('INDEX',workspace.home_builder_library_index,'LENGTH',len(wm_props.home_builder_library_assets))
+        # if workspace.home_builder_library_index > len(wm_props.home_builder_library_assets):
+        #     print("INDEX GREATER THAN LENGTH")
 
 def update_library_package_path(self,context):
-    print('Package Path',self.package_path)
     bpy.ops.home_builder.update_library_xml()
 
 def update_wall_index(self,context):
@@ -169,12 +167,22 @@ class Home_Builder_Workspace_Props(PropertyGroup):
 
 
 class Home_Builder_Window_Manager_Props(PropertyGroup):
-    home_builder_library_assets: bpy.props.CollectionProperty(type=bpy.types.AssetHandle)
+    home_builder_library_assets: bpy.props.CollectionProperty(
+        type=bpy.types.AssetHandle,
+        description="Current Set of Assets In Asset Browser")
 
-    asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
-    library_packages: bpy.props.CollectionProperty(type=Library_Package)
+    asset_libraries: bpy.props.CollectionProperty(
+        type=Asset_Library,
+        description="Collection of all asset libraries loaded into Home Builder")
 
-    show_built_in_asset_libraries: bpy.props.BoolProperty(name="Show Built In Asset Libraries",default=False)
+    library_packages: bpy.props.CollectionProperty(
+        type=Library_Package,
+        description="Collection of all external asset packages loaded into Home Builder")
+
+    show_built_in_asset_libraries: bpy.props.BoolProperty(
+        name="Show Built In Asset Libraries",
+        description="UI toggle to display the build in asset libraries",
+        default=False)
 
     active_product_library_name: bpy.props.StringProperty(name="Active Product Library Name")
     active_build_library_name: bpy.props.StringProperty(name="Active Build Library Name")

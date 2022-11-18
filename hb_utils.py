@@ -117,17 +117,9 @@ def add_material_pointers(pointers):
         p.material_name = pointer[3]  
         p.library_path = pointer[4]    
 
-def get_library_path_xml():
-    path = os.path.join(bpy.utils.user_resource('SCRIPTS'), "home_builder")
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-        
-    return os.path.join(path,"home_builder_paths.xml")
-
 def load_libraries_from_xml(context):
     wm_props = context.window_manager.home_builder
-    xml_file = get_library_path_xml()
+    xml_file = hb_paths.get_library_path_xml()
     if os.path.exists(xml_file):
         root = ET.parse(xml_file).getroot()
         for node in root:
@@ -143,36 +135,36 @@ def load_libraries_from_xml(context):
                                     lib.package_path = path
                                 for nnc_node in nc_node:
                                     if "Enabled" in nnc_node.tag:
-                                        lib.enabled = True if nnc_node.tag == "True" else False
+                                        lib.enabled = True if nnc_node.text == "True" else False
 
 def load_libraries(context):
     product_path = hb_paths.get_product_library_path()
-    build_library_path = hb_paths.get_build_library_path()
-    deco_library_path = hb_paths.get_decoration_library_path()
-    material_path = hb_paths.get_material_library_path()
 
-    prefs = context.preferences
-    asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
+    # prefs = context.preferences
+    # asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
 
-    if not asset_lib:
-        bpy.ops.preferences.asset_library_add()
-        asset_lib = prefs.filepaths.asset_libraries[-1]
-        asset_lib.name = "home_builder_library"
-        asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')
-    else:
-        asset_lib.name = "home_builder_library"
-        asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')        
+    # if not asset_lib:
+    #     bpy.ops.preferences.asset_library_add()
+    #     asset_lib = prefs.filepaths.asset_libraries[-1]
+    #     asset_lib.name = "home_builder_library"
+    #     asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')
+    # else:
+    #     asset_lib.name = "home_builder_library"
+    #     asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')        
 
-    for workspace in bpy.data.workspaces:
-        workspace.asset_library_ref = "home_builder_library"
+    # for workspace in bpy.data.workspaces:
+    #     workspace.asset_library_ref = "home_builder_library"
 
     wm_props = context.window_manager.home_builder
-    dirs = os.listdir(product_path)
+    
     mat_library_path = os.path.join(os.path.dirname(__file__),'materials','Default Room Materials','library.blend')
     pointer_list = []
     pointer_list.append(("Walls","Room Materials","Built In","White Wall Paint",mat_library_path))
     pointer_list.append(("Floor","Room Materials","Built In","Wood Floor",mat_library_path))
-    pointer_list.append(("Ceiling","Room Materials","Built In","White Walls",mat_library_path))    
+    pointer_list.append(("Ceiling","Room Materials","Built In","White Walls",mat_library_path)) 
+    
+    #LOAD BUILT IN LIBRARIES
+    dirs = os.listdir(product_path) 
     for folder in dirs:
         if os.path.isdir(os.path.join(product_path,folder)):
             files = os.listdir(os.path.join(product_path,folder))
@@ -181,10 +173,11 @@ def load_libraries(context):
                     sys.path.append(product_path)
                     mod = __import__(folder)
                     if hasattr(mod,'register'):
+                        #If register fails the module is already registered
                         try:
                             mod.register()
                         except:
-                            print("MOD ALREADY REGISTERED")
+                            pass
                         if hasattr(mod,"LIBRARIES"):
                             libs = list(mod.LIBRARIES)
                             for lib in libs:
@@ -205,41 +198,48 @@ def load_libraries(context):
                                     for p2 in pointers[p]:
                                         lib_path = os.path.dirname(p2[1])
                                         pointer_list.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
-    
-    #BUILD LIBRARIES
-    custom_dirs = os.listdir(build_library_path)
-    for dir in custom_dirs:
-        cat_path = os.path.join(build_library_path,dir)
-        if os.path.isdir(cat_path):
-            asset_lib = wm_props.asset_libraries.add()
-            asset_lib.name = dir
-            asset_lib.library_type = 'BUILD_LIBRARY'
-            asset_lib.library_path = os.path.join(cat_path,"library.blend")
-            asset_lib.drop_id = 'home_builder.drop_build_library'
 
-    #DECO LIBRARIES
-    custom_dirs = os.listdir(deco_library_path)
-    for dir in custom_dirs:
-        cat_path = os.path.join(deco_library_path,dir)
-        if os.path.isdir(cat_path):
-            asset_lib = wm_props.asset_libraries.add()
-            asset_lib.name = dir
-            asset_lib.library_type = 'DECORATIONS'
-            asset_lib.library_path = os.path.join(cat_path,"library.blend")
-            asset_lib.drop_id = 'home_builder.drop_decoration'
+    load_library_from_path(context,hb_paths.get_build_library_path(),'BUILD_LIBRARY')
+    load_library_from_path(context,hb_paths.get_decoration_library_path(),'DECORATIONS')
+    load_library_from_path(context,hb_paths.get_material_library_path(),'MATERIALS')
 
-    #LOAD CUSTOM MATERIAL LIBRARIES
-    custom_dirs = os.listdir(material_path)
-    for dir in custom_dirs:
-        cat_path = os.path.join(material_path,dir)
-        if os.path.isdir(cat_path):
-            asset_lib = wm_props.asset_libraries.add()
-            asset_lib.name = dir
-            asset_lib.library_type = 'MATERIALS'
-            asset_lib.library_path = os.path.join(cat_path,"library.blend")
-            asset_lib.drop_id = "home_builder.drop_material"
+    #LOAD EXTERNAL LIBRARIES
+    for library_package in wm_props.library_packages:
+        path = library_package.package_path
+        if os.path.exists(path) and os.path.isdir(path):
+            dirs = os.listdir(path)
+            for folder in dirs:
+                print('FOLDER',folder)
+                if folder == 'materials':
+                    load_library_from_path(context,os.path.join(path,folder),'MATERIALS')
+                if folder == 'decorations':
+                    load_library_from_path(context,os.path.join(path,folder),'DECORATIONS')
+                if folder == 'build_library':
+                    load_library_from_path(context,os.path.join(path,folder),'BUILD_LIBRARY')
 
     add_material_pointers(pointer_list)
+
+def load_library_from_path(context,path,library_type):
+    wm_props = context.window_manager.home_builder
+
+    if library_type == 'MATERIALS':
+        drop_id = "home_builder.drop_material"
+
+    if library_type == 'DECORATIONS':
+        drop_id = 'home_builder.drop_decoration'
+
+    if library_type == 'BUILD_LIBRARY':
+        drop_id = 'home_builder.drop_build_library'
+
+    library_dirs = os.listdir(path)
+    for dir in library_dirs:
+        cat_path = os.path.join(path,dir)
+        if os.path.isdir(cat_path):
+            asset_lib = wm_props.asset_libraries.add()
+            asset_lib.name = dir
+            asset_lib.library_type = library_type
+            asset_lib.library_path = os.path.join(cat_path,"library.blend")
+            asset_lib.drop_id = drop_id
 
 def load_custom_driver_functions():
     import inspect

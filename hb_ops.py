@@ -48,8 +48,6 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
         return {'FINISHED'}
 
     def get_library_icon(self,library):
-        if library.library_type == 'DOORS_WINDOWS':
-            return  'MESH_GRID'
         if library.library_type == 'PRODUCTS':
             return  'META_CUBE'
         if library.library_type == 'DECORATIONS':
@@ -107,6 +105,7 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
                     print(lib.library_type)
                     row.label(text="",icon=self.get_library_icon(lib))
                     row.prop(lib,'enabled',text=lib.name)
+                    
 
             for ex_lib in wm_props.library_packages:
                 row = main_box.row()
@@ -116,14 +115,18 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
                     row.alignment = 'LEFT'
                     row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
                     row.prop(ex_lib,'enabled',text=folder_name)
+                    
                 else:
                     row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
                     row.prop(ex_lib,'enabled',text="")
                     row.prop(ex_lib,'package_path',text="Set Path")
+                    row.operator('home_builder.delete_external_library',text="",icon='X',emboss=False).package_path = ex_lib.package_path
+                    
                 if ex_lib.expand:
                     row = main_box.row()
                     row.label(text="",icon='BLANK1')
                     row.prop(ex_lib,'package_path',text="Set Path")
+                    row.operator('home_builder.delete_external_library',text="",icon='X',emboss=False).package_path = ex_lib.package_path
 
         if self.tabs == 'TRAINING':
             main_box = layout.box()
@@ -137,7 +140,7 @@ class home_builder_OT_update_library_xml(bpy.types.Operator):
 
     def execute(self, context):
         wm_props = context.window_manager.home_builder
-        file_path = hb_utils.get_library_path_xml()
+        file_path = hb_paths.get_library_path_xml()
         xml = pc_types.HB_XML()
         root = xml.create_tree()
         paths = xml.add_element(root,'LibraryPaths')
@@ -192,6 +195,22 @@ class home_builder_OT_add_external_library(bpy.types.Operator):
     def execute(self, context):
         wm_props = context.window_manager.home_builder
         lib = wm_props.library_packages.add()
+        return {'FINISHED'}
+
+
+class home_builder_OT_delete_external_library(bpy.types.Operator):
+    bl_idname = "home_builder.delete_external_library"
+    bl_label = "Delete External Library"
+    bl_description = "Delete a new library"
+
+    package_path: bpy.props.StringProperty(name="Package Path",subtype='DIR_PATH')
+
+    def execute(self, context):
+        wm_props = context.window_manager.home_builder
+        for i, package in enumerate(wm_props.library_packages):
+            if package.package_path == self.package_path:
+                wm_props.library_packages.remove(i)
+        bpy.ops.home_builder.update_library_xml()
         return {'FINISHED'}
 
 
@@ -920,6 +939,7 @@ classes = (
     home_builder_OT_todo,
     home_builder_OT_load_library,
     home_builder_OT_add_external_library,
+    home_builder_OT_delete_external_library,
     home_builder_OT_update_library_path,
     home_builder_OT_show_library_material_pointers,
     home_builder_OT_assign_material_to_pointer,
