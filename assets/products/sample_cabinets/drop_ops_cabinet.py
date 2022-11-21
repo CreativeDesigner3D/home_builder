@@ -1667,6 +1667,7 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
         self.region = pc_utils.get_3d_view_region(context)
         self.reset_properties()
         self.create_part(context)
+        self.create_dimension()
         # path, file_name = os.path.split(self.filepath)
         # if 'Fixed' in file_name:
         #     self.is_fixed = True
@@ -1675,6 +1676,35 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
         context.window_manager.modal_handler_add(self)
         context.area.tag_redraw()
         return {'RUNNING_MODAL'}
+
+    def create_dimension(self):
+        self.dim = pc_types.Dimension()
+        self.dim.create_dimension()
+        self.dim.obj_bp.rotation_euler.y = 0
+        self.dim.obj_y.location.y = pc_unit.inch(5)
+        self.dim.obj_bp.parent = None
+        self.dim.obj_x.location.x = self.part.obj_bp.location.z
+        self.dim.obj_bp.rotation_euler.y = math.radians(-90)
+        self.dim.obj_bp.rotation_euler.z = math.radians(90)
+        self.dim.obj_bp.location.z = 0
+        self.dim.obj_bp.hide_viewport = False
+        self.dim.obj_x.hide_viewport = False
+        self.dim.obj_y.hide_viewport = False
+        self.dim.obj_z.hide_viewport = False
+        self.dim.get_prompt("Font Size").set_value(.1)
+        self.dim.get_prompt("Arrow Height").set_value(pc_unit.inch(3))
+        self.dim.get_prompt("Arrow Length").set_value(pc_unit.inch(4))
+        self.dim.get_prompt("Line Thickness").set_value(pc_unit.inch(.25))
+        for child in self.dim.obj_bp.children:
+            child.show_in_front = True
+        self.dim.update_dim_text()        
+
+    def position_dimension(self,opening):
+        self.dim.obj_bp.parent = opening.obj_bp
+        self.dim.obj_bp.location.z = -opening.obj_bp.matrix_world[2][3]
+        # self.dim.obj_bp.matrix_world[2][3] = 0
+        self.dim.obj_x.location.x = self.part.obj_bp.location.z
+        self.dim.update_dim_text()
 
     def position_part(self,mouse_location,selected_obj,event,cursor_z,selected_normal):
         if selected_obj is not None:
@@ -1698,6 +1728,7 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
                 self.part.obj_bp.location.z = self.get_32mm_position(mouse_location) 
                 self.part.obj_x.location.x = opening.obj_x.location.x
                 self.part.obj_y.location.y = opening.obj_y.location.y
+                self.position_dimension(opening)
                 return opening
 
     def create_part(self,context):
@@ -1772,6 +1803,7 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
 
     def cancel_drop(self,context):
         pc_utils.delete_object_and_children(self.part.obj_bp)
+        pc_utils.delete_object_and_children(self.dim.obj_bp)
         return {'CANCELLED'}
 
     def refresh_data(self,hide=True):
@@ -1845,6 +1877,7 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
             self.set_placed_properties(self.part.obj_bp)
             material_pointers_cabinet.assign_double_sided_pointers(self.part)
             material_pointers_cabinet.assign_materials_to_assembly(self.part)
+        pc_utils.delete_object_and_children(self.dim.obj_bp)
         # if is_recursive:
         #     bpy.ops.home_builder.place_closet_part(filepath=self.filepath)
         return {'FINISHED'}
