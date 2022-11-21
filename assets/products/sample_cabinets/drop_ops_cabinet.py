@@ -881,7 +881,6 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
         self.exclude_objects = []
 
     def execute(self, context):
-        print('OBJ BP NAME',self.obj_bp_name)
         self.region = pc_utils.get_3d_view_region(context)
         self.reset_properties()
         self.get_insert(context)
@@ -988,10 +987,10 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
                 o_left_depth = o_left_depth_prompt.get_var('o_left_depth')
                 i_left_depth.set_formula('o_left_depth',[o_left_depth])
             if o_right_depth_prompt and i_right_depth:
-                o_right_depth = o_left_depth_prompt.get_var('o_right_depth')
+                o_right_depth = o_right_depth_prompt.get_var('o_right_depth')
                 i_right_depth.set_formula('o_right_depth',[o_right_depth])
             if o_back_inset_prompt and i_back_inset:
-                o_back_inset = o_left_depth_prompt.get_var('o_back_inset')
+                o_back_inset = o_back_inset_prompt.get_var('o_back_inset')
                 i_back_inset.set_formula('o_back_inset',[o_back_inset])                        
        
             # o_left_depth = opening.get_prompt('Left Depth').get_var('o_left_depth')
