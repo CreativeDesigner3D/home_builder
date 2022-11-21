@@ -1,4 +1,5 @@
 from . import types_closet_inserts
+from . import types_cabinet_exteriors
 
 class Adj_Shelves(types_closet_inserts.Shelves):
 
@@ -21,7 +22,7 @@ class Double_Hang(types_closet_inserts.Hanging_Rod):
 class Slanted_Shoe_Shelf(types_closet_inserts.Slanted_Shoe_Shelf):
 
     def __init__(self):
-        pass             
+        pass
 
 
 class Cubbies(types_closet_inserts.Cubbies):
@@ -30,34 +31,28 @@ class Cubbies(types_closet_inserts.Cubbies):
         pass        
 
 
-class Base_Doors(types_closet_inserts.Base_Doors):
+class Base_Doors(types_cabinet_exteriors.Doors):
 
     def __init__(self):
-        pass        
+        self.door_type = "Base"      
 
 
-class Tall_Doors(types_closet_inserts.Tall_Doors):
-
-    def __init__(self):
-        pass        
-
-
-class Upper_Doors(types_closet_inserts.Upper_Doors):
+class Tall_Doors(types_cabinet_exteriors.Doors):
 
     def __init__(self):
-        pass                
+        self.door_type = "Tall"          
 
 
-class Drawers(types_closet_inserts.Drawers):
+class Upper_Doors(types_cabinet_exteriors.Doors):
+
+    def __init__(self):
+        self.door_type = "Upper"                  
+
+
+class Drawers(types_cabinet_exteriors.Drawers):
 
     def __init__(self):
         pass            
-
-
-class Single_Drawer(types_closet_inserts.Single_Drawer):
-
-    def __init__(self):
-        pass         
 
 
 class Wire_Baskets(types_closet_inserts.Wire_Baskets):

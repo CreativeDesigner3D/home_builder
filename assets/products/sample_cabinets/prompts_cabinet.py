@@ -66,7 +66,7 @@ def add_front_overlay_prompts(assembly):
     assembly.add_prompt("Vertical Gap",'DISTANCE',pc_unit.inch(.125))
     assembly.add_prompt("Horizontal Gap",'DISTANCE',pc_unit.inch(.125))
 
-def add_pull_prompts(assembly):
+def add_door_pull_prompts(assembly):
     props = utils_cabinet.get_scene_props(bpy.context.scene)
     assembly.add_prompt("Base Pull Vertical Location",'DISTANCE',props.pull_vertical_location_base)
     assembly.add_prompt("Tall Pull Vertical Location",'DISTANCE',props.pull_vertical_location_tall)

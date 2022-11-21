@@ -235,6 +235,7 @@ class Prompt(PropertyGroup):
 class Calculator_Prompt(PropertyGroup):
     distance_value: FloatProperty(name="Distance Value",subtype='DISTANCE',precision=5)
     equal: BoolProperty(name="Equal",default=True)
+    include: BoolProperty(name="Include In Calculation",default=True)
 
     def draw(self,layout):
         row = layout.row()
@@ -306,16 +307,21 @@ class Calculator(PropertyGroup):
         calc_prompts = []
         for prompt in self.prompts:
             if prompt.equal:
-                equal_prompt_qty += 1
+                if prompt.include:
+                    equal_prompt_qty += 1
                 calc_prompts.append(prompt)
             else:
-                non_equal_prompts_total_value += prompt.distance_value
+                if prompt.include:
+                    non_equal_prompts_total_value += prompt.distance_value
 
         if equal_prompt_qty > 0:
             prompt_value = (self.distance_obj.pyclone.calculator_distance - non_equal_prompts_total_value) / equal_prompt_qty
 
             for prompt in calc_prompts:
-                prompt.distance_value = prompt_value
+                if prompt.include:
+                    prompt.distance_value = prompt_value
+                else:
+                    prompt.distance_value = 0
 
             self.id_data.location = self.id_data.location 
 

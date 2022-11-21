@@ -137,7 +137,7 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
 
         for cal in self.calculators:
             cal.calculate()
-            
+
     def get_calculators(self,obj):
         for calculator in obj.pyclone.calculators:
             self.calculators.append(calculator)
@@ -978,15 +978,31 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
             self.insert.obj_x.location.x = 0
             self.insert.obj_y.location.y = 0
             self.insert.obj_z.location.z = 0
-            o_left_depth = opening.get_prompt('Left Depth').get_var('o_left_depth')
-            o_right_depth = opening.get_prompt('Right Depth').get_var('o_right_depth')
-            o_back_inset = opening.get_prompt('Back Inset').get_var('o_back_inset')
+            o_left_depth_prompt = opening.get_prompt('Left Depth')
+            o_right_depth_prompt = opening.get_prompt('Right Depth')
+            o_back_inset_prompt = opening.get_prompt('Back Inset')
             i_left_depth = self.insert.get_prompt('Left Depth')
             i_right_depth = self.insert.get_prompt('Right Depth')
             i_back_inset = self.insert.get_prompt('Back Inset')
-            i_left_depth.set_formula('o_left_depth',[o_left_depth])
-            i_right_depth.set_formula('o_right_depth',[o_right_depth])
-            i_back_inset.set_formula('o_back_inset',[o_back_inset])
+            if o_left_depth_prompt and i_left_depth:
+                o_left_depth = o_left_depth_prompt.get_var('o_left_depth')
+                i_left_depth.set_formula('o_left_depth',[o_left_depth])
+            if o_right_depth_prompt and i_right_depth:
+                o_right_depth = o_left_depth_prompt.get_var('o_right_depth')
+                i_right_depth.set_formula('o_right_depth',[o_right_depth])
+            if o_back_inset_prompt and i_back_inset:
+                o_back_inset = o_left_depth_prompt.get_var('o_back_inset')
+                i_back_inset.set_formula('o_back_inset',[o_back_inset])                        
+       
+            # o_left_depth = opening.get_prompt('Left Depth').get_var('o_left_depth')
+            # o_right_depth = opening.get_prompt('Right Depth').get_var('o_right_depth')
+            # o_back_inset = opening.get_prompt('Back Inset').get_var('o_back_inset')
+            # i_left_depth = self.insert.get_prompt('Left Depth')
+            # i_right_depth = self.insert.get_prompt('Right Depth')
+            # i_back_inset = self.insert.get_prompt('Back Inset')
+            # i_left_depth.set_formula('o_left_depth',[o_left_depth])
+            # i_right_depth.set_formula('o_right_depth',[o_right_depth])
+            # i_back_inset.set_formula('o_back_inset',[o_back_inset])
             
             # props = home_builder_utils.get_object_props(self.insert.obj_bp)
             # props.insert_opening = opening.obj_bp

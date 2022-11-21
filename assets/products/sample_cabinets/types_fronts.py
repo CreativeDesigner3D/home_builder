@@ -12,6 +12,8 @@ class Fronts(pc_types.Assembly):
     overlay_prompts = None
 
     def add_overlay_prompts(self):
+        inset = self.get_prompt("Inset Front").get_var('inset')
+        i_reveal = self.get_prompt("Inset Reveal").get_var('i_reveal')
         hot = self.get_prompt("Half Overlay Top").get_var('hot')
         hob = self.get_prompt("Half Overlay Bottom").get_var('hob')
         hol = self.get_prompt("Half Overlay Left").get_var('hol')
@@ -32,10 +34,10 @@ class Fronts(pc_types.Assembly):
         lo = self.overlay_prompts.pyclone.add_prompt('DISTANCE',"Left Overlay")
         ro = self.overlay_prompts.pyclone.add_prompt('DISTANCE',"Right Overlay")
 
-        to.set_formula('IF(hot,(mat_thickness-vertical_gap)/2,mat_thickness-tr)',[hot,mat_thickness,vertical_gap,tr])
-        bo.set_formula('IF(hob,(mat_thickness-vertical_gap)/2,mat_thickness-br)',[hob,mat_thickness,vertical_gap,br])
-        lo.set_formula('IF(hol,(mat_thickness-vertical_gap)/2,mat_thickness-lr)',[hol,mat_thickness,vertical_gap,lr])
-        ro.set_formula('IF(hor,(mat_thickness-vertical_gap)/2,mat_thickness-rr)',[hor,mat_thickness,vertical_gap,rr])
+        to.set_formula('IF(inset,-i_reveal,IF(hot,(mat_thickness-vertical_gap)/2,mat_thickness-tr))',[inset,i_reveal,hot,mat_thickness,vertical_gap,tr])
+        bo.set_formula('IF(inset,-i_reveal,IF(hob,(mat_thickness-vertical_gap)/2,mat_thickness-br))',[inset,i_reveal,hob,mat_thickness,vertical_gap,br])
+        lo.set_formula('IF(inset,-i_reveal,IF(hol,(mat_thickness-vertical_gap)/2,mat_thickness-lr))',[inset,i_reveal,hol,mat_thickness,vertical_gap,lr])
+        ro.set_formula('IF(inset,-i_reveal,IF(hor,(mat_thickness-vertical_gap)/2,mat_thickness-rr))',[inset,i_reveal,hor,mat_thickness,vertical_gap,rr])
 
         return to, bo, lo, ro
 
@@ -183,6 +185,7 @@ class Fronts(pc_types.Assembly):
         door_rotation = self.get_prompt("Door Rotation").get_var('door_rotation')  
         door_swing = self.get_prompt("Door Swing").get_var('door_swing')
         open_door = self.get_prompt("Open Door").get_var('open_door')
+        inset = self.get_prompt("Inset Front").get_var('inset')
            
         vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
 
@@ -196,8 +199,7 @@ class Fronts(pc_types.Assembly):
         left_o.set_formula("lo_var",[lo_var])
         right_o = front.add_prompt("Right Overlay",'DISTANCE',0)
         right_o.set_formula("ro_var",[ro_var])
-        front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
-        # front.loc_z('-bo_var',[bo_var])
+        front.loc_y('IF(inset,front_thickness,-door_to_cabinet_gap)',[inset,front_thickness,door_to_cabinet_gap])
         front.rot_x(value = math.radians(90))
         front.rot_y(value = math.radians(-90))    
         front.dim_z('front_thickness',[front_thickness])  
@@ -233,39 +235,20 @@ class Fronts(pc_types.Assembly):
         else:
             front.loc_z('-bo_var',[bo_var])
 
-        # if door_type_prompt.get_value() == 'Tall':
-        #     if location == 'Top':
-        #         front.loc_z('z+to_var',[z,to_var])
-        #     else:
-        #         front.loc_z('-bo_var',[bo_var])
-        #     front.dim_x('z+to_var+bo_var',[z,to_var,bo_var])
-
-        # if door_type_prompt.get_value() == 'Upper':
-        #     door_height_var = self.get_prompt("Door Height").get_var("door_height_var")
-        #     fill = self.get_prompt("Fill Opening").get_var('fill')                
-        #     if location == 'Top':
-        #         front.loc_z('z+to_var',[z,to_var])
-        #     else:            
-        #         front.loc_z('IF(fill,0,z-door_height_var)-bo_var',[fill,z,door_height_var,bo_var])
-        #     front.dim_x('IF(fill,z,door_height_var)+to_var+bo_var',[fill,z,door_height_var,to_var,bo_var])
-
-        # if door_type_prompt.get_value() == 'Base':
-            # door_height_var = self.get_prompt("Door Height").get_var("door_height_var")
-            # fill = self.get_prompt("Fill Opening").get_var('fill')              
-            # if location == 'Top':
-            #     front.loc_z('IF(fill,z+to_var,door_height_var+to_var)',[fill,z,door_height_var,to_var])
-            # else:
-            #     front.loc_z('-bo_var',[bo_var])
-            # front.dim_x('IF(fill,z,door_height_var)+to_var+bo_var',[fill,z,door_height_var,to_var,bo_var])
-
         material_pointers_cabinet.assign_door_pointers(front)
         material_pointers_cabinet.assign_materials_to_assembly(front)
 
         pull_obj = self.add_door_pull(front)
+        return front
 
-    def add_prompts(self):
-        prompts_cabinet.add_door_prompts(self)
+    def add_prompts(self,include_door_prompts,include_drawer_prompts):
+        if include_door_prompts:
+            prompts_cabinet.add_door_prompts(self)
+            prompts_cabinet.add_door_pull_prompts(self)
+        if include_drawer_prompts:
+            prompts_cabinet.add_drawer_prompts(self)
+            prompts_cabinet.add_drawer_pull_prompts(self)
+        
         prompts_cabinet.add_front_prompts(self)
-        prompts_cabinet.add_pull_prompts(self)
         prompts_cabinet.add_front_overlay_prompts(self)
         prompts_cabinet.add_thickness_prompts(self)
