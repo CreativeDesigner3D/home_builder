@@ -46,17 +46,11 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
     molding: bpy.props.EnumProperty(name="Molding",
         items=enum_cabinets.enum_molding_names)
 
+    show_door_library: BoolProperty(name="Show Door Library", 
+                                    description="This will show the door library", 
+                                    default=False)
+
     #POINTERS
-    base_handle: PointerProperty(name="Base Handle",type=Pointer)
-    tall_handle: PointerProperty(name="Tall Handle",type=Pointer)
-    upper_handle: PointerProperty(name="Upper Handle",type=Pointer)
-    drawer_handle: PointerProperty(name="Drawer Handle",type=Pointer)
-
-    base_door: PointerProperty(name="Base Door",type=Pointer)
-    tall_door: PointerProperty(name="Tall Door",type=Pointer)
-    upper_door: PointerProperty(name="Upper Door",type=Pointer)
-    drawer_front: PointerProperty(name="Drawer Front",type=Pointer)
-
     base_molding: PointerProperty(name="Base Molding",type=Pointer)
     crown_molding: PointerProperty(name="Crown Molding",type=Pointer)
     light_rail_molding: PointerProperty(name="Light Rail Molding",type=Pointer)

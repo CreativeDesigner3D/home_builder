@@ -35,7 +35,8 @@ def add_base_assembly(assembly):
     return part    
 
 def add_door_assembly(assembly):
-    part_path = path.join(paths_cabinet.get_assembly_path(),"Part.blend")
+    # part_path = path.join(paths_cabinet.get_assembly_path(),"Part.blend")
+    part_path = paths_cabinet.get_current_door_path()
     part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
     # part.obj_bp['IS_DOOR_BP'] = True
     assembly.add_assembly(part)

@@ -44,3 +44,13 @@ def get_current_handle_path():
     item_name = props.cabinet_handle        
     path = os.path.join(get_handles_paths(),category_name,item_name + ".blend")
     return path
+
+def get_current_door_path():
+    props = utils_cabinet.get_scene_props(bpy.context.scene)
+    if props.show_door_library:
+        category_name = props.cabinet_door_category
+        item_name = props.cabinet_door        
+        path = os.path.join(get_door_paths(),category_name,item_name + ".blend")
+        return path    
+    else:
+        return os.path.join(get_assembly_path(),"Part.blend")

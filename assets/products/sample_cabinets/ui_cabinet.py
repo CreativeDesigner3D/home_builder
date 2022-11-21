@@ -268,34 +268,18 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
         layout = self.layout
 
         box = layout.box()
-        box.label(text="Cabinet Front Library")
-        row = box.row()
-        row.operator('hb_sample_cabinets.update_all_pulls_in_room',text="Update All",icon='FILE_REFRESH')
-        row.operator('hb_sample_cabinets.update_selected_pulls_in_room',text="Update Selected",icon='FILE_REFRESH')     
+        box.prop(props,'show_door_library')
+        if props.show_door_library:
+            box.label(text="Cabinet Front Library")
+            row = box.row()
+            row.operator('hb_sample_cabinets.update_all_pulls_in_room',text="Update All",icon='FILE_REFRESH')
+            row.operator('hb_sample_cabinets.update_selected_pulls_in_room',text="Update Selected",icon='FILE_REFRESH')     
 
-        row = box.row()
-        row.prop(props,'cabinet_door_category',text="")    
+            row = box.row()
+            row.prop(props,'cabinet_door_category',text="")    
 
-        row = box.row()
-        row.template_icon_view(props,"cabinet_door",show_labels=True)   
-
-        # box = layout.box()
-        # box.label(text="Cabinet Front Pointers")   
-        # row = box.row()
-        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_door"
-        # row.label(text="Base Door: " + props.base_door.category_name + " - " + props.base_door.item_name)  
-
-        # row = box.row()
-        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "tall_door"
-        # row.label(text="Tall Door: " + props.tall_door.category_name + " - " + props.tall_door.item_name)  
-
-        # row = box.row()
-        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "upper_door"
-        # row.label(text="Upper Door: " + props.upper_door.category_name + " - " + props.upper_door.item_name)  
-
-        # row = box.row()
-        # row.operator('hb_sample_cabinets.assign_door_pointer',text="",icon='TRIA_RIGHT').pointer_name = "drawer_front"
-        # row.label(text="Drawer Front: " + props.drawer_front.category_name + " - " + props.drawer_front.item_name)       
+            row = box.row()
+            row.template_icon_view(props,"cabinet_door",show_labels=True)     
 
 
 class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):
