@@ -175,6 +175,17 @@ class home_builder_OT_load_library(bpy.types.Operator):
     def execute(self, context):
         hb_utils.load_libraries(context)
         hb_utils.load_custom_driver_functions()
+        prefs = context.preferences
+        asset_lib = prefs.filepaths.asset_libraries.get('home_builder_library')
+        library = hb_utils.get_active_library(context)
+        if library:
+            asset_lib.path = library.library_path
+
+            for workspace in bpy.data.workspaces:
+                workspace.asset_library_ref = "home_builder_library"
+            
+            if bpy.ops.asset.library_refresh.poll():
+                bpy.ops.asset.library_refresh()        
         return {'FINISHED'}
 
     def draw(self, context):

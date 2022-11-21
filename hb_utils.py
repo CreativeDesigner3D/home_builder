@@ -140,13 +140,13 @@ def load_libraries_from_xml(context):
 def load_libraries(context):
     product_path = hb_paths.get_product_library_path()
 
-    # prefs = context.preferences
-    # asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
+    prefs = context.preferences
+    asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
 
-    # if not asset_lib:
-    #     bpy.ops.preferences.asset_library_add()
-    #     asset_lib = prefs.filepaths.asset_libraries[-1]
-    #     asset_lib.name = "home_builder_library"
+    if not asset_lib:
+        bpy.ops.preferences.asset_library_add()
+        asset_lib = prefs.filepaths.asset_libraries[-1]
+        asset_lib.name = "home_builder_library"
     #     asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')
     # else:
     #     asset_lib.name = "home_builder_library"
