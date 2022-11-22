@@ -272,8 +272,8 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
         if props.show_door_library:
             box.label(text="Cabinet Front Library")
             row = box.row()
-            row.operator('hb_sample_cabinets.update_all_pulls_in_room',text="Update All",icon='FILE_REFRESH')
-            row.operator('hb_sample_cabinets.update_selected_pulls_in_room',text="Update Selected",icon='FILE_REFRESH')     
+            row.operator('hb_sample_cabinets.update_all_fronts_in_room',text="Update All",icon='FILE_REFRESH')
+            row.operator('hb_sample_cabinets.update_selected_fronts_in_room',text="Update Selected",icon='FILE_REFRESH')     
 
             row = box.row()
             row.prop(props,'cabinet_door_category',text="")    

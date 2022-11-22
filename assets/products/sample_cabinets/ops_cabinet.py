@@ -23,6 +23,7 @@ from . import types_cabinet
 from . import assemblies_cabinet
 from . import const_cabinets as const
 from . import types_fronts
+from . import paths_cabinet
 
 class Cabinet_Library_Item(bpy.types.PropertyGroup):
     library_type: StringProperty(name="Library Type")
@@ -908,6 +909,77 @@ class hb_sample_cabinets_OT_update_selected_pulls_in_room(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class hb_sample_cabinets_OT_update_all_fronts_in_room(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.update_all_fronts_in_room"
+    bl_label = "Update All Fronts in Room"
+    bl_description = "This will update all of the fronts in the scene"
+
+    def execute(self, context):
+        part_path = paths_cabinet.get_current_door_path()
+
+        drawer_panel_bps = []
+        door_panel_bps = []
+        for obj in bpy.data.objects:
+
+            if const.DOOR_FRONT_TAG in obj:
+                if obj not in door_panel_bps:
+                    door_panel_bps.append(obj)
+
+            if const.DRAWER_FRONT_TAG in obj:
+                if obj not in drawer_panel_bps:
+                    drawer_panel_bps.append(obj)
+
+        for door_panel_bp in door_panel_bps:
+            old_door_panel = pc_types.Assembly(door_panel_bp)
+            door_insert = types_fronts.Fronts(door_panel_bp.parent)
+            new_front = pc_types.Assembly(door_insert.add_assembly_from_file(part_path))
+            door_insert.replace_front(old_door_panel,new_front,True)
+
+        for door_panel_bp in drawer_panel_bps:
+            old_door_panel = pc_types.Assembly(door_panel_bp)
+            door_insert = types_fronts.Fronts(door_panel_bp.parent)
+            new_front = pc_types.Assembly(door_insert.add_assembly_from_file(part_path))
+            door_insert.replace_front(old_door_panel,new_front,False)
+
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_update_selected_fronts_in_room(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.update_selected_fronts_in_room"
+    bl_label = "Update Selected Fronts in Room"
+    bl_description = "This will update the selected fronts in the scene"
+
+    def execute(self, context):
+        part_path = paths_cabinet.get_current_door_path()
+
+        drawer_panel_bps = []
+        door_panel_bps = []
+        for obj in context.selected_objects:
+            door_bp = pc_utils.get_bp_by_tag(obj,const.DOOR_FRONT_TAG)
+            if door_bp:
+                if door_bp not in door_panel_bps:
+                    door_panel_bps.append(door_bp)
+
+            drawer_bp = pc_utils.get_bp_by_tag(obj,const.DRAWER_FRONT_TAG)
+            if drawer_bp:
+                if drawer_bp not in drawer_panel_bps:
+                    drawer_panel_bps.append(drawer_bp)
+
+        for door_panel_bp in door_panel_bps:
+            old_door_panel = pc_types.Assembly(door_panel_bp)
+            door_insert = types_fronts.Fronts(door_panel_bp.parent)
+            new_front = pc_types.Assembly(door_insert.add_assembly_from_file(part_path))
+            door_insert.replace_front(old_door_panel,new_front,True)
+
+        for door_panel_bp in drawer_panel_bps:
+            old_door_panel = pc_types.Assembly(door_panel_bp)
+            door_insert = types_fronts.Fronts(door_panel_bp.parent)
+            new_front = pc_types.Assembly(door_insert.add_assembly_from_file(part_path))
+            door_insert.replace_front(old_door_panel,new_front,False)
+
+        return {'FINISHED'}
+
+
 class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.build_library"
     bl_label = "Build Library"
@@ -1016,6 +1088,8 @@ classes = (
     hb_sample_cabinets_OT_place_wall_cabinet,
     hb_sample_cabinets_OT_update_all_pulls_in_room,
     hb_sample_cabinets_OT_update_selected_pulls_in_room,
+    hb_sample_cabinets_OT_update_all_fronts_in_room,
+    hb_sample_cabinets_OT_update_selected_fronts_in_room,
     hb_sample_cabinets_OT_build_library,
 )
 

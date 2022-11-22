@@ -136,7 +136,7 @@ class Fronts(pc_types.Assembly):
         for child in obj.children:
             self.set_child_properties(child,insert_bp)
 
-    def replace_front(self,old_door_panel,new_front,pull_pointer,is_door=True):
+    def replace_front(self,old_door_panel,new_front,is_door=True):
         hb_props = bpy.context.scene.hb_cabinet
         if "FRONT_NUMBER" in old_door_panel.obj_bp:
             new_front.obj_bp["FRONT_NUMBER"] = old_door_panel.obj_bp["FRONT_NUMBER"]
@@ -161,10 +161,10 @@ class Fronts(pc_types.Assembly):
         pc_utils.replace_assembly(old_door_panel,new_front)
         if is_door:
             new_front.obj_bp[const.DOOR_FRONT_TAG] = True
-            self.add_door_pull(new_front,pull_pointer)
+            self.add_door_pull(new_front)
         else:
             new_front.obj_bp[const.DRAWER_FRONT_TAG] = True
-            self.add_drawer_pull(new_front,pull_pointer)
+            self.add_drawer_pull(new_front)
         material_pointers_cabinet.assign_door_pointers(new_front)
         material_pointers_cabinet.assign_materials_to_assembly(new_front)            
         self.set_child_properties(new_front.obj_bp,self.obj_bp)

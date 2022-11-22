@@ -109,6 +109,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row = col.row(align=True)
             row.scale_y = 1.3                 
             row.menu('HOME_BUILDER_MT_decorations',text=library_name)
+            row.separator()
             row.menu('HOME_BUILDER_MT_decoration_library_commands',text="",icon='SETTINGS')
             self.draw_library(col,context,library)
 
@@ -118,6 +119,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row.scale_y = 1.3                 
             row.menu('HOME_BUILDER_MT_products',text=library_name)                  
             if library_menu_id != '':
+                row.separator()
                 row.menu(library_menu_id,text="",icon='SETTINGS')
             
             self.draw_library(col,context,library)           
@@ -127,6 +129,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
             row = col.row(align=True)
             row.scale_y = 1.3                 
             row.menu('HOME_BUILDER_MT_materials_library',text=library_name)   
+            row.separator()
             row.menu('HOME_BUILDER_MT_material_library_commands',text="",icon='SETTINGS')
             self.draw_library(col,context,library)
 
@@ -146,6 +149,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row.scale_y = 1.3                 
                 row.menu('HOME_BUILDER_MT_starters_library',text=library_name) 
                 if library_menu_id != '':
+                    row.separator()
                     row.menu(library_menu_id,text="",icon='SETTINGS')                 
                 self.draw_library(col,context,library)
 
@@ -155,6 +159,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row.scale_y = 1.3                 
                 row.menu('HOME_BUILDER_MT_inserts_library',text=library_name)  
                 if library_menu_id != '':
+                    row.separator()
                     row.menu(library_menu_id,text="",icon='SETTINGS')
                 
                 self.draw_library(col,context,library)
@@ -165,6 +170,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row.scale_y = 1.3                 
                 row.menu('HOME_BUILDER_MT_parts_library',text=library_name)  
                 if library_menu_id != '':
+                    row.separator()
                     row.menu(library_menu_id,text="",icon='SETTINGS')
                 self.draw_library(col,context,library)
 
