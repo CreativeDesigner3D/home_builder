@@ -318,6 +318,7 @@ class Refrigerator(pc_types.Assembly):
 
         doors = types_cabinet_exteriors.Doors()
         doors.carcass_type = 'Upper'
+        doors.door_type = 'Upper'
         doors.door_swing = 2
         insert = self.add_assembly(doors)
         insert.loc_x('material_thickness',[material_thickness])
