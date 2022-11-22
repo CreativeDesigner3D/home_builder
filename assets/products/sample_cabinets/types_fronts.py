@@ -186,6 +186,7 @@ class Fronts(pc_types.Assembly):
         door_swing = self.get_prompt("Door Swing").get_var('door_swing')
         open_door = self.get_prompt("Open Door").get_var('open_door')
         inset = self.get_prompt("Inset Front").get_var('inset')
+        hide_doors = self.get_prompt("Hide").get_var('hide_doors')
            
         vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
 
@@ -205,17 +206,17 @@ class Fronts(pc_types.Assembly):
         front.dim_z('front_thickness',[front_thickness])  
         hide = front.get_prompt("Hide")  
         if location == 'Left':
-            hide.set_formula('IF(OR(door_swing==0,door_swing==2),False,True)',[door_swing])
+            hide.set_formula('IF(hide_doors,True,IF(OR(door_swing==0,door_swing==2),False,True))',[hide_doors,door_swing])
             front.loc_x('-lo_var',[lo_var])
             front.rot_z('-door_rotation*open_door',[door_rotation,open_door])
             front.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)*-1',[door_swing,x,lo_var,ro_var,vertical_gap])
         if location == 'Right':
-            hide.set_formula('IF(OR(door_swing==1,door_swing==2),False,True)',[door_swing])
+            hide.set_formula('IF(hide_doors,True,IF(OR(door_swing==1,door_swing==2),False,True))',[hide_doors,door_swing])
             front.loc_x('x+ro_var',[x,ro_var])
             front.rot_z('door_rotation*open_door',[door_rotation,open_door])
             front.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)',[door_swing,x,lo_var,ro_var,vertical_gap])  
         if location == 'Top':
-            hide.set_formula('IF(door_swing==3,False,True)',[door_swing])
+            hide.set_formula('IF(hide_doors,True,IF(door_swing==3,False,True))',[hide_doors,door_swing])
             front.rot_x(value = 0)
             front.rot_y('radians(90)-(door_rotation*open_door)',[door_rotation,open_door])  
             front.rot_z(value = math.radians(-90)) 
@@ -225,7 +226,7 @@ class Fronts(pc_types.Assembly):
             front.rot_x(value = 0)
             front.rot_y('radians(-90)-(door_rotation*open_door)',[door_rotation,open_door])  
             front.rot_z(value = math.radians(90))  
-            hide.set_formula('IF(door_swing==4,False,True)',[door_swing])
+            hide.set_formula('IF(hide_doors,True,IF(door_swing==4,False,True))',[hide_doors,door_swing])
             front.loc_x('-lo_var',[lo_var])
             front.dim_y('(x+lo_var+ro_var)*-1',[x,lo_var,ro_var])  
 
