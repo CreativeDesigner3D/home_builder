@@ -235,7 +235,7 @@ class HOME_BUILDER_PT_cabinet_hardware(bpy.types.Panel):
         row.label(text="Center Pulls on Drawers:")        
         row.prop(props,'center_pulls_on_drawer_front',text="")      
         op_props = row.operator('home_builder.update_checkbox_prompt_in_scene',text="",icon='FILE_REFRESH',emboss=False)
-        op_props.prompt_name = "Center Pulls on Fronts"
+        op_props.prompt_name = "Center Pull on Front"
         op_props.prompt_value = False          
         if not props.center_pulls_on_drawer_front:
             row = box.row(align=True)
@@ -245,15 +245,30 @@ class HOME_BUILDER_PT_cabinet_hardware(bpy.types.Panel):
         row = box.row(align=True)
         row.label(text="Horizontal Location:")        
         row.prop(props,'pull_dim_from_edge',text="")       
+        op_props = row.operator('home_builder.update_distance_prompt_in_scene',text="",icon='FILE_REFRESH',emboss=False)
+        op_props.prompt_name = "Pull Horizontal Location"
+        op_props.prompt_value = props.pull_dim_from_edge
+
         row = box.row(align=True)
         row.label(text="Base Vertical Location:")        
-        row.prop(props,'pull_vertical_location_base',text="Top of Door")                   
+        row.prop(props,'pull_vertical_location_base',text="Top of Door")    
+        op_props = row.operator('home_builder.update_distance_prompt_in_scene',text="",icon='FILE_REFRESH',emboss=False)
+        op_props.prompt_name = "Base Pull Vertical Location"
+        op_props.prompt_value = props.pull_vertical_location_base      
+
         row = box.row(align=True)
         row.label(text="Tall Vertical Location:")        
         row.prop(props,'pull_vertical_location_tall',text="Bottom of Door")   
+        op_props = row.operator('home_builder.update_distance_prompt_in_scene',text="",icon='FILE_REFRESH',emboss=False)
+        op_props.prompt_name = "Tall Pull Vertical Location"
+        op_props.prompt_value = props.pull_vertical_location_tall      
+
         row = box.row(align=True)
         row.label(text="Upper Vertical Location:")        
-        row.prop(props,'pull_vertical_location_upper',text="Bottom of Door")       
+        row.prop(props,'pull_vertical_location_upper',text="Bottom of Door")  
+        op_props = row.operator('home_builder.update_distance_prompt_in_scene',text="",icon='FILE_REFRESH',emboss=False)
+        op_props.prompt_name = "Upper Pull Vertical Location"
+        op_props.prompt_value = props.pull_vertical_location_upper                   
 
 
 class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
