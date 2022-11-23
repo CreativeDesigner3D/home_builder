@@ -585,7 +585,7 @@ class hb_sample_cabinets_OT_delete_closet_insert(bpy.types.Operator):
 
 class hb_sample_cabinets_OT_place_wall_cabinet(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.place_wall_cabinet"
-    bl_label = "Place Wall Cabinet"
+    bl_label = "Place Cabinet On Wall"
 
     cabinet_name: bpy.props.StringProperty(name="Cabinet Name",default="")
     
@@ -628,6 +628,8 @@ class hb_sample_cabinets_OT_place_wall_cabinet(bpy.types.Operator):
 
     def reset_variables(self):
         self.quantity = 1
+        self.left_offset = 0
+        self.right_offset = 0
         self.cabinet = None
         self.position = 'SELECTED_POINT'
         self.qty_cage = None
