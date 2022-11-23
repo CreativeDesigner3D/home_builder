@@ -1099,6 +1099,44 @@ class home_builder_OT_update_distance_prompt_in_scene(bpy.types.Operator):
                     prompt.set_value(self.prompt_value)
         return {'FINISHED'}
 
+
+class home_builder_OT_update_wall_height(bpy.types.Operator):
+    bl_idname = "home_builder.update_wall_height"
+    bl_label = "Update Wall Height"
+    bl_description = "This will update all of the wall heights in the room"
+
+    def execute(self, context):
+        props = hb_utils.get_scene_props(context.scene)
+        walls = []
+        for obj in bpy.data.objects:
+            wall_bp = pc_utils.get_bp_by_tag(obj,'IS_WALL_BP')
+            if wall_bp and wall_bp not in walls:
+                walls.append(wall_bp)
+
+        for wall_bp in walls:
+            wall = pc_types.Assembly(wall_bp)
+            wall.obj_z.location.z = props.wall_height
+        return {'FINISHED'}
+
+
+class home_builder_OT_update_wall_thickness(bpy.types.Operator):
+    bl_idname = "home_builder.update_wall_thickness"
+    bl_label = "Update Wall Thickness"
+    bl_description = "This will update all of the thickness of all of the walls in the room"
+
+    def execute(self, context):
+        props = hb_utils.get_scene_props(context.scene)
+        walls = []
+        for obj in bpy.data.objects:
+            wall_bp = pc_utils.get_bp_by_tag(obj,'IS_WALL_BP')
+            if wall_bp and wall_bp not in walls:
+                walls.append(wall_bp)
+
+        for wall_bp in walls:
+            wall = pc_types.Assembly(wall_bp)
+            wall.obj_y.location.y = props.wall_thickness
+        return {'FINISHED'}
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_update_library_xml,
@@ -1122,6 +1160,8 @@ classes = (
     home_builder_OT_assign_material_to_all_slots,
     home_builder_OT_update_checkbox_prompt_in_scene,
     home_builder_OT_update_distance_prompt_in_scene,
+    home_builder_OT_update_wall_height,
+    home_builder_OT_update_wall_thickness,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

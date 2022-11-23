@@ -88,8 +88,12 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 box.use_property_split = True
                 box.use_property_decorate = False
                 box.label(text="Wall Settings")
-                box.prop(hb_scene,'wall_height')
-                box.prop(hb_scene,'wall_thickness')
+                row = box.row()
+                row.prop(hb_scene,'wall_height')
+                row.operator('home_builder.update_wall_height',text="",icon='FILE_REFRESH',emboss=False)
+                row = box.row()
+                row.prop(hb_scene,'wall_thickness')
+                row.operator('home_builder.update_wall_thickness',text="",icon='FILE_REFRESH',emboss=False)
             
             if hb_scene.room_tabs == 'CURRENT_ROOM':
 
