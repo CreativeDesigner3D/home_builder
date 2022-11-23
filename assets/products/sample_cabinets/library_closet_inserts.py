@@ -61,6 +61,12 @@ class Wire_Baskets(types_closet_inserts.Wire_Baskets):
         pass             
 
 
+class Wine_Rack(types_closet_inserts.Wine_Rack):
+
+    def __init__(self):
+        pass             
+
+
 class Division_1(types_closet_inserts.Horizontal_Splitter):
 
     def __init__(self):

@@ -504,6 +504,54 @@ class Wire_Baskets(Closet_Insert):
             prev_wire_basket_empty = wire_basket_empty
                
 
+class Wine_Rack(Closet_Insert):
+    
+    def draw(self):
+        self.create_assembly()
+        self.add_closet_insert_prompts()      
+        self.obj_bp[const.WINE_RACK_TAG] = True
+        self.obj_bp[const.INSERT_TAG] = True
+        self.obj_bp['PROMPT_ID'] = 'hb_closet_inserts.wine_rack_prompts'
+        # self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+
+        self.obj_x.location.x = pc_unit.inch(20)
+        self.obj_y.location.y = pc_unit.inch(12)
+        self.obj_z.location.z = pc_unit.inch(60)        
+
+        self.add_prompt("Wine Rack Quantity",'QUANTITY',3)
+        self.add_prompt("Space From Bottom",'DISTANCE',pc_unit.inch(1))
+        self.add_prompt("Vertical Spacing",'DISTANCE',pc_unit.inch(6))
+        self.add_prompt("Wine Rack Setback",'DISTANCE',pc_unit.inch(2))
+        self.add_prompt("Wine Rack Depth",'DISTANCE',pc_unit.inch(10))
+
+        prompts_cabinet.add_closet_thickness_prompts(self)
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')      
+        qty = self.get_prompt("Wine Rack Quantity").get_var('qty') 
+        back_inset = self.get_prompt("Back Inset").get_var("back_inset")
+        space_from_bot = self.get_prompt("Space From Bottom").get_var("space_from_bot")
+        vert_spacing = self.get_prompt("Vertical Spacing").get_var("vert_spacing")
+        setback = self.get_prompt("Wine Rack Setback").get_var("setback")
+        rack_depth = self.get_prompt("Wine Rack Depth").get_var("rack_depth")
+
+        rack = assemblies_cabinet.add_wine_rack(self)
+        rack.loc_x('x',[x])
+        rack.loc_y('rack_depth+setback',[rack_depth,setback])
+        rack.loc_z('space_from_bot',[space_from_bot])                                                                         
+        rack.rot_x(value = 0)
+        rack.rot_y(value = 0)
+        rack.rot_z(value = math.radians(180))
+        rack.dim_x('x',[x])
+        rack.dim_y('rack_depth',[rack_depth])            
+        rack.dim_z(value = 0)
+        z_quantity = rack.get_prompt("Z Quantity")
+        z_offset = rack.get_prompt("Z Offset")
+        z_quantity.set_formula('qty',[qty]) 
+        z_offset.set_formula('vert_spacing',[vert_spacing])         
+
+
 class Vertical_Splitter(Closet_Insert):
 
     splitter_qty = 1

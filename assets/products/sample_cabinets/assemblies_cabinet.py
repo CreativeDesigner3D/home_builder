@@ -307,6 +307,19 @@ def add_wire_basket(assembly):
     material_pointers_cabinet.assign_materials_to_assembly(part)
     return part          
 
+def add_wine_rack(assembly):
+    part_path = path.join(paths_cabinet.get_assembly_path(),"Wine Rack.blend")
+    part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))
+    assembly.add_assembly(part)
+    part.obj_bp.empty_display_size = .001
+    part.obj_x.empty_display_size = .001
+    part.obj_y.empty_display_size = .001
+    part.obj_z.empty_display_size = .001
+    part.obj_prompts.empty_display_size = .001    
+    material_pointers_cabinet.assign_pointer_to_assembly(part,"Wire Baskets")
+    material_pointers_cabinet.assign_materials_to_assembly(part)
+    return part          
+
 def add_cage(assembly):
     part_path = path.join(paths_cabinet.get_assembly_path(),"Cage.blend")
     part = pc_types.Assembly(assembly.add_assembly_from_file(part_path))

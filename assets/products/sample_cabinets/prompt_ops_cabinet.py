@@ -2026,6 +2026,59 @@ class hb_closet_inserts_OT_closet_wire_baskets_prompts(bpy.types.Operator):
         row.prop(spacing,'distance_value',text="")
 
 
+class hb_closet_inserts_OT_wine_rack_prompts(bpy.types.Operator):
+    bl_idname = "hb_closet_inserts.wine_rack_prompts"
+    bl_label = "Wine Rack Prompts"
+
+    insert = None
+
+    def check(self, context):     
+        return True
+
+    def execute(self, context):                   
+        return {'FINISHED'}
+
+    def invoke(self,context,event):
+        self.get_assemblies(context)
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=300)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.WINE_RACK_TAG)
+        self.insert = pc_types.Assembly(bp)
+
+    def draw(self, context):
+        layout = self.layout
+
+        rack_qty = self.insert.get_prompt("Wine Rack Quantity")
+        space_from_bottom = self.insert.get_prompt("Space From Bottom")
+        setback = self.insert.get_prompt("Wine Rack Setback")
+        spacing = self.insert.get_prompt("Vertical Spacing")
+        depth = self.insert.get_prompt("Wine Rack Depth")
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="Wine Rack Quantity")
+        row.prop(rack_qty,'quantity_value',text="")
+
+        box = layout.box()
+        row = box.row()
+        row.label(text="Space From Bottom")
+        row.prop(space_from_bottom,'distance_value',text="")
+
+        row = box.row()
+        row.label(text="Vertical Spacing")
+        row.prop(spacing,'distance_value',text="")
+
+        row = box.row()
+        row.label(text="Wine Rack Setback")
+        row.prop(setback,'distance_value',text="")
+
+        row = box.row()
+        row.label(text="Wine Rack Depth")
+        row.prop(depth,'distance_value',text="")                
+
+
 class hb_closet_parts_OT_closet_single_adj_shelf_prompts(bpy.types.Operator):
     bl_idname = "hb_closet_parts.closet_single_adj_shelf_prompts"
     bl_label = "Closet Single Adjustable Shelf Prompts"
@@ -2350,6 +2403,7 @@ classes = (
     hb_closet_inserts_OT_closet_shoe_shelf_prompts,
     hb_closet_inserts_OT_closet_cubby_prompts,
     hb_closet_inserts_OT_closet_wire_baskets_prompts,
+    hb_closet_inserts_OT_wine_rack_prompts,
     hb_closet_parts_OT_closet_single_adj_shelf_prompts,
     hb_closet_parts_OT_closet_cleat_prompts,
     hb_closet_parts_OT_closet_back_prompts,
