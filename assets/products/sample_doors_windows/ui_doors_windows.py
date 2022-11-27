@@ -86,7 +86,7 @@ class HOME_BUILDER_MT_window_insert_library_commands(bpy.types.Menu):
         bp = pc_utils.get_bp_by_tag(context.object,const.WINDOW_TAG)
         path = paths_doors_windows.get_window_insert_path()
         layout = self.layout
-        layout.operator('doors_windows.create_new_asset',text="Create New Window Frame",icon='ADD').asset_type = "WINDOW_INSERT"
+        layout.operator('doors_windows.create_new_asset',text="Create New Window Insert",icon='ADD').asset_type = "WINDOW_INSERT"
         layout.operator('home_builder.open_browser_window',text="Open Library Path",icon='FILE_FOLDER').path = path
         layout.operator('doors_windows.save_asset_to_library',text="Save Window Insert to Library",icon='FILE').asset_type = "WINDOW_INSERT"
 
