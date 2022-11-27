@@ -1137,6 +1137,25 @@ class home_builder_OT_update_wall_thickness(bpy.types.Operator):
             wall.obj_y.location.y = props.wall_thickness
         return {'FINISHED'}
 
+
+class home_builder_OT_open_browser_window(bpy.types.Operator):
+    bl_idname = "home_builder.open_browser_window"
+    bl_label = "Open Browser Window"
+    bl_description = "This will open a path in your OS file browser"
+
+    path: bpy.props.StringProperty(name="Path",description="Path to Open")
+
+    def execute(self, context):
+        import subprocess
+        if 'Windows' in str(bpy.app.build_platform):
+            subprocess.Popen(r'explorer ' + self.path)
+        elif 'Darwin' in str(bpy.app.build_platform):
+            subprocess.Popen(['open' , os.path.normpath(self.path)])
+        else:
+            subprocess.Popen(['xdg-open' , os.path.normpath(self.path)])
+        return {'FINISHED'}
+
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_update_library_xml,
@@ -1162,6 +1181,7 @@ classes = (
     home_builder_OT_update_distance_prompt_in_scene,
     home_builder_OT_update_wall_height,
     home_builder_OT_update_wall_thickness,
+    home_builder_OT_open_browser_window,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

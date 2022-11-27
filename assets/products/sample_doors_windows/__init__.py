@@ -4,6 +4,7 @@ from . import ui_doors_windows
 from . import props_doors_windows
 from . import drop_ops_doors_windows
 from . import prompt_ops_doors_windows
+from . import ops_doors_windows
 
 DOOR_WINDOW_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Sample Doors and Windows")
 
@@ -28,6 +29,7 @@ MATERIAL_POINTERS = [DOOR_WINDOW_POINTERS]
 
 def register():
     props_doors_windows.register()
+    ops_doors_windows.register()
     ui_doors_windows.register()
     drop_ops_doors_windows.register()
     prompt_ops_doors_windows.register()

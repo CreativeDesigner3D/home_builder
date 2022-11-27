@@ -72,7 +72,7 @@ class HB_Door_Window_Scene_Props(PropertyGroup):
 
     door_height: bpy.props.FloatProperty(name="Double Door Width",
                                          description="Is the width of double entry doors",
-                                         default=pc_unit.inch(70),
+                                         default=pc_unit.inch(80),
                                          unit='LENGTH')     
 
     #WINDOWS
