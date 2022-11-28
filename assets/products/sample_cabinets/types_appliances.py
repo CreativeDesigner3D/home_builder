@@ -176,13 +176,16 @@ class Range(pc_types.Assembly):
 class Refrigerator(pc_types.Assembly):
 
     refrigerator = None
+    doors = None
 
     def __init__(self,obj_bp=None):
         super().__init__(obj_bp=obj_bp)  
         if obj_bp:
             for child in obj_bp.children:   
                 if const.REFRIGERATOR_TAG in child:
-                    self.refrigerator = pc_types.Assembly(child)    
+                    self.refrigerator = pc_types.Assembly(child)   
+                if const.DOOR_INSERT_TAG in child:
+                    self.doors = pc_types.Assembly(child)
 
     def add_refrigerator(self,assembly_name=""):
         props = utils_cabinet.get_scene_props(bpy.context.scene)

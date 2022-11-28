@@ -883,6 +883,13 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
     appliance_bp_name: bpy.props.StringProperty(name="Appliance BP Name",default="")
     refrigerator_changed: bpy.props.BoolProperty(name="Refrigerator Changed",default=False)
 
+    door_swing: bpy.props.EnumProperty(name="Door Swing",
+                                       items=[('LEFT',"Left","Left Swing Door"),
+                                              ('RIGHT',"Right","Right Swing Door"),
+                                              ('DOUBLE',"Double","Double Door"),
+                                              ('TOP',"Top","Top Swing Door"),
+                                              ('BOTTOM',"Bottom","Bottom Swing Door")])
+
     width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
@@ -901,6 +908,17 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
         enum_cabinets.update_refrigerator_category(self,context)
 
     def check(self, context):
+        door_swing = self.product.doors.get_prompt("Door Swing")
+        if self.door_swing == 'LEFT':
+            door_swing.set_value(0)
+        if self.door_swing == 'RIGHT':
+            door_swing.set_value(1)
+        if self.door_swing == 'DOUBLE':
+            door_swing.set_value(2)         
+        if self.door_swing == 'TOP':
+            door_swing.set_value(3)     
+        if self.door_swing == 'BOTTOM':
+            door_swing.set_value(4)                             
         self.update_product_size(self.product)
         self.update_refrigerator(context)
         return True
@@ -920,6 +938,19 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
             pc_utils.hide_empties(self.product.obj_bp)
             self.get_assemblies(context)
 
+    def set_properties_from_prompts(self):
+        door_swing = self.product.doors.get_prompt("Door Swing")
+        if door_swing.get_value() == 0:
+            self.door_swing = 'LEFT'
+        if door_swing.get_value() == 1:
+            self.door_swing = 'RIGHT'
+        if door_swing.get_value() == 2:
+            self.door_swing = 'DOUBLE' 
+        if door_swing.get_value() == 3:
+            self.door_swing = 'TOP' 
+        if door_swing.get_value() == 4:
+            self.door_swing = 'BOTTOM' 
+
     def execute(self, context):
         return {'FINISHED'}
 
@@ -930,6 +961,7 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
     def invoke(self,context,event):
         self.reset_variables(context)
         self.get_assemblies(context)
+        self.set_properties_from_prompts()
      
         self.depth = math.fabs(self.product.obj_y.location.y)
         self.height = math.fabs(self.product.obj_z.location.z)
@@ -950,6 +982,13 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
         remove_carcass.draw(box,allow_edit=False)
         carcass_height = self.product.get_prompt("Carcass Height")
         carcass_height.draw(box,allow_edit=False)
+        if remove_carcass.get_value() == False and self.product.doors:
+            open_door = self.product.doors.get_prompt("Open Door")
+            row = box.row()
+            row.label(text="Swing")
+            row.prop(self,'door_swing',expand=True)
+            if open_door:
+                open_door.draw(box,allow_edit=False)
 
     def draw(self, context):
         layout = self.layout
