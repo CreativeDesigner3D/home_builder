@@ -583,8 +583,8 @@ class hb_sample_cabinets_OT_delete_closet_insert(bpy.types.Operator):
         self.insert = pc_types.Assembly(bp)
 
 
-class hb_sample_cabinets_OT_place_wall_cabinet(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.place_wall_cabinet"
+class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.place_cabinet_on_wall"
     bl_label = "Place Cabinet On Wall"
 
     cabinet_name: bpy.props.StringProperty(name="Cabinet Name",default="")
@@ -782,6 +782,8 @@ class hb_sample_cabinets_OT_place_wall_cabinet(bpy.types.Operator):
 
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_TAG)
+        if not bp:
+            bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
         self.cabinet = types_cabinet.Cabinet(bp)
 
     def draw(self, context):
@@ -1087,7 +1089,7 @@ classes = (
     hb_sample_cabinets_OT_delete_closet_opening,
     hb_sample_cabinets_OT_duplicate_closet_insert,
     hb_sample_cabinets_OT_delete_closet_insert,
-    hb_sample_cabinets_OT_place_wall_cabinet,
+    hb_sample_cabinets_OT_place_cabinet_on_wall,
     hb_sample_cabinets_OT_update_all_pulls_in_room,
     hb_sample_cabinets_OT_update_selected_pulls_in_room,
     hb_sample_cabinets_OT_update_all_fronts_in_room,
