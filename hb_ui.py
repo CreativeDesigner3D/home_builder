@@ -190,7 +190,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                             row.operator('pc_assembly.select_parent',text="",icon='SORT_DESC')
                         else:
                             row = box.row()
-                            row.operator('home_builder.create_new_library_category',text="Create Library Category",icon='ADD').library_type = 'BUILD_LIBRARY'                          
+                            row.operator('home_builder.create_new_library_category',text="Create Library Category",icon='FILE_FOLDER').library_type = 'BUILD_LIBRARY'                          
                     else:
                         box = col.box()
                         row = box.row()
@@ -204,7 +204,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row = col.row(align=True)
                 row.scale_y = 1.3                 
                 row.menu('HOME_BUILDER_MT_build_library',text=library_name)
-                row.operator('home_builder.create_new_library_category',text="",icon='ADD').library_type = 'BUILD_LIBRARY' 
+                row.menu('HOME_BUILDER_MT_build_library_commands',text="",icon='SETTINGS')
 
                 self.draw_library(col,context,library)                
 
@@ -347,6 +347,21 @@ class HOME_BUILDER_MT_material_library_commands(bpy.types.Menu):
         layout.operator('home_builder.save_material',text="Save Active Material to Library",icon='ADD')
 
 
+class HOME_BUILDER_MT_build_library_commands(bpy.types.Menu):
+    bl_label = "Build Library Commands"
+
+    def draw(self, context):
+        layout = self.layout
+        wm_props = context.window_manager.home_builder
+        library = wm_props.get_active_library(context)
+        library_filepath = library.library_path
+        if os.path.exists(library_filepath):
+            props = layout.operator('wm.open_mainfile',text="Open Library File",icon='ASSET_MANAGER')
+            props.filepath = library_filepath
+            props.display_file_selector = False
+        layout.operator('home_builder.create_new_library_category',text="Create New Category",icon='FILE_FOLDER').library_type = 'BUILD_LIBRARY' 
+
+
 class HOME_BUILDER_PT_walls(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -381,6 +396,7 @@ classes = (
     HOME_BUILDER_MT_home_builder_menu,
     HOME_BUILDER_MT_decoration_library_commands,
     HOME_BUILDER_MT_material_library_commands,
+    HOME_BUILDER_MT_build_library_commands,
     HOME_BUILDER_PT_walls,
 )
 
