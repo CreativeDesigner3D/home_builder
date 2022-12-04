@@ -333,6 +333,7 @@ class Door_Drawer(types_fronts.Fronts):
         
         #VARS
         x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_z.pyclone.get_var('location.y','y')  
         z = self.obj_z.pyclone.get_var('location.z','z')        
         vertical_gap = self.get_prompt("Vertical Gap").get_var('vertical_gap')
         h_gap = self.get_prompt("Horizontal Gap").get_var('h_gap')
@@ -341,6 +342,8 @@ class Door_Drawer(types_fronts.Fronts):
         front_thickness = self.get_prompt("Front Thickness").get_var('front_thickness')
         door_rotation = self.get_prompt("Door Rotation").get_var('door_rotation')
         open_door = self.get_prompt("Open Door").get_var('open_door')
+        inset = self.get_prompt("Inset Front").get_var('inset')
+        open_drawer = self.get_prompt("Open Drawer").get_var('open_drawer')
 
         to, bo, lo, ro = self.add_overlay_prompts()
 
@@ -378,7 +381,7 @@ class Door_Drawer(types_fronts.Fronts):
         l_drawer_front.obj_bp[const.DRAWER_FRONT_TAG] = True
         l_drawer_front.set_name('Drawer Front')
         l_drawer_front.loc_x('-lo_var',[lo_var])
-        l_drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        l_drawer_front.loc_y('IF(inset,front_thickness,-door_to_cabinet_gap)-(y*open_drawer)',[inset,front_thickness,door_to_cabinet_gap,y,open_drawer])
         l_drawer_front.loc_z('z+to_var-top_df_height_var',[z,to_var,top_df_height_var])
         l_drawer_front.rot_x(value = math.radians(90))
         l_drawer_front.rot_y(value = math.radians(-90))
@@ -398,7 +401,7 @@ class Door_Drawer(types_fronts.Fronts):
         r_drawer_front.obj_bp[const.DRAWER_FRONT_TAG] = True
         r_drawer_front.set_name('Drawer Front')
         r_drawer_front.loc_x('(x/2)+(vertical_gap/2)',[x,vertical_gap])
-        r_drawer_front.loc_y('-door_to_cabinet_gap',[door_to_cabinet_gap])
+        r_drawer_front.loc_y('IF(inset,front_thickness,-door_to_cabinet_gap)-(y*open_drawer)',[inset,front_thickness,door_to_cabinet_gap,y,open_drawer])
         r_drawer_front.loc_z('z+to_var-top_df_height_var',[z,to_var,top_df_height_var])
         r_drawer_front.rot_x(value = math.radians(90))
         r_drawer_front.rot_y(value = math.radians(-90))
