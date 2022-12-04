@@ -1,7 +1,7 @@
 import bpy
 import os
 import math
-from pc_lib import pc_utils, pc_placement_utils
+from pc_lib import pc_utils, pc_placement_utils, pc_unit, pc_types
 from mathutils import Vector
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 
@@ -206,6 +206,9 @@ class home_builder_OT_drop_build_library(bpy.types.Operator):
     obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
 
     current_wall = None
+    z_loc = 0
+
+    assembly = None
 
     starting_point = ()
 
@@ -240,11 +243,13 @@ class home_builder_OT_drop_build_library(bpy.types.Operator):
             obj.display_type = 'WIRE'
             self.all_objects.append(obj)
             if obj.parent is None:
+                self.assembly = pc_types.Assembly(obj)
+                self.z_loc = obj.location.z
                 self.parent_obj_dict[obj] = (obj.location.x, obj.location.y, obj.location.z)            
             context.view_layer.active_layer_collection.collection.objects.link(obj)  
 
     def set_placed_properties(self,obj):
-        if obj.type == 'MESH' and obj.hide_render == False:
+        if obj.type in {'MESH','CURVE'}:
             obj.display_type = 'TEXTURED'          
         for child in obj.children:
             self.set_placed_properties(child) 
@@ -272,11 +277,20 @@ class home_builder_OT_drop_build_library(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def position_object(self,selected_point,selected_obj):
-        for obj, location in self.parent_obj_dict.items():
-            obj.location = selected_point
-            obj.location.x += location[0]
-            obj.location.y += location[1]
-            obj.location.z += location[2]
+        wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_CABINET_BP')
+        if cabinet_bp:
+            cabinet = pc_types.Assembly(cabinet_bp)
+            pc_placement_utils.position_assembly_next_to_cabinet(self.assembly,cabinet,selected_point)
+        elif wall_bp:
+            wall = pc_types.Assembly(wall_bp)
+            pc_placement_utils.position_assembly_on_wall(self.assembly,wall,selected_point,(0,0,0),self.z_loc)
+        else:
+            for obj, location in self.parent_obj_dict.items():
+                obj.location = selected_point
+                obj.location.x += location[0]
+                obj.location.y += location[1]
+                obj.location.z += self.z_loc
 
     def cancel_drop(self,context):
         obj_list = []
@@ -307,6 +321,7 @@ class home_builder_OT_drop_build_library(bpy.types.Operator):
             self.set_placed_properties(obj) 
         context.area.tag_redraw()
         return {'FINISHED'}
+
 
 classes = (
     home_builder_OT_drop_material,

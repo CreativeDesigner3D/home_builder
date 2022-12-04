@@ -209,7 +209,6 @@ def load_libraries(context):
         if os.path.exists(path) and os.path.isdir(path):
             dirs = os.listdir(path)
             for folder in dirs:
-                print('FOLDER',folder)
                 if folder == 'materials':
                     load_library_from_path(context,os.path.join(path,folder),'MATERIALS')
                 if folder == 'decorations':
