@@ -394,9 +394,8 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def get_appliance(self,context):
-        workspace = context.workspace
-        wm = context.window_manager
-        asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]
+        wm_props = context.window_manager.home_builder
+        asset = wm_props.get_active_asset(context)        
         self.cabinet = eval("library_appliance." + asset.file_data.name.replace(" ","_") + "()")
         self.cabinet.draw()
         self.set_child_properties(self.cabinet.obj_bp)
@@ -452,77 +451,6 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         for cal in self.calculators:
             cal.calculate()
         self.refresh_data(False)
-
-        # if self.placement == 'LEFT' and self.selected_cabinet:
-        #     self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
-        #     constraint_obj = self.cabinet.obj_x
-        #     constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
-        #     constraint.target = constraint_obj
-        #     constraint.use_x = True
-        #     constraint.use_y = True
-        #     constraint.use_z = False
-        #     for carcass in self.cabinet.carcasses:
-        #         if self.cabinet.obj_z.location.z == self.selected_cabinet.obj_z.location.z:
-        #             rfe = carcass.get_prompt('Right Finished End')
-        #             rfe.set_value(False)
-
-        #     for carcass in self.selected_cabinet.carcasses:
-        #         if self.cabinet.obj_z.location.z == self.selected_cabinet.obj_z.location.z:
-        #             lfe = carcass.get_prompt('Left Finished End')
-        #             lfe.set_value(False)                
-
-        # if self.placement == 'RIGHT' and self.selected_cabinet:
-        #     self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
-        #     constraint_obj = self.selected_cabinet.obj_x
-        #     constraint = self.cabinet.obj_bp.constraints.new('COPY_LOCATION')
-        #     constraint.target = constraint_obj
-        #     constraint.use_x = True
-        #     constraint.use_y = True
-        #     constraint.use_z = False
-        #     for carcass in self.cabinet.carcasses:
-        #         if self.cabinet.obj_z.location.z == self.selected_cabinet.obj_z.location.z:
-        #             lfe = carcass.get_prompt('Left Finished End')
-        #             lfe.set_value(False)
-
-        #     for carcass in self.selected_cabinet.carcasses:
-        #         if self.cabinet.obj_z.location.z == self.selected_cabinet.obj_z.location.z:
-        #             rfe = carcass.get_prompt('Right Finished End')
-        #             rfe.set_value(False)               
-
-        # if hasattr(self.cabinet,'pre_draw'):
-        #     self.cabinet.draw()
-        # self.set_child_properties(self.cabinet.obj_bp)
-        # for cal in self.calculators:
-        #     cal.calculate()
-
-        # self.refresh_data(False)
-
-        # if self.placement == 'WALL_LEFT':
-        #     if self.cabinet.corner_type == 'Blind':
-        #         blind_panel_location = self.cabinet.carcasses[0].get_prompt("Blind Panel Location")
-        #         blind_panel_location.set_value(0)
-
-        # if self.placement == 'WALL_RIGHT':
-        #     if self.cabinet.corner_type == 'Blind':
-        #         blind_panel_location = self.cabinet.carcasses[0].get_prompt("Blind Panel Location")
-        #         blind_panel_location.set_value(1)
-
-        # if self.placement == 'BLIND_LEFT':
-        #     right_filler = self.cabinet.get_prompt("Right Adjustment Width")
-        #     right_filler.set_value(pc_unit.inch(2))
-        #     self.cabinet.add_right_filler() 
-
-        # if self.placement == 'BLIND_RIGHT':
-        #     left_filler = self.cabinet.get_prompt("Left Adjustment Width")
-        #     left_filler.set_value(pc_unit.inch(2))
-        #     self.cabinet.add_left_filler() 
-
-        # if self.current_wall:
-        #     props = home_builder_utils.get_scene_props(context.scene)
-        #     cabinet_type = self.cabinet.get_prompt("Cabinet Type")
-        #     self.cabinet.obj_bp.location.z = 0
-        #     if cabinet_type and cabinet_type.get_value() == 'Upper':
-        #         self.cabinet.obj_bp.location.z += props.height_above_floor - self.cabinet.obj_z.location.z
 
     def modal(self, context, event):
         context.area.tag_redraw()
