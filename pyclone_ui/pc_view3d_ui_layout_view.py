@@ -20,9 +20,9 @@ from pc_lib import pc_utils, pc_types
 class VIEW3D_PT_pc_layout_view(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_category = "Layout View"
-    bl_label = "Layout View"
-    bl_options = {'HIDE_HEADER'}
+    bl_category = "View"
+    bl_label = "Layout Views"
+    bl_options = {'DEFAULT_CLOSED'}
     
     @classmethod
     def poll(cls, context):

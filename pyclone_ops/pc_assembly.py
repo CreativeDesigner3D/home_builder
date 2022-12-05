@@ -630,7 +630,7 @@ class pc_assembly_OT_add_title_block(bpy.types.Operator):
         return True
 
     def invoke(self,context,event):
-        PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),'pc_lib','assets','Title Blocks')
+        PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)),'python_libs','pc_lib','assets','Title Blocks')
         files = os.listdir(PATH)
         for file in files:
             filename, ext = os.path.splitext(file)

@@ -397,7 +397,7 @@ classes = (
     HOME_BUILDER_MT_decoration_library_commands,
     HOME_BUILDER_MT_material_library_commands,
     HOME_BUILDER_MT_build_library_commands,
-    HOME_BUILDER_PT_walls,
+    # HOME_BUILDER_PT_walls,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

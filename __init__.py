@@ -28,6 +28,7 @@ from .pyclone_ui import pc_view3d_ui_sidebar_assemblies
 from .pyclone_ui import pc_view3d_ui_sidebar_object
 from .pyclone_ui import pc_text_ui_sidebar_library
 from .pyclone_ui import pc_view3d_ui_menu
+from .pyclone_ui import pc_view3d_ui_layout_view
 from .pyclone_ui import pc_lists
 
 from bpy.app.handlers import persistent
@@ -114,6 +115,7 @@ def register():
     pc_view3d_ui_sidebar_assemblies.register()
     pc_view3d_ui_sidebar_object.register()
     pc_text_ui_sidebar_library.register()
+    pc_view3d_ui_layout_view.register()
     hb_ui.register()
     hb_ops.register()
     wall_ops.register()
@@ -137,6 +139,7 @@ def unregister():
     pc_view3d_ui_sidebar_assemblies.unregister()
     pc_view3d_ui_sidebar_object.unregister()
     pc_text_ui_sidebar_library.unregister()
+    pc_view3d_ui_layout_view.unregister()
     hb_props.unregister()
     hb_ui.unregister()
     hb_ops.unregister()
