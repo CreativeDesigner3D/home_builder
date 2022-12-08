@@ -701,9 +701,12 @@ class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
         enum_cabinets.update_range_hood_category(self,context)
 
     def check(self, context):
+        add_range_hood = self.product.get_prompt("Add Range Hood")
+        add_range_hood.set_value(self.add_range_hood)        
         self.update_product_size(self.product)
         self.update_range(context)
         self.update_range_hood(context)
+        self.product.update_range_hood_location()
         self.product.update_range_hood_location()
         return True
 
@@ -735,6 +738,10 @@ class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
             self.get_assemblies(context)
 
     def execute(self, context):
+        add_range_hood = self.product.get_prompt("Add Range Hood")
+        if add_range_hood:
+            if self.product.range_hood_appliance and not add_range_hood.get_value():
+                pc_utils.delete_object_and_children(self.product.range_hood_appliance.obj_bp)          
         return {'FINISHED'}
 
     def get_assemblies(self,context):
@@ -745,7 +752,8 @@ class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
         self.reset_variables(context)
         self.get_assemblies(context)
         add_range_hood = self.product.get_prompt("Add Range Hood")
-        self.add_range_hood = add_range_hood.get_value()        
+        self.add_range_hood = add_range_hood.get_value() 
+        print(self.add_range_hood)       
         self.depth = math.fabs(self.product.obj_y.location.y)
         self.height = math.fabs(self.product.obj_z.location.z)
         self.width = math.fabs(self.product.obj_x.location.x)        

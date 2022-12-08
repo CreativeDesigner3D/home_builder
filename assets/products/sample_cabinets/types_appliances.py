@@ -18,6 +18,13 @@ def get_range_hood(category,assembly_name):
     else:
         return os.path.join(ASSET_DIR, category, assembly_name + ".blend")   
 
+def get_range(category,assembly_name):
+    ASSET_DIR = paths_cabinet.get_range_paths()
+    if assembly_name == "":
+        return os.path.join(ASSET_DIR,"_Sample","Range.blend")  
+    else:
+        return os.path.join(ASSET_DIR, category, assembly_name + ".blend")   
+
 class Dishwasher(pc_types.Assembly):
 
     def __init__(self,obj_bp=None):
@@ -129,8 +136,8 @@ class Range(pc_types.Assembly):
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')
 
-        path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Range.blend')
-        self.range_appliance = pc_types.Assembly(self.add_assembly_from_file(path))
+        # path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Range.blend')
+        self.range_appliance = pc_types.Assembly(self.add_assembly_from_file(get_range(category,assembly_name)))
         self.range_appliance.obj_bp[const.RANGE_TAG] = True
         self.range_appliance.obj_x.empty_display_size = pc_unit.inch(.5)
         self.range_appliance.obj_y.empty_display_size = pc_unit.inch(.5)
@@ -161,6 +168,10 @@ class Range(pc_types.Assembly):
             height = self.obj_z.pyclone.get_var('location.z','height')
             self.range_appliance.dim_z('height',[height])   
         
+        self.update_range_hood_location()
+        #Location must be updated twice for some reason
+        self.update_range_hood_location()
+                
         pc_utils.update_assembly_id_props(self.range_appliance,self)
 
     def draw(self):
