@@ -438,6 +438,16 @@ def get_material(library_path,material_name):
         for mat in data_to.materials:
             return mat
 
+def assign_materials_to_object(obj):
+    scene_props = bpy.context.scene.home_builder  
+    pointers = scene_props.material_pointers  
+    for index, pointer in enumerate(obj.pyclone.pointers):
+        if pointer.pointer_name in pointers:
+            p = pointers[pointer.pointer_name]
+            if index + 1 <= len(obj.material_slots):
+                slot = obj.material_slots[index]
+                slot.material = get_material(p.library_path,p.material_name)
+
 def get_connected_left_wall_bp(current_wall):
     for con in current_wall.obj_bp.constraints:
         if con.type == 'COPY_LOCATION':

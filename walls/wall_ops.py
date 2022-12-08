@@ -590,6 +590,13 @@ class home_builder_OT_draw_floor_plane(bpy.types.Operator):
         #SET CONTEXT
         context.view_layer.objects.active = obj_plane
         
+        #Add Material Pointer
+        bpy.ops.object.material_slot_add()
+        pointer = obj_plane.pyclone.pointers.add()
+        pointer.name = "Floor"
+        pointer.pointer_name = "Floor"        
+
+        pc_utils.assign_materials_to_object(obj_plane)
         return {'FINISHED'}
 
 

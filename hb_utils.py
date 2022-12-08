@@ -157,11 +157,11 @@ def load_libraries(context):
 
     wm_props = context.window_manager.home_builder
     
-    mat_library_path = os.path.join(os.path.dirname(__file__),'materials','Default Room Materials','library.blend')
+    mat_library_path = os.path.join(os.path.dirname(__file__),'assets','materials','Default Room Materials','library.blend')
     pointer_list = []
-    pointer_list.append(("Walls","Room Materials","Built In","White Wall Paint",mat_library_path))
-    pointer_list.append(("Floor","Room Materials","Built In","Wood Floor",mat_library_path))
-    pointer_list.append(("Ceiling","Room Materials","Built In","White Walls",mat_library_path)) 
+    pointer_list.append(("Walls","Room Materials","Default Room Materials","White Wall Paint",mat_library_path))
+    pointer_list.append(("Floor","Room Materials","Default Room Materials","Wood Floor",mat_library_path))
+    pointer_list.append(("Ceiling","Room Materials","Default Room Materials","White Wall Paint",mat_library_path)) 
     
     #LOAD BUILT IN LIBRARIES
     dirs = os.listdir(product_path) 

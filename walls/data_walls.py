@@ -31,7 +31,6 @@ class Mesh_Wall(pc_types.Assembly):
         size = (0,0,0)
         obj_mesh = pc_utils.create_cube_mesh("Wall Mesh",size)
         obj_mesh.color = [0.252832, 0.500434, 0.735662, 1.000000]
-        # obj_mesh.show_wire = True
         self.add_object(obj_mesh)
 
         #Assign Mesh Hooks
@@ -79,6 +78,14 @@ class Mesh_Wall(pc_types.Assembly):
         right_angle_empty.pyclone.loc_x('length+tan(right_angle_var)*wall_thickness',[length,right_angle_var,wall_thickness])
         right_angle_empty.pyclone.loc_y('wall_thickness',[wall_thickness])
 
+        #Add Material Pointer
+        bpy.context.view_layer.objects.active = obj_mesh
+        bpy.ops.object.material_slot_add()
+        pointer = obj_mesh.pyclone.pointers.add()
+        pointer.name = "Wall"
+        pointer.pointer_name = "Walls"
+
+        pc_utils.assign_materials_to_object(obj_mesh)
 
 # class Wall_Framed(pc_types.Assembly):
 #     show_in_library = True
