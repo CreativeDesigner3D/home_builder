@@ -52,7 +52,7 @@ class home_builder_OT_drop_material(bpy.types.Operator):
                 if len(selected_obj.material_slots) == 0:
                     bpy.ops.object.material_slot_add()
 
-                if len(selected_obj.material_slots) > 1:
+                if len(selected_obj.material_slots) > 1 or len(selected_obj.pyclone.pointers) > 0:
                     print(self.mat,selected_obj)
                     bpy.ops.home_builder.assign_material_dialog('INVOKE_DEFAULT',material_name = self.mat.name, object_name = selected_obj.name)
                     return self.finish(context)
