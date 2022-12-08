@@ -642,6 +642,9 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         obj.hide_viewport = False
         obj.select_set(True)
         for child in obj.children:
+            if child.animation_data:
+                for driver in child.animation_data.drivers:
+                    driver.mute = True
             obj.hide_viewport = False
             child.select_set(True)
             self.select_obj_and_children(child)
@@ -657,7 +660,7 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         self.select_obj_and_children(cabinet.obj_bp)
         bpy.ops.object.duplicate_move()
         obj = context.active_object
-        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)
+        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)     
         return pc_types.Assembly(cabinet_bp)
 
     def check(self, context):
@@ -743,7 +746,11 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
             new_p.obj_z.hide_viewport = False
             new_p.obj_x.empty_display_size = .001
             new_p.obj_y.empty_display_size = .001
-            new_p.obj_z.empty_display_size = .001                
+            new_p.obj_z.empty_display_size = .001          
+            for child in new_p.obj_bp.children_recursive:
+                if child.animation_data:
+                    for driver in child.animation_data.drivers:
+                        driver.mute = False                     
             # home_builder_utils.show_assembly_xyz(new_p)
 
         self.hide_empties_and_boolean_meshes(self.cabinet.obj_bp)
