@@ -999,13 +999,13 @@ class home_builder_OT_assign_material_dialog(bpy.types.Operator):
             if index + 1 <= len(self.obj.pyclone.pointers):
                 pointer = self.obj.pyclone.pointers[index]
 
-            if mat_slot.name == "":
-                row.label(text='No Material')
+            # if mat_slot.name == "":
+            #     row.label(text='No Material')
+            # else:
+            if pointer:
+                row.prop(mat_slot,"name",text=pointer.name,icon='MATERIAL')
             else:
-                if pointer:
-                    row.prop(mat_slot,"name",text=pointer.name,icon='MATERIAL')
-                else:
-                    row.prop(mat_slot,"name",text=" ",icon='MATERIAL')
+                row.prop(mat_slot,"name",text=" ",icon='MATERIAL')
 
             if pointer and pointer.pointer_name not in pointer_list and pointer.pointer_name != "":
                 pointer_list.append(pointer.pointer_name)
