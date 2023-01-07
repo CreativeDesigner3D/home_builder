@@ -14,7 +14,7 @@ CLOSET_STARTER_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"
 CLOSET_INSERT_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Inserts")
 CLOSET_PART_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Parts")
 
-CABINETS = {"library_name": "Sample Cabinets",
+CABINETS = {"library_name": "Cabinets",
             "library_type": "PRODUCTS",
             "library_path": CABINET_LIBRARY_PATH,
             "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
