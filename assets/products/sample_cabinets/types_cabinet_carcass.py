@@ -88,13 +88,10 @@ class Design_Carcass(pc_types.Assembly):
 
         prompts_cabinet.add_thickness_prompts(self)
         prompts_cabinet.add_carcass_prompts(self)
-        prompts_cabinet.add_base_assembly_prompts(self)
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')  
-        tkh = self.get_prompt("Toe Kick Height").get_var('tkh') 
-        tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
         carcass_type = self.get_prompt("Carcass Type")
         carcass_type.set_value(self.carcass_type)
         is_exposed_interior = self.get_prompt("Is Exposed Interior")
@@ -108,6 +105,11 @@ class Design_Carcass(pc_types.Assembly):
             carcass.dim_z('height',[height])
             carcass.loc_z(value=0)
         else:
+            prompts_cabinet.add_base_assembly_prompts(self)
+
+            tkh = self.get_prompt("Toe Kick Height").get_var('tkh') 
+            tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
+
             carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
             carcass.set_name("Design Carcass")
             carcass.dim_x('width',[width])
@@ -256,14 +258,11 @@ class Design_Blind_Carcass(pc_types.Assembly):
         self.obj_bp["IS_CARCASS_BP"] = True
 
         prompts_cabinet.add_thickness_prompts(self)
-        prompts_cabinet.add_carcass_prompts(self)
-        prompts_cabinet.add_base_assembly_prompts(self)
+        prompts_cabinet.add_carcass_prompts(self)        
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')  
-        tkh = self.get_prompt("Toe Kick Height").get_var('tkh') 
-        tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
         carcass_type = self.get_prompt("Carcass Type")
         carcass_type.set_value(self.carcass_type)
         is_exposed_interior = self.get_prompt("Is Exposed Interior")
@@ -277,6 +276,10 @@ class Design_Blind_Carcass(pc_types.Assembly):
             self.design_carcass.dim_z('height',[height])
             self.design_carcass.loc_z(value=0)
         else:
+            prompts_cabinet.add_base_assembly_prompts(self)
+            tkh = self.get_prompt("Toe Kick Height").get_var('tkh') 
+            tk_setback = self.get_prompt("Toe Kick Setback").get_var('tk_setback') 
+
             self.design_carcass = assemblies_cabinet.add_design_carcass(self,self.exposed_interior)
             self.design_carcass.set_name("Design Carcass")
             self.design_carcass.dim_x('width',[width])
