@@ -650,8 +650,11 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
             self.select_obj_and_children(child)
 
     def hide_empties_and_boolean_meshes(self,obj):
-        if obj.type == 'EMPTY' or obj.hide_render:
-            obj.hide_viewport = True
+        if 'IS_OPENING_MESH' in obj:
+            pass
+        else:
+            if obj.type == 'EMPTY' or obj.hide_render:
+                obj.hide_viewport = True
         for child in obj.children:
             self.hide_empties_and_boolean_meshes(child)
     
