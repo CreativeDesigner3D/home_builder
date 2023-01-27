@@ -38,19 +38,19 @@ CABINET_INSERTS = {"library_name": "Cabinet Inserts",
                    "library_type": "INSERTS",
                    "library_path": CABINET_INSERT_LIBRARY_PATH,
                    "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                   "libary_drop_id": "hb_sample_cabinets.place_cabinet_insert"}
+                   "libary_drop_id": "hb_sample_cabinets.drop_cabinet_insert"}
 
 CABINET_ACCESSORIES = {"library_name": "Cabinet Accessories",
                        "library_type": "INSERTS",
                        "library_path": CABINET_ACCESSORY_LIBRARY_PATH,
                        "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                       "libary_drop_id": "hb_sample_cabinets.place_cabinet_insert"}
+                       "libary_drop_id": "hb_sample_cabinets.drop_cabinet_insert"}
 
 CABINET_PARTS = {"library_name": "Cabinet Parts",
                  "library_type": "PARTS",
                  "library_path": CABINET_PART_LIBRARY_PATH,
                  "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                 "libary_drop_id": "hb_sample_cabinets.place_closet_part"}
+                 "libary_drop_id": "home_builder.lookup_drop_id"}
 
 SAMPLE_CABINET_MATERIALS = {"library_name": "Sample Cabinet Materials",
                             "library_type": "MATERIALS",
