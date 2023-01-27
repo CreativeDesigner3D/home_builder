@@ -932,9 +932,9 @@ class hb_sample_cabinets_OT_drop_cabinet_corner(Cabinet_Drop):
         return {'FINISHED'}
 
 
-class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.place_closet_insert"
-    bl_label = "Place Closet Insert"
+class hb_sample_cabinets_OT_place_cabinet_insert(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.place_cabinet_insert"
+    bl_label = "Place Cabinet Insert"
     bl_options = {'UNDO'}
     
     filepath: bpy.props.StringProperty(name="Filepath",default="Error")
@@ -1966,7 +1966,7 @@ classes = (
     hb_sample_cabinets_OT_drop_appliance,
     hb_sample_cabinets_OT_drop_cabinet_fill_wall,
     hb_sample_cabinets_OT_drop_cabinet_corner,
-    hb_sample_cabinets_OT_place_closet_insert,
+    hb_sample_cabinets_OT_place_cabinet_insert,
     hb_sample_cabinets_OT_place_closet_part,
     hb_sample_cabinets_OT_place_closet_shelf,
     hb_sample_cabinets_OT_place_closet_cleat,

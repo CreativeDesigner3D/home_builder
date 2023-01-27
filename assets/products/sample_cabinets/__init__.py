@@ -11,6 +11,7 @@ CABINET_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Sample 
 APPLIANCE_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Appliances")
 CABINET_STARTER_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Starters")
 CABINET_INSERT_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Inserts")
+CABINET_ACCESSORY_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Accessories")
 CABINET_PART_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Parts")
 
 CABINETS = {"library_name": "Cabinets",
@@ -37,7 +38,13 @@ CABINET_INSERTS = {"library_name": "Cabinet Inserts",
                    "library_type": "INSERTS",
                    "library_path": CABINET_INSERT_LIBRARY_PATH,
                    "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                   "libary_drop_id": "hb_sample_cabinets.place_closet_insert"}
+                   "libary_drop_id": "hb_sample_cabinets.place_cabinet_insert"}
+
+CABINET_ACCESSORIES = {"library_name": "Cabinet Accessories",
+                       "library_type": "INSERTS",
+                       "library_path": CABINET_ACCESSORY_LIBRARY_PATH,
+                       "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
+                       "libary_drop_id": "hb_sample_cabinets.place_cabinet_insert"}
 
 CABINET_PARTS = {"library_name": "Cabinet Parts",
                  "library_type": "PARTS",
@@ -55,6 +62,7 @@ LIBRARIES = [CABINETS,
              APPLIANCES,
              CABINET_STARTERS,
              CABINET_INSERTS,
+             CABINET_ACCESSORIES,
              CABINET_PARTS,
              SAMPLE_CABINET_MATERIALS]
 
