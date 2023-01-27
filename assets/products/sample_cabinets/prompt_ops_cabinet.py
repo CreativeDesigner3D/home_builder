@@ -4,7 +4,7 @@ from pc_lib import pc_utils, pc_types, pc_unit
 from . import material_pointers_cabinet
 from . import types_cabinet
 from . import types_appliances
-from . import types_closet_starters
+from . import types_cabinet_starters
 from . import const_cabinets as const
 from . import enum_cabinets
 from . import utils_cabinet
@@ -1279,7 +1279,7 @@ class hb_closet_starters_OT_closet_prompts(bpy.types.Operator):
 
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
-        self.closet = types_closet_starters.Closet_Starter(bp)
+        self.closet = types_cabinet_starters.Closet_Starter(bp)
         self.is_base = self.closet.is_base
         if self.is_base:
             self.set_depth = math.fabs(self.closet.obj_y.location.y)
@@ -1566,7 +1566,7 @@ class hb_closet_starters_OT_closet_inside_corner_prompts(bpy.types.Operator):
 
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_INSIDE_CORNER_TAG)
-        self.closet = types_closet_starters.Closet_Inside_Corner(bp)
+        self.closet = types_cabinet_starters.Closet_Inside_Corner(bp)
         self.width = self.closet.obj_x.location.x
         self.depth = math.fabs(self.closet.obj_y.location.y)      
 
@@ -1625,6 +1625,9 @@ class hb_closet_starters_OT_closet_inside_corner_prompts(bpy.types.Operator):
     def draw_construction_prompts(self,layout):
         left_depth = self.closet.get_prompt("Left Depth")
         right_depth = self.closet.get_prompt("Right Depth")
+        filler_left_depth = self.closet.get_prompt("Left Filler Width")
+        filler_right_depth = self.closet.get_prompt("Right Filler Width")        
+        
         kick_height = self.closet.get_prompt("Closet Kick Height")
         kick_setback = self.closet.get_prompt("Closet Kick Setback")
         shelf_qty = self.closet.get_prompt("Shelf Quantity")
@@ -1632,24 +1635,35 @@ class hb_closet_starters_OT_closet_inside_corner_prompts(bpy.types.Operator):
         flip_back_support_location = self.closet.get_prompt("Flip Back Support Location")
 
         box = layout.box()
-        row = box.row()
-        row.label(text="Left Depth")
-        row.prop(left_depth,'distance_value',text="")
-        row.label(text="Right Depth")
-        row.prop(right_depth,'distance_value',text="")      
+        if left_depth and right_depth:
+            row = box.row()
+            row.label(text="Left Depth")
+            row.prop(left_depth,'distance_value',text="")
+            row.label(text="Right Depth")
+            row.prop(right_depth,'distance_value',text="")      
+        if filler_left_depth and filler_right_depth:
+            row = box.row()
+            row.label(text="Left Filler Amount")
+            row.prop(filler_left_depth,'distance_value',text="")
+            row = box.row()
+            row.label(text="Right Filler Amount")
+            row.prop(filler_right_depth,'distance_value',text="")      
 
-        row = box.row()
-        row.label(text="Toe Kick")
-        row.prop(kick_height,'distance_value',text="Height")
-        row.prop(kick_setback,'distance_value',text="Setback")
+        if kick_height and kick_setback:
+            row = box.row()
+            row.label(text="Toe Kick")
+            row.prop(kick_height,'distance_value',text="Height")
+            row.prop(kick_setback,'distance_value',text="Setback")
 
-        row = box.row()
-        row.label(text="Shelf Quantity")
-        row.prop(shelf_qty,'quantity_value',text="")
+        if shelf_qty:
+            row = box.row()
+            row.label(text="Shelf Quantity")
+            row.prop(shelf_qty,'quantity_value',text="")
 
-        row = box.row()
-        row.label(text="Back Width")
-        row.prop(back_width,'distance_value',text="")
+        if back_width:
+            row = box.row()
+            row.label(text="Back Width")
+            row.prop(back_width,'distance_value',text="")
 
         if flip_back_support_location:
             row.prop(flip_back_support_location,'checkbox_value',text="Flip")

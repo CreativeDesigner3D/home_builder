@@ -2,7 +2,7 @@ import bpy
 import math
 from mathutils import Vector
 from pc_lib import pc_types, pc_unit, pc_utils
-from . import types_closet_starters
+from . import types_cabinet_starters
 from . import types_cabinet
 from . import utils_cabinet
 from . import const_cabinets as const
@@ -220,7 +220,7 @@ def get_closet_collision_location(closet,wall,placement_obj,mouse_location,direc
             list_obj_left_bp.reverse()
             for obj_bp in list_obj_left_bp:
                 if base_point_is_closet(obj_bp):
-                    prev_ass = types_closet_starters.Closet(obj_bp)
+                    prev_ass = types_cabinet_starters.Closet(obj_bp)
                 else:
                     prev_ass = pc_types.Assembly(obj_bp)
                 if has_closet_height_collision(closet,prev_ass):
@@ -237,7 +237,7 @@ def get_closet_collision_location(closet,wall,placement_obj,mouse_location,direc
                         if obj == placement_obj:
                             continue                            
                         if base_point_is_closet(obj):
-                            prev_ass = types_closet_starters.Closet(obj)
+                            prev_ass = types_cabinet_starters.Closet(obj)
                         else:
                             prev_ass = pc_types.Assembly(obj)
                         product_x = obj.location.x
@@ -252,7 +252,7 @@ def get_closet_collision_location(closet,wall,placement_obj,mouse_location,direc
         if direction == 'RIGHT':
             for obj_bp in list_obj_right_bp:
                 if base_point_is_closet(obj_bp):
-                    next_assembly = types_closet_starters.Closet(obj_bp)
+                    next_assembly = types_cabinet_starters.Closet(obj_bp)
                 else:
                     next_assembly = pc_types.Assembly(obj_bp)
                 if has_closet_height_collision(closet,next_assembly):
@@ -274,7 +274,7 @@ def get_closet_collision_location(closet,wall,placement_obj,mouse_location,direc
                         if obj == placement_obj:
                             continue
                         if base_point_is_closet(obj):
-                            next_ass = types_closet_starters.Closet(obj)
+                            next_ass = types_cabinet_starters.Closet(obj)
                         else:
                             next_ass = pc_types.Assembly(obj)
                         product_x = obj.location.x
@@ -424,7 +424,7 @@ def position_cabinet_on_object(mouse_location,cabinet,selected_obj,cursor_z,sele
     cabinet.obj_bp.location.x = mouse_location[0]
     cabinet.obj_bp.location.y = mouse_location[1]
     
-    if selected_normal.z == 0:
+    if selected_obj and selected_normal.z == 0:
         rotate_to_normal(cabinet.obj_bp,selected_normal)
         parented_rotation_sum = accumulate_z_rotation(selected_obj)
         cabinet.obj_bp.rotation_euler.z += selected_obj.rotation_euler.z + parented_rotation_sum

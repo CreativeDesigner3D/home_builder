@@ -12,9 +12,9 @@ from . import utils_cabinet
 from . import const_cabinets as const
 
 class Closet(pc_types.Assembly):
-    category_name = "CLOSETS"
-    subcategory_name = "STARTERS"
-    catalog_name = "_Sample"
+    # category_name = "CLOSETS"
+    # subcategory_name = "STARTERS"
+    # catalog_name = "_Sample"
 
     is_base = False
     is_hanging = False
@@ -904,9 +904,9 @@ class Closet_Starter(Closet):
 
 class Closet_Inside_Corner(Closet):
     show_in_library = True
-    category_name = "CLOSETS"
-    subcategory_name = "STARTERS"
-    catalog_name = "_Sample"
+    # category_name = "CLOSETS"
+    # subcategory_name = "STARTERS"
+    # catalog_name = "_Sample"
 
     style = 'PIE' # PIE, DIAGONAL, CURVED  
 
@@ -918,9 +918,19 @@ class Closet_Inside_Corner(Closet):
     def pre_draw(self):
         self.create_assembly()
         props = utils_cabinet.get_scene_props(bpy.context.scene)
-        self.obj_x.location.x = pc_unit.inch(24)
-        self.obj_y.location.y = -pc_unit.inch(24)
-        self.obj_z.location.z = pc_unit.millimeter(2131)
+
+        if self.is_hanging:
+            self.obj_x.location.x = props.upper_inside_corner_size
+            self.obj_z.location.z = props.upper_cabinet_height
+            self.obj_y.location.y = -props.upper_inside_corner_size
+        elif self.is_base:
+            self.obj_x.location.x = props.base_inside_corner_size
+            self.obj_z.location.z = props.base_cabinet_height
+            self.obj_y.location.y = -props.base_inside_corner_size
+        else:
+            self.obj_x.location.x = props.tall_inside_corner_size
+            self.obj_z.location.z = props.tall_cabinet_height
+            self.obj_y.location.y = -props.tall_inside_corner_size
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
@@ -940,7 +950,6 @@ class Closet_Inside_Corner(Closet):
 
     def draw(self):
         self.obj_bp[const.CLOSET_INSIDE_CORNER_TAG] = True
-        # self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
         self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_inside_corner_prompts"
         self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets_corner_commands"
         self.obj_y['IS_MIRROR'] = True
@@ -948,37 +957,50 @@ class Closet_Inside_Corner(Closet):
         props = utils_cabinet.get_scene_props(bpy.context.scene)
 
         prompts_cabinet.add_closet_thickness_prompts(self)
-        prompts_cabinet.add_closet_toe_kick_prompts(self)
+        
+        if self.is_hanging:
+            depth = props.upper_cabinet_depth
+        elif self.is_base:
+            depth = props.base_cabinet_depth
+        else:
+            depth = props.tall_cabinet_depth
 
-        depth = props.default_hanging_closet_depth if self.is_hanging else props.default_tall_closet_depth
         self.add_prompt("Drill Start Location",'DISTANCE',pc_unit.inch(.35))
         self.add_prompt("Back Width",'DISTANCE',pc_unit.inch(6))
         self.add_prompt("Left Depth",'DISTANCE',depth)
         self.add_prompt("Right Depth",'DISTANCE',depth)
         self.add_prompt("Shelf Wall Offset Amount",'DISTANCE',pc_unit.inch(.5))
-        self.add_prompt("Shelf Quantity",'QUANTITY',3) 
-        self.add_prompt("Is Hanging",'CHECKBOX',self.is_hanging) 
-        self.add_prompt("Use Square Notch Top Shelf",'CHECKBOX',False) 
+        # self.add_prompt("Shelf Quantity",'QUANTITY',3) 
+        # self.add_prompt("Is Hanging",'CHECKBOX',self.is_hanging) 
+        
+        # self.add_prompt("Use Square Notch Top Shelf",'CHECKBOX',False) 
         self.add_prompt("Flip Back Support Location",'CHECKBOX',False) 
-        self.add_prompt("Panel Height",'DISTANCE',pc_unit.millimeter(int(props.hanging_closet_panel_height)))
+        # self.add_prompt("Panel Height",'DISTANCE',pc_unit.millimeter(int(props.hanging_closet_panel_height)))
+
+        if self.is_base:
+            prompts_cabinet.add_countertop_prompts(self)
+            self.add_prompt("Add Countertop",'CHECKBOX',self.is_base) 
+            self.add_prompt("Countertop Thickness",'DISTANCE',pc_unit.inch(1.5)) 
+
+        if not self.is_hanging:
+            prompts_cabinet.add_closet_toe_kick_prompts(self)
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')
         left_depth_var = self.get_prompt("Left Depth").get_var('left_depth_var')
         right_depth_var = self.get_prompt("Right Depth").get_var('right_depth_var')
-        kick_height = self.get_prompt("Closet Kick Height").get_var('kick_height')
-        kick_setback = self.get_prompt("Closet Kick Setback").get_var('kick_setback')
+
         back_width_var = self.get_prompt("Back Width").get_var('back_width_var')
-        p_height = self.get_prompt("Panel Height").get_var('p_height')
-        is_hang = self.get_prompt("Is Hanging").get_var('is_hang')
+        # p_height = self.get_prompt("Panel Height").get_var('p_height')
+        # is_hang = self.get_prompt("Is Hanging").get_var('is_hang')
         panel_thickness_var = self.get_prompt("Panel Thickness").get_var("panel_thickness_var")
         st = self.get_prompt("Shelf Thickness").get_var("st") 
-        qty = self.get_prompt("Shelf Quantity").get_var("qty")
+        # qty = self.get_prompt("Shelf Quantity").get_var("qty")
         flip_back_support = self.get_prompt("Flip Back Support Location").get_var("flip_back_support")
         shelf_wall_offset = self.get_prompt("Shelf Wall Offset Amount").get_var("shelf_wall_offset")
-        use_square_notch_top_shelf = self.get_prompt("Use Square Notch Top Shelf").get_var("use_square_notch_top_shelf")
-        drill_start_loc = self.get_prompt("Drill Start Location").get_var("drill_start_loc")
+        # use_square_notch_top_shelf = self.get_prompt("Use Square Notch Top Shelf").get_var("use_square_notch_top_shelf")
+        # drill_start_loc = self.get_prompt("Drill Start Location").get_var("drill_start_loc")
 
         left_side = assemblies_cabinet.add_closet_part(self)
         props = utils_cabinet.get_object_props(left_side.obj_bp)
@@ -987,26 +1009,26 @@ class Closet_Inside_Corner(Closet):
         left_side.set_name('Closet Partition')
         left_side.loc_x(value = 0)
         left_side.loc_y('depth',[depth])
-        left_side.loc_z('IF(is_hang,height-p_height,0)',[is_hang,height,p_height])
+        left_side.loc_z(value = 0)
         left_side.rot_y(value=math.radians(-90))
         left_side.rot_z(value=math.radians(-90))
-        left_side.dim_x('IF(is_hang,p_height,height)',[is_hang,height,p_height])
+        left_side.dim_x('height',[height])
         left_side.dim_y('left_depth_var',[left_depth_var])
         left_side.dim_z('panel_thickness_var',[panel_thickness_var])
 
-        prompt_dict = self.add_panel_prompts(left_side)
-        prompt_dict["Left Depth"].set_formula('left_depth_var',[left_depth_var]) 
-        prompt_dict["Left Height"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])   
-        prompt_dict["Left Floor"].set_formula('IF(is_hang,False,True)',[is_hang]) 
-        prompt_dict["Left Drill Start"].set_formula("drill_start_loc",[drill_start_loc])
-        prompt_dict["Left Drill Stop"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])    
-        prompt_dict["Right Depth"].set_formula('0',[]) 
-        prompt_dict["Right Height"].set_formula('0',[])  
-        prompt_dict["Right Floor"].set_formula('0',[]) 
-        prompt_dict["Right Drill Start"].set_formula("0",[])
-        prompt_dict["Right Drill Stop"].set_formula('0',[])     
-        prompt_dict["Drill From Left"].set_value(True)
-        prompt_dict["Drill From One Side"].set_value(True)    
+        # prompt_dict = self.add_panel_prompts(left_side)
+        # prompt_dict["Left Depth"].set_formula('left_depth_var',[left_depth_var]) 
+        # prompt_dict["Left Height"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])   
+        # prompt_dict["Left Floor"].set_formula('IF(is_hang,False,True)',[is_hang]) 
+        # prompt_dict["Left Drill Start"].set_formula("drill_start_loc",[drill_start_loc])
+        # prompt_dict["Left Drill Stop"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])    
+        # prompt_dict["Right Depth"].set_formula('0',[]) 
+        # prompt_dict["Right Height"].set_formula('0',[])  
+        # prompt_dict["Right Floor"].set_formula('0',[]) 
+        # prompt_dict["Right Drill Start"].set_formula("0",[])
+        # prompt_dict["Right Drill Stop"].set_formula('0',[])     
+        # prompt_dict["Drill From Left"].set_value(True)
+        # prompt_dict["Drill From One Side"].set_value(True)    
 
         back = assemblies_cabinet.add_closet_part(self)
         back.obj_bp["IS_PANEL_BP"] = True
@@ -1015,27 +1037,27 @@ class Closet_Inside_Corner(Closet):
         back.set_name('Back Support')
         back.loc_x('shelf_wall_offset',[shelf_wall_offset])
         back.loc_y('IF(flip_back_support,-back_width_var,0)-shelf_wall_offset',[flip_back_support,back_width_var,shelf_wall_offset])
-        back.loc_z('IF(is_hang,height-p_height,0)',[is_hang,height,p_height])
+        back.loc_z('st',[st])
         back.rot_y(value=math.radians(-90))
         back.rot_z('IF(flip_back_support,0,radians(-90))',[flip_back_support])
-        back.dim_x('IF(is_hang,p_height,height)',[is_hang,height,p_height])
+        back.dim_x('height-(st*2)',[height,st])
         back.dim_y('back_width_var',[back_width_var])
         back.dim_z('-panel_thickness_var',[panel_thickness_var])
         pc_utils.flip_normals(back)
 
-        prompt_dict = self.add_panel_prompts(back)
-        prompt_dict["Left Depth"].set_formula('0',[])
-        prompt_dict["Left Height"].set_formula('0',[])   
-        prompt_dict["Left Floor"].set_formula('0',[])  
-        prompt_dict["Left Drill Start"].set_formula("0",[])
-        prompt_dict["Left Drill Stop"].set_formula('',[])
-        prompt_dict["Right Depth"].set_formula('back_width_var',[back_width_var])
-        prompt_dict["Right Height"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height]) 
-        prompt_dict["Right Floor"].set_formula('IF(is_hang,False,True)',[is_hang])  
-        prompt_dict["Right Drill Start"].set_formula("drill_start_loc",[drill_start_loc])
-        prompt_dict["Right Drill Stop"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])  
-        prompt_dict["Drill From Left"].set_value(False)
-        prompt_dict["Drill From One Side"].set_value(True) 
+        # prompt_dict = self.add_panel_prompts(back)
+        # prompt_dict["Left Depth"].set_formula('0',[])
+        # prompt_dict["Left Height"].set_formula('0',[])   
+        # prompt_dict["Left Floor"].set_formula('0',[])  
+        # prompt_dict["Left Drill Start"].set_formula("0",[])
+        # prompt_dict["Left Drill Stop"].set_formula('',[])
+        # prompt_dict["Right Depth"].set_formula('back_width_var',[back_width_var])
+        # prompt_dict["Right Height"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height]) 
+        # prompt_dict["Right Floor"].set_formula('IF(is_hang,False,True)',[is_hang])  
+        # prompt_dict["Right Drill Start"].set_formula("drill_start_loc",[drill_start_loc])
+        # prompt_dict["Right Drill Stop"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])  
+        # prompt_dict["Drill From Left"].set_value(False)
+        # prompt_dict["Drill From One Side"].set_value(True) 
 
         right_side = assemblies_cabinet.add_closet_part(self)
         props = utils_cabinet.get_object_props(right_side.obj_bp)
@@ -1044,36 +1066,40 @@ class Closet_Inside_Corner(Closet):
         right_side.set_name('Closet Partition')
         right_side.loc_x('width',[width])
         right_side.loc_y(value = 0)
-        right_side.loc_z('IF(is_hang,height-p_height,0)',[is_hang,height,p_height])
+        right_side.loc_z(value = 0)
         right_side.rot_y(value=math.radians(-90))
         right_side.rot_z(value=math.radians(180))
-        right_side.dim_x('IF(is_hang,p_height,height)',[is_hang,height,p_height])
+        right_side.dim_x('height',[height])
         right_side.dim_y('right_depth_var',[right_depth_var])
         right_side.dim_z('-panel_thickness_var',[panel_thickness_var])
         pc_utils.flip_normals(right_side)
 
-        prompt_dict = self.add_panel_prompts(right_side)
-        prompt_dict["Left Depth"].set_formula('0',[])
-        prompt_dict["Left Height"].set_formula('0',[]) 
-        prompt_dict["Left Floor"].set_formula('0',[]) 
-        prompt_dict["Left Drill Start"].set_formula("0",[])
-        prompt_dict["Left Drill Stop"].set_formula('0',[])
-        prompt_dict["Right Depth"].set_formula('right_depth_var',[right_depth_var])
-        prompt_dict["Right Height"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height]) 
-        prompt_dict["Right Floor"].set_formula('IF(is_hang,False,True)',[is_hang]) 
-        prompt_dict["Right Drill Start"].set_formula("drill_start_loc",[drill_start_loc])
-        prompt_dict["Right Drill Stop"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])    
-        prompt_dict["Drill From Left"].set_value(False)
-        prompt_dict["Drill From One Side"].set_value(True) 
+        # prompt_dict = self.add_panel_prompts(right_side)
+        # prompt_dict["Left Depth"].set_formula('0',[])
+        # prompt_dict["Left Height"].set_formula('0',[]) 
+        # prompt_dict["Left Floor"].set_formula('0',[]) 
+        # prompt_dict["Left Drill Start"].set_formula("0",[])
+        # prompt_dict["Left Drill Stop"].set_formula('0',[])
+        # prompt_dict["Right Depth"].set_formula('right_depth_var',[right_depth_var])
+        # prompt_dict["Right Height"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height]) 
+        # prompt_dict["Right Floor"].set_formula('IF(is_hang,False,True)',[is_hang]) 
+        # prompt_dict["Right Drill Start"].set_formula("drill_start_loc",[drill_start_loc])
+        # prompt_dict["Right Drill Stop"].set_formula('IF(is_hang,p_height,height)',[is_hang,p_height,height])    
+        # prompt_dict["Drill From Left"].set_value(False)
+        # prompt_dict["Drill From One Side"].set_value(True) 
 
-        bottom = assemblies_cabinet.add_corner_radius_part(self)
+        bottom = assemblies_cabinet.add_corner_notch_part(self)
         bottom.obj_bp["IS_FIXED_L_SHELF_BP"] = True
         props = utils_cabinet.get_object_props(bottom.obj_bp)
         props.ebl1 = True        
         bottom.set_name('Closet L Shelf')
         bottom.loc_x('shelf_wall_offset',[shelf_wall_offset])
         bottom.loc_y('-shelf_wall_offset',[shelf_wall_offset])
-        bottom.loc_z('IF(is_hang,height-p_height,kick_height)',[is_hang,height,p_height,kick_height])
+        if self.is_hanging:
+            bottom.loc_z(value=0)
+        else:
+            kick_height = self.get_prompt("Closet Kick Height").get_var('kick_height')       
+            bottom.loc_z('kick_height',[kick_height])
         bottom.rot_x(value = 0)
         bottom.rot_y(value = 0)
         bottom.rot_z(value = math.radians(-90))
@@ -1099,93 +1125,118 @@ class Closet_Inside_Corner(Closet):
         top.dim_x('fabs(depth)-panel_thickness_var-shelf_wall_offset',[depth,panel_thickness_var,shelf_wall_offset])
         top.dim_y('width-panel_thickness_var-shelf_wall_offset',[width,panel_thickness_var,shelf_wall_offset])
         top.dim_z('st',[st])
-        hide = top.get_prompt('Hide')
-        hide.set_formula('IF(use_square_notch_top_shelf,False,True)',[use_square_notch_top_shelf])        
+        # hide = top.get_prompt('Hide')
+        # hide.set_formula('IF(use_square_notch_top_shelf,False,True)',[use_square_notch_top_shelf])        
         l_depth = top.get_prompt('Left Depth')
         l_depth.set_formula('left_depth_var-shelf_wall_offset',[left_depth_var,shelf_wall_offset])
         r_depth = top.get_prompt('Right Depth')
         r_depth.set_formula('right_depth_var-shelf_wall_offset',[right_depth_var,shelf_wall_offset])
         # home_builder_utils.flip_normals(top)
 
-        top_radius = assemblies_cabinet.add_corner_radius_part(self)
-        top_radius.obj_bp["IS_FIXED_L_SHELF_BP"] = True
-        props = utils_cabinet.get_object_props(top_radius.obj_bp)
-        props.ebl1 = True         
-        top_radius.set_name('Closet L Shelf')
-        top_radius.loc_x('shelf_wall_offset',[shelf_wall_offset])
-        top_radius.loc_y('-shelf_wall_offset',[shelf_wall_offset])
-        top_radius.loc_z('height-st',[height,st])
-        top_radius.rot_x(value = 0)
-        top_radius.rot_y(value = 0)
-        top_radius.rot_z(value = math.radians(-90))
-        top_radius.dim_x('fabs(depth)-panel_thickness_var-shelf_wall_offset',[depth,panel_thickness_var,shelf_wall_offset])
-        top_radius.dim_y('width-panel_thickness_var-shelf_wall_offset',[width,panel_thickness_var,shelf_wall_offset])
-        top_radius.dim_z('st',[st])
-        hide = top_radius.get_prompt('Hide')
-        hide.set_formula('IF(use_square_notch_top_shelf,True,False)',[use_square_notch_top_shelf])
-        l_depth = top_radius.get_prompt('Left Depth')
-        l_depth.set_formula('left_depth_var-shelf_wall_offset',[left_depth_var,shelf_wall_offset])
-        r_depth = top_radius.get_prompt('Right Depth')
-        r_depth.set_formula('right_depth_var-shelf_wall_offset',[right_depth_var,shelf_wall_offset])
+        # top_radius = assemblies_cabinet.add_corner_radius_part(self)
+        # top_radius.obj_bp["IS_FIXED_L_SHELF_BP"] = True
+        # props = utils_cabinet.get_object_props(top_radius.obj_bp)
+        # props.ebl1 = True         
+        # top_radius.set_name('Closet L Shelf')
+        # top_radius.loc_x('shelf_wall_offset',[shelf_wall_offset])
+        # top_radius.loc_y('-shelf_wall_offset',[shelf_wall_offset])
+        # top_radius.loc_z('height-st',[height,st])
+        # top_radius.rot_x(value = 0)
+        # top_radius.rot_y(value = 0)
+        # top_radius.rot_z(value = math.radians(-90))
+        # top_radius.dim_x('fabs(depth)-panel_thickness_var-shelf_wall_offset',[depth,panel_thickness_var,shelf_wall_offset])
+        # top_radius.dim_y('width-panel_thickness_var-shelf_wall_offset',[width,panel_thickness_var,shelf_wall_offset])
+        # top_radius.dim_z('st',[st])
+        # hide = top_radius.get_prompt('Hide')
+        # hide.set_formula('IF(use_square_notch_top_shelf,True,False)',[use_square_notch_top_shelf])
+        # l_depth = top_radius.get_prompt('Left Depth')
+        # l_depth.set_formula('left_depth_var-shelf_wall_offset',[left_depth_var,shelf_wall_offset])
+        # r_depth = top_radius.get_prompt('Right Depth')
+        # r_depth.set_formula('right_depth_var-shelf_wall_offset',[right_depth_var,shelf_wall_offset])
 
-        left_kick = assemblies_cabinet.add_closet_part(self)
-        left_kick.obj_bp["IS_TOE_KICK_BP"] = True
-        left_kick.set_name('Left Kick')
-        left_kick.loc_x('left_depth_var-kick_setback',[left_depth_var,kick_setback])
-        left_kick.loc_y('depth+panel_thickness_var',[depth,panel_thickness_var])
-        left_kick.loc_z(value = 0)
-        left_kick.rot_x(value=math.radians(90))
-        left_kick.rot_y(value=0)
-        left_kick.rot_z(value=math.radians(90))
-        left_kick.dim_x('fabs(depth)-(panel_thickness_var*2)',[depth,panel_thickness_var])
-        left_kick.dim_y('kick_height',[kick_height])
-        left_kick.dim_z('panel_thickness_var',[panel_thickness_var])
-        hide = left_kick.get_prompt('Hide')
-        hide.set_formula('is_hang',[is_hang])
+        if self.is_base:
+            add_ctop = self.get_prompt("Add Countertop").get_var("add_ctop")
+            ctop_thickness_var = self.get_prompt("Countertop Thickness").get_var("ctop_thickness_var")
+            ctop_overhang_front = self.get_prompt("Countertop Overhang Front").get_var('ctop_overhang_front')
+            ctop_overhang_back = self.get_prompt("Countertop Overhang Back").get_var('ctop_overhang_back')
+            ctop_overhang_left = self.get_prompt("Countertop Overhang Left").get_var('ctop_overhang_left')
+            ctop_overhang_right = self.get_prompt("Countertop Overhang Right").get_var('ctop_overhang_right')
 
-        right_kick = assemblies_cabinet.add_closet_part(self)
-        right_kick.obj_bp["IS_TOE_KICK_BP"] = True
-        right_kick.set_name('Right Kick')
-        right_kick.loc_x('width-panel_thickness_var',[width,panel_thickness_var])
-        right_kick.loc_y('-right_depth_var+kick_setback',[right_depth_var,kick_setback])
-        right_kick.loc_z(value = 0)
-        right_kick.rot_x(value=math.radians(90))
-        right_kick.rot_y(value=0)
-        right_kick.rot_z(value=math.radians(180))
-        right_kick.dim_x('width-left_depth_var-(panel_thickness_var*2)+kick_setback',[width,left_depth_var,kick_setback,panel_thickness_var])
-        right_kick.dim_y('kick_height',[kick_height])
-        right_kick.dim_z('panel_thickness_var',[panel_thickness_var])
-        hide = right_kick.get_prompt('Hide')
-        hide.set_formula('is_hang',[is_hang])
+            c_top = assemblies_cabinet.add_corner_notch_countertop_part(self)
+            c_top.set_name('Closet L Shelf')
+            c_top.loc_x(value = 0)
+            c_top.loc_y(value = 0)
+            c_top.loc_z('height',[height])
+            c_top.rot_x(value = 0)
+            c_top.rot_y(value = 0)
+            c_top.rot_z(value = math.radians(-90))
+            c_top.dim_x('fabs(depth)',[depth])
+            c_top.dim_y('width',[width])
+            c_top.dim_z('ctop_thickness_var',[ctop_thickness_var])
+            l_depth = c_top.get_prompt('Left Depth')
+            l_depth.set_formula('left_depth_var+ctop_overhang_front',[left_depth_var,ctop_overhang_front])
+            r_depth = c_top.get_prompt('Right Depth')
+            r_depth.set_formula('right_depth_var+ctop_overhang_front',[right_depth_var,ctop_overhang_front])
+            hide = c_top.get_prompt("Hide")
+            hide.set_formula('IF(add_ctop,False,True)',[add_ctop])
 
-        b_loc = bottom.obj_bp.pyclone.get_var('location.z','b_loc')
-        t_loc = top.obj_bp.pyclone.get_var('location.z','t_loc')
+        if not self.is_hanging:
+            kick_setback = self.get_prompt("Closet Kick Setback").get_var('kick_setback')    
 
-        shelf = assemblies_cabinet.add_corner_radius_part(self)
-        shelf.obj_bp["IS_ADJ_L_SHELF_BP"] = True
-        props = utils_cabinet.get_object_props(shelf.obj_bp)
-        props.ebl1 = True  
-        props.ebl2 = True 
-        props.ebw1 = True 
-        props.ebw2 = True             
-        shelf.set_name('Closet L Shelf')
-        shelf.loc_x('shelf_wall_offset',[shelf_wall_offset])
-        shelf.loc_y('-shelf_wall_offset',[shelf_wall_offset])
-        shelf.loc_z('b_loc+st+(((t_loc-b_loc-(st*2)-(st*qty)))/(qty+1))',[b_loc,t_loc,kick_height,st,height,qty])
-        shelf.rot_x(value = 0)
-        shelf.rot_y(value = 0)
-        shelf.rot_z(value = math.radians(-90))
-        shelf.dim_x('fabs(depth)-panel_thickness_var-shelf_wall_offset',[depth,panel_thickness_var,shelf_wall_offset])
-        shelf.dim_y('width-panel_thickness_var-shelf_wall_offset',[width,panel_thickness_var,shelf_wall_offset])
-        shelf.dim_z('st',[st])
-        l_depth = shelf.get_prompt('Left Depth')
-        l_depth.set_formula('left_depth_var-shelf_wall_offset',[left_depth_var,shelf_wall_offset])
-        r_depth = shelf.get_prompt('Right Depth')
-        r_depth.set_formula('right_depth_var-shelf_wall_offset',[right_depth_var,shelf_wall_offset])
-        quantity = shelf.get_prompt('Z Quantity')
-        quantity.set_formula('qty',[qty])
-        offset = shelf.get_prompt('Z Offset')
-        offset.set_formula('((t_loc-b_loc-(st*2)-(st*qty))/(qty+1))+st',[t_loc,b_loc,st,qty])
+            left_kick = assemblies_cabinet.add_closet_part(self)
+            left_kick.obj_bp["IS_TOE_KICK_BP"] = True
+            left_kick.set_name('Left Kick')
+            left_kick.loc_x('left_depth_var-kick_setback',[left_depth_var,kick_setback])
+            left_kick.loc_y('depth+panel_thickness_var',[depth,panel_thickness_var])
+            left_kick.loc_z(value = 0)
+            left_kick.rot_x(value=math.radians(90))
+            left_kick.rot_y(value=0)
+            left_kick.rot_z(value=math.radians(90))
+            left_kick.dim_x('fabs(depth)-(panel_thickness_var*2)',[depth,panel_thickness_var])
+            left_kick.dim_y('kick_height',[kick_height])
+            left_kick.dim_z('panel_thickness_var',[panel_thickness_var])
+
+            right_kick = assemblies_cabinet.add_closet_part(self)
+            right_kick.obj_bp["IS_TOE_KICK_BP"] = True
+            right_kick.set_name('Right Kick')
+            right_kick.loc_x('width-panel_thickness_var',[width,panel_thickness_var])
+            right_kick.loc_y('-right_depth_var+kick_setback',[right_depth_var,kick_setback])
+            right_kick.loc_z(value = 0)
+            right_kick.rot_x(value=math.radians(90))
+            right_kick.rot_y(value=0)
+            right_kick.rot_z(value=math.radians(180))
+            right_kick.dim_x('width-left_depth_var-(panel_thickness_var*2)+kick_setback',[width,left_depth_var,kick_setback,panel_thickness_var])
+            right_kick.dim_y('kick_height',[kick_height])
+            right_kick.dim_z('panel_thickness_var',[panel_thickness_var])
+
+        # b_loc = bottom.obj_bp.pyclone.get_var('location.z','b_loc')
+        # t_loc = top.obj_bp.pyclone.get_var('location.z','t_loc')
+
+        # shelf = assemblies_cabinet.add_corner_radius_part(self)
+        # shelf.obj_bp["IS_ADJ_L_SHELF_BP"] = True
+        # props = utils_cabinet.get_object_props(shelf.obj_bp)
+        # props.ebl1 = True  
+        # props.ebl2 = True 
+        # props.ebw1 = True 
+        # props.ebw2 = True             
+        # shelf.set_name('Closet L Shelf')
+        # shelf.loc_x('shelf_wall_offset',[shelf_wall_offset])
+        # shelf.loc_y('-shelf_wall_offset',[shelf_wall_offset])
+        # shelf.loc_z('b_loc+st+(((t_loc-b_loc-(st*2)-(st*qty)))/(qty+1))',[b_loc,t_loc,kick_height,st,height,qty])
+        # shelf.rot_x(value = 0)
+        # shelf.rot_y(value = 0)
+        # shelf.rot_z(value = math.radians(-90))
+        # shelf.dim_x('fabs(depth)-panel_thickness_var-shelf_wall_offset',[depth,panel_thickness_var,shelf_wall_offset])
+        # shelf.dim_y('width-panel_thickness_var-shelf_wall_offset',[width,panel_thickness_var,shelf_wall_offset])
+        # shelf.dim_z('st',[st])
+        # l_depth = shelf.get_prompt('Left Depth')
+        # l_depth.set_formula('left_depth_var-shelf_wall_offset',[left_depth_var,shelf_wall_offset])
+        # r_depth = shelf.get_prompt('Right Depth')
+        # r_depth.set_formula('right_depth_var-shelf_wall_offset',[right_depth_var,shelf_wall_offset])
+        # quantity = shelf.get_prompt('Z Quantity')
+        # quantity.set_formula('qty',[qty])
+        # offset = shelf.get_prompt('Z Offset')
+        # offset.set_formula('((t_loc-b_loc-(st*2)-(st*qty))/(qty+1))+st',[t_loc,b_loc,st,qty])
 
     def render(self):
         self.create_assembly()
@@ -1198,9 +1249,9 @@ class Closet_Inside_Corner(Closet):
 
 class Closet_Inside_Corner_Filler(Closet):
     show_in_library = True
-    category_name = "CLOSETS"
-    subcategory_name = "STARTERS"
-    catalog_name = "_Sample"
+    # category_name = "CLOSETS"
+    # subcategory_name = "STARTERS"
+    # catalog_name = "_Sample"
 
     style = 'PIE' # PIE, DIAGONAL, CURVED  
 
@@ -1212,9 +1263,22 @@ class Closet_Inside_Corner_Filler(Closet):
     def pre_draw(self):
         self.create_assembly()
         props = utils_cabinet.get_scene_props(bpy.context.scene)
-        self.obj_x.location.x = props.default_base_closet_depth + pc_unit.inch(1.5)
-        self.obj_y.location.y = -props.default_base_closet_depth - pc_unit.inch(1.5)
-        self.obj_z.location.z = pc_unit.millimeter(int(props.base_closet_panel_height))
+        # self.obj_x.location.x = props.default_base_closet_depth + pc_unit.inch(1.5)
+        # self.obj_y.location.y = -props.default_base_closet_depth - pc_unit.inch(1.5)
+        # self.obj_z.location.z = pc_unit.millimeter(int(props.base_closet_panel_height))
+
+        if self.is_hanging:
+            self.obj_x.location.x = props.upper_cabinet_depth + pc_unit.inch(1.5)
+            self.obj_z.location.z = props.upper_cabinet_height
+            self.obj_y.location.y = -props.upper_cabinet_depth - pc_unit.inch(1.5)
+        elif self.is_base:
+            self.obj_x.location.x = props.base_cabinet_depth + pc_unit.inch(1.5)
+            self.obj_z.location.z = props.base_cabinet_height
+            self.obj_y.location.y = -props.base_cabinet_depth - pc_unit.inch(1.5)
+        else:
+            self.obj_x.location.x = props.tall_cabinet_depth + pc_unit.inch(1.5)
+            self.obj_z.location.z = props.tall_cabinet_height
+            self.obj_y.location.y = -props.tall_cabinet_depth - pc_unit.inch(1.5)
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
@@ -1236,7 +1300,7 @@ class Closet_Inside_Corner_Filler(Closet):
         self.obj_bp[const.CLOSET_INSIDE_CORNER_TAG] = True
         # self.obj_bp['IS_CLOSET_INSIDE_CORNER_BP'] = True
         self.obj_bp["IS_BASE_BP"] = True
-        self.obj_bp["PROMPT_ID"] = "home_builder.closet_inside_corner_prompts" 
+        self.obj_bp["PROMPT_ID"] = "hb_closet_starters.closet_inside_corner_prompts" 
         self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closets_corner_commands"
         self.obj_y['IS_MIRROR'] = True
 
@@ -1275,7 +1339,7 @@ class Closet_Inside_Corner_Filler(Closet):
         right_filler = assemblies_cabinet.add_closet_part(self)
         right_filler.set_name('Closet Partition')
         right_filler.loc_x('width',[width])
-        right_filler.loc_y('depth+rf_width',[depth,rf_width])
+        right_filler.loc_y('depth+lf_width',[depth,lf_width])
         right_filler.loc_z('IF(is_hang,height-p_height,0)',[is_hang,height,p_height])
         right_filler.rot_y(value=math.radians(-90))
         right_filler.rot_z(value=math.radians(90))

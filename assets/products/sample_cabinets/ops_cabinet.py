@@ -18,7 +18,7 @@ from pc_lib import pc_types, pc_unit, pc_utils
 from . import library_cabinet
 from . import utils_cabinet
 from . import utils_placement
-from . import types_closet_starters
+from . import types_cabinet_starters
 from . import types_cabinet
 from . import assemblies_cabinet
 from . import const_cabinets as const
@@ -223,14 +223,14 @@ class hb_sample_cabinets_OT_change_closet_openings(bpy.types.Operator):
     def check(self, context):
         obj = context.object
         closet_bp = pc_utils.get_bp_by_tag(obj,const.CLOSET_TAG)
-        self.closet = types_closet_starters.Closet_Starter(closet_bp) 
+        self.closet = types_cabinet_starters.Closet_Starter(closet_bp) 
         return True
 
     def invoke(self,context,event):
         self.calculators = []
         obj = context.object
         closet_bp = pc_utils.get_bp_by_tag(obj,const.CLOSET_TAG)
-        self.closet = types_closet_starters.Closet_Starter(closet_bp)     
+        self.closet = types_cabinet_starters.Closet_Starter(closet_bp)     
         for i in range(1,9):
             opening_height_prompt = self.closet.get_prompt("Opening " + str(i) + " Width")
             if not opening_height_prompt:
@@ -285,7 +285,7 @@ class hb_sample_cabinets_OT_change_closet_openings(bpy.types.Operator):
             length = self.closet.obj_x.location.x
             pc_utils.delete_object_and_children(self.closet.obj_bp)
 
-            self.new_closet = types_closet_starters.Closet_Starter()
+            self.new_closet = types_cabinet_starters.Closet_Starter()
             self.new_closet.opening_qty = self.quantity
             self.new_closet.is_base = self.closet.is_base
             self.new_closet.is_hanging = self.closet.is_hanging
@@ -335,7 +335,7 @@ class hb_sample_cabinets_OT_add_closet_opening(bpy.types.Operator):
             return False
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
         if bp:
-            closet = types_closet_starters.Closet_Starter(bp)
+            closet = types_cabinet_starters.Closet_Starter(bp)
             if closet.opening_qty == 1:
                 return False
             elif closet.opening_qty == 8:
@@ -414,7 +414,7 @@ class hb_sample_cabinets_OT_add_closet_opening(bpy.types.Operator):
 
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
-        self.closet = types_closet_starters.Closet_Starter(bp)
+        self.closet = types_cabinet_starters.Closet_Starter(bp)
 
 
 class hb_sample_cabinets_OT_delete_closet_opening(bpy.types.Operator):
@@ -429,7 +429,7 @@ class hb_sample_cabinets_OT_delete_closet_opening(bpy.types.Operator):
             return False
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
         if bp:
-            closet = types_closet_starters.Closet_Starter(bp)
+            closet = types_cabinet_starters.Closet_Starter(bp)
             if closet.opening_qty == 1:
                 return False
             else:            
@@ -498,7 +498,7 @@ class hb_sample_cabinets_OT_delete_closet_opening(bpy.types.Operator):
 
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
-        self.closet = types_closet_starters.Closet_Starter(bp)
+        self.closet = types_cabinet_starters.Closet_Starter(bp)
 
 
 class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):

@@ -10,9 +10,8 @@ from . import material_pointers_cabinet
 CABINET_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Sample Cabinets")
 APPLIANCE_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Appliances")
 CABINET_STARTER_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Starters")
-CLOSET_STARTER_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Starters")
-CLOSET_INSERT_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Inserts")
-CLOSET_PART_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Closet Parts")
+CABINET_INSERT_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Inserts")
+CABINET_PART_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Parts")
 
 CABINETS = {"library_name": "Cabinets",
             "library_type": "PRODUCTS",
@@ -32,26 +31,19 @@ CABINET_STARTERS = {"library_name": "Cabinet Starters",
                     "library_path": CABINET_STARTER_LIBRARY_PATH,
                     "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
                     "library_activate_id": "hb_sample_cabinets.active_cabinet_library",
-                    "libary_drop_id": "hb_sample_cabinets.drop_cabinet"}
+                    "libary_drop_id": "home_builder.lookup_drop_id"}
 
-CLOSET_STARTERS = {"library_name": "Closet Starters",
-                   "library_type": "STARTERS",
-                   "library_path": CLOSET_STARTER_LIBRARY_PATH,
+CABINET_INSERTS = {"library_name": "Cabinet Inserts",
+                   "library_type": "INSERTS",
+                   "library_path": CABINET_INSERT_LIBRARY_PATH,
                    "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                   "library_activate_id": "hb_sample_cabinets.active_cabinet_library",
-                   "libary_drop_id": "hb_sample_cabinets.drop_closet_starter"}
+                   "libary_drop_id": "hb_sample_cabinets.place_closet_insert"}
 
-CLOSET_INSERTS = {"library_name": "Closet Inserts",
-                  "library_type": "INSERTS",
-                  "library_path": CLOSET_INSERT_LIBRARY_PATH,
-                  "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                  "libary_drop_id": "hb_sample_cabinets.place_closet_insert"}
-
-CLOSET_PARTS = {"library_name": "Closet Parts",
-                "library_type": "PARTS",
-                "library_path": CLOSET_PART_LIBRARY_PATH,
-                "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
-                "libary_drop_id": "hb_sample_cabinets.place_closet_part"}
+CABINET_PARTS = {"library_name": "Cabinet Parts",
+                 "library_type": "PARTS",
+                 "library_path": CABINET_PART_LIBRARY_PATH,
+                 "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
+                 "libary_drop_id": "hb_sample_cabinets.place_closet_part"}
 
 SAMPLE_CABINET_MATERIALS = {"library_name": "Sample Cabinet Materials",
                             "library_type": "MATERIALS",
@@ -61,10 +53,9 @@ SAMPLE_CABINET_MATERIALS = {"library_name": "Sample Cabinet Materials",
 
 LIBRARIES = [CABINETS,
              APPLIANCES,
-             CLOSET_STARTERS,
              CABINET_STARTERS,
-             CLOSET_INSERTS,
-             CLOSET_PARTS,
+             CABINET_INSERTS,
+             CABINET_PARTS,
              SAMPLE_CABINET_MATERIALS]
 
 CABINET_POINTERS = {}

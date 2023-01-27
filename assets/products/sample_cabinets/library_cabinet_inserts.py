@@ -1,31 +1,31 @@
-from . import types_closet_inserts
+from . import types_cabinet_inserts
 from . import types_cabinet_exteriors
 
-class Adj_Shelves(types_closet_inserts.Shelves):
+class Adj_Shelves(types_cabinet_inserts.Shelves):
 
     def __init__(self):
         pass    
 
 
-class Hanging_Rod(types_closet_inserts.Hanging_Rod):
+class Hanging_Rod(types_cabinet_inserts.Hanging_Rod):
 
     def __init__(self):
         pass        
 
 
-class Double_Hang(types_closet_inserts.Hanging_Rod):
+class Double_Hang(types_cabinet_inserts.Hanging_Rod):
 
     def __init__(self):
         self.is_double = True        
 
 
-class Slanted_Shoe_Shelf(types_closet_inserts.Slanted_Shoe_Shelf):
+class Slanted_Shoe_Shelf(types_cabinet_inserts.Slanted_Shoe_Shelf):
 
     def __init__(self):
         pass
 
 
-class Cubbies(types_closet_inserts.Cubbies):
+class Cubbies(types_cabinet_inserts.Cubbies):
 
     def __init__(self):
         pass        
@@ -55,37 +55,37 @@ class Drawers(types_cabinet_exteriors.Drawers):
         pass            
 
 
-class Wire_Baskets(types_closet_inserts.Wire_Baskets):
+class Wire_Baskets(types_cabinet_inserts.Wire_Baskets):
 
     def __init__(self):
         pass             
 
 
-class Wine_Rack(types_closet_inserts.Wine_Rack):
+class Wine_Rack(types_cabinet_inserts.Wine_Rack):
 
     def __init__(self):
         pass             
 
 
-class Division_1(types_closet_inserts.Horizontal_Splitter):
+class Division_1(types_cabinet_inserts.Horizontal_Splitter):
 
     def __init__(self):
         self.splitter_qty = 1
 
 
-class Division_2(types_closet_inserts.Horizontal_Splitter):
+class Division_2(types_cabinet_inserts.Horizontal_Splitter):
 
     def __init__(self):
         self.splitter_qty = 2
 
 
-class Division_3(types_closet_inserts.Horizontal_Splitter):
+class Division_3(types_cabinet_inserts.Horizontal_Splitter):
 
     def __init__(self):
         self.splitter_qty = 3      
 
 
-class Division_4(types_closet_inserts.Horizontal_Splitter):
+class Division_4(types_cabinet_inserts.Horizontal_Splitter):
 
     def __init__(self):
         self.splitter_qty = 4                  

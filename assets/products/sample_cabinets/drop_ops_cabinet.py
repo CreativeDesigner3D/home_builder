@@ -3,10 +3,10 @@ import os
 import math
 from . import library_cabinet
 from . import library_appliance
-from . import library_closet_starters
-from . import library_closet_inserts
-from . import library_closet_parts
-from . import types_closet_inserts
+from . import library_cabinet_starters
+from . import library_cabinet_inserts
+from . import library_cabinet_parts
+from . import types_cabinet_inserts
 from . import utils_placement
 from . import utils_cabinet
 from . import material_pointers_cabinet
@@ -45,7 +45,80 @@ def add_insert_to_opening(insert,opening):
     for child in opening.obj_bp.children:
         child.hide_viewport = True
 
-class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
+
+class Cabinet_Drop(bpy.types.Operator):
+
+    cabinet = None
+    drawing_plane = None
+    calculators = []
+    exclude_objects = []
+
+    def delete_reference_object(self):
+        ''' This deletes the cube object that is created for
+            reference during the placement operation.
+        '''
+        for obj in self.cabinet.obj_bp.children:
+            if "IS_REFERENCE" in obj:
+                pc_utils.delete_object_and_children(obj)
+
+    def refresh_data(self,hide=True):
+        ''' For some reason matrix world doesn't evaluate correctly
+            when placing cabinets next to this if object is hidden
+            For now set x, y, z object to not be hidden.
+        '''
+        self.cabinet.obj_x.hide_viewport = hide
+        self.cabinet.obj_y.hide_viewport = hide
+        self.cabinet.obj_z.hide_viewport = hide
+        self.cabinet.obj_x.empty_display_size = .001
+        self.cabinet.obj_y.empty_display_size = .001
+        self.cabinet.obj_z.empty_display_size = .001
+
+    def get_calculators(self,obj):
+        for calculator in obj.pyclone.calculators:
+            self.calculators.append(calculator)
+        for child in obj.children:
+            self.get_calculators(child)
+
+    def set_child_properties(self,obj):
+        pc_utils.update_id_props(obj,self.cabinet.obj_bp)
+        # home_builder_utils.assign_current_material_index(obj)
+        if obj.type == 'EMPTY':
+            obj.hide_viewport = True    
+        if obj.type == 'MESH':
+            obj.display_type = 'WIRE'
+        if obj.name != self.drawing_plane.name:
+            self.exclude_objects.append(obj)    
+        for child in obj.children:
+            self.set_child_properties(child)
+
+    def set_placed_properties(self,obj):
+        if obj.type == 'MESH' and 'IS_OPENING_MESH' not in obj:
+            obj.display_type = 'TEXTURED'          
+        for child in obj.children:
+            self.set_placed_properties(child) 
+
+    def create_drawing_plane(self,context):
+        bpy.ops.mesh.primitive_plane_add()
+        plane = context.active_object
+        plane.location = (0,0,0)
+        self.drawing_plane = context.active_object
+        self.drawing_plane.display_type = 'WIRE'
+        self.drawing_plane.dimensions = (100,100,1)
+
+
+class hb_sample_cabinets_OT_drop_cabinet(Cabinet_Drop):
+    '''
+    Drop Operator Requires Class to be Defined in library_cabinet module
+    Required Prompts
+        Cabinet Type - {'Base','Tall','Upper'} - If Upper Assembly will be placed above floor
+        Corner Type - {'','Blind','Inside','Outside'} - Determines how cabinet should be placed on walls
+        Left Finished End - Drop Op sets this to True if connected to cabinet
+        Right Finished End - Drop Op sets this to True if connected to cabinet
+        Left Adjustment Width - Drop Op sets this to 2 inches if placed next to Blind Cabinet
+        Right Adjustment Width - Drop Op sets this to 2 inches if placed next to Blind Cabinet
+        if Corner Type == 'Blind'
+        Blind Panel Location - Drop Op Sets this to 0 if placed in left corner and 1 if placed in right corner
+    '''
     bl_idname = "hb_sample_cabinets.drop_cabinet"
     bl_label = "Place Cabinet"
     bl_options = {'UNDO'}
@@ -66,7 +139,7 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
 
     calculators = []
 
-    drawing_plane = None
+    # drawing_plane = None
 
     next_wall = None
     current_wall = None
@@ -77,7 +150,7 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
 
     assembly = None
     obj = None
-    exclude_objects = []
+    # exclude_objects = []
 
     def reset_selection(self):
         self.current_wall = None
@@ -137,38 +210,6 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
 
         for cal in self.calculators:
             cal.calculate()
-
-    def get_calculators(self,obj):
-        for calculator in obj.pyclone.calculators:
-            self.calculators.append(calculator)
-        for child in obj.children:
-            self.get_calculators(child)
-
-    def set_child_properties(self,obj):
-        pc_utils.update_id_props(obj,self.cabinet.obj_bp)
-        # home_builder_utils.assign_current_material_index(obj)
-        if obj.type == 'EMPTY':
-            obj.hide_viewport = True    
-        if obj.type == 'MESH':
-            obj.display_type = 'WIRE'            
-        if obj.name != self.drawing_plane.name:
-            self.exclude_objects.append(obj)    
-        for child in obj.children:
-            self.set_child_properties(child)
-
-    def set_placed_properties(self,obj):
-        if obj.type == 'MESH' and 'IS_OPENING_MESH' not in obj:
-            obj.display_type = 'TEXTURED'          
-        for child in obj.children:
-            self.set_placed_properties(child) 
-
-    def create_drawing_plane(self,context):
-        bpy.ops.mesh.primitive_plane_add()
-        plane = context.active_object
-        plane.location = (0,0,0)
-        self.drawing_plane = context.active_object
-        self.drawing_plane.display_type = 'WIRE'
-        self.drawing_plane.dimensions = (100,100,1)
 
     def confirm_placement(self,context):
         if self.placement == 'LEFT' and self.selected_cabinet:
@@ -288,18 +329,6 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
         if self.placement_obj:
             pc_utils.delete_object_and_children(self.placement_obj)           
         return {'CANCELLED'}
-
-    def refresh_data(self,hide=True):
-        ''' For some reason matrix world doesn't evaluate correctly
-            when placing cabinets next to this if object is hidden
-            For now set x, y, z object to not be hidden.
-        '''
-        self.cabinet.obj_x.hide_viewport = hide
-        self.cabinet.obj_y.hide_viewport = hide
-        self.cabinet.obj_z.hide_viewport = hide
-        self.cabinet.obj_x.empty_display_size = .001
-        self.cabinet.obj_y.empty_display_size = .001
-        self.cabinet.obj_z.empty_display_size = .001
  
     def finish(self,context,is_recursive=False):
         context.window.cursor_set('DEFAULT')
@@ -311,7 +340,7 @@ class hb_sample_cabinets_OT_drop_cabinet(bpy.types.Operator):
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
         #Reset Object Base Point Name for Duplicate Command
-        self.obj_bp_name = ""        
+        self.obj_bp_name = ""
         # if is_recursive:
         #     bpy.ops.home_builder.place_cabinet(filepath=self.filepath)
         return {'FINISHED'}        
@@ -534,9 +563,9 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         return {'FINISHED'}        
 
 
-class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.drop_closet_starter"
-    bl_label = "Drop Closet Starter"
+class hb_sample_cabinets_OT_drop_cabinet_fill_wall(Cabinet_Drop):
+    bl_idname = "hb_sample_cabinets.drop_cabinet_fill_wall"
+    bl_label = "Drop Cabinet Fill Wall"
     bl_options = {'UNDO'}
     
     filepath: bpy.props.StringProperty(name="Filepath",default="Error")
@@ -546,13 +575,7 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
     mouse_x = 0
     mouse_y = 0
 
-    closet = None
     selected_cabinet = None
-
-    calculators = []
-
-    drawing_plane = None
-    placement_obj = None
 
     next_wall = None
     current_wall = None
@@ -563,7 +586,6 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
 
     assembly = None
     obj = None
-    exclude_objects = []
 
     class_name = ""
 
@@ -596,65 +618,33 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         self.region = pc_utils.get_3d_view_region(context)
         self.reset_properties()
         self.create_drawing_plane(context)
-        self.get_closet(context)
+        self.get_cabinet(context)
         self.placement_obj = utils_placement.create_placement_obj(context)
         context.window_manager.modal_handler_add(self)
         context.area.tag_redraw()
         return {'RUNNING_MODAL'}
 
-    def get_closet(self,context):
+    def get_cabinet(self,context):
         wm_props = context.window_manager.home_builder
         asset = wm_props.get_active_asset(context)
-        self.closet = eval("library_closet_starters." + asset.file_data.name.replace(" ","_") + "()")
+        self.cabinet = eval("library_cabinet_starters." + asset.file_data.name.replace(" ","_") + "()")
 
-        if hasattr(self.closet,'pre_draw'):
-            self.closet.pre_draw()
+        if hasattr(self.cabinet,'pre_draw'):
+            self.cabinet.pre_draw()
         else:
-            self.closet.draw()
+            self.cabinet.draw()
 
-        self.closet.set_name(asset.file_data.name)
-        self.set_child_properties(self.closet.obj_bp)
-        self.get_calculators(self.closet.obj_bp)
-
-    def get_calculators(self,obj):
-        for calculator in obj.pyclone.calculators:
-            self.calculators.append(calculator)
-        for child in obj.children:
-            self.get_calculators(child)
-
-    def set_child_properties(self,obj):
-        pc_utils.update_id_props(obj,self.closet.obj_bp)
-        # home_builder_utils.assign_current_material_index(obj)
-        if obj.type == 'EMPTY':
-            obj.hide_viewport = True    
-        if obj.type == 'MESH':
-            obj.display_type = 'WIRE'            
-        if obj.name != self.drawing_plane.name:
-            self.exclude_objects.append(obj)    
-        for child in obj.children:
-            self.set_child_properties(child)
-
-    def set_placed_properties(self,obj):
-        if obj.type == 'MESH' and 'IS_OPENING_MESH' not in obj:
-            obj.display_type = 'TEXTURED'          
-        for child in obj.children:
-            self.set_placed_properties(child) 
-
-    def create_drawing_plane(self,context):
-        bpy.ops.mesh.primitive_plane_add()
-        plane = context.active_object
-        plane.location = (0,0,0)
-        self.drawing_plane = context.active_object
-        self.drawing_plane.display_type = 'WIRE'
-        self.drawing_plane.dimensions = (100,100,1)
+        self.cabinet.set_name(asset.file_data.name)
+        self.set_child_properties(self.cabinet.obj_bp)
+        self.get_calculators(self.cabinet.obj_bp)
 
     def confirm_placement(self,context, override_height):
         if self.current_wall:
-            self.closet.opening_qty = max(int(math.ceil(self.closet.obj_x.location.x / pc_unit.inch(38))),1)
+            self.cabinet.opening_qty = max(int(math.ceil(self.cabinet.obj_x.location.x / pc_unit.inch(38))),1)
 
         if self.placement == 'LEFT':
-            self.closet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
-            constraint_obj = self.closet.obj_x
+            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.cabinet.obj_x
             constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
             constraint.target = constraint_obj
             constraint.use_x = True
@@ -662,29 +652,27 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
             constraint.use_z = False
 
         if self.placement == 'RIGHT':
-            self.closet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
             constraint_obj = self.selected_cabinet.obj_x
-            constraint = self.closet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint = self.cabinet.obj_bp.constraints.new('COPY_LOCATION')
             constraint.target = constraint_obj
             constraint.use_x = True
             constraint.use_y = True
             constraint.use_z = False
 
-        self.delete_reference_object()
-
-        if hasattr(self.closet,'pre_draw'):
-            self.closet.draw()
+        if hasattr(self.cabinet,'pre_draw'):
+            self.cabinet.draw()
 
         if override_height != 0:
             for i in range(1,9):
-                opening_height_prompt = self.closet.get_prompt("Opening " + str(i) + " Height")
+                opening_height_prompt = self.cabinet.get_prompt("Opening " + str(i) + " Height")
                 if opening_height_prompt:
                     for index, height in enumerate(const.PANEL_HEIGHTS):
                         if not override_height >= float(height[0])/1000:
                             opening_height_prompt.set_value(float(const.PANEL_HEIGHTS[index - 1][0])/1000)
                             break
 
-        self.set_child_properties(self.closet.obj_bp)
+        self.set_child_properties(self.cabinet.obj_bp)
         for cal in self.calculators:
             cal.calculate()
         self.refresh_data(False)
@@ -695,8 +683,8 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
 
         context.view_layer.update()
         #EMPTY MUST BE VISIBLE TO CALCULATE CORRECT SIZE FOR HEIGHT COLLISION
-        self.closet.obj_z.empty_display_size = .001
-        self.closet.obj_z.hide_viewport = False
+        self.cabinet.obj_z.empty_display_size = .001
+        self.cabinet.obj_z.hide_viewport = False
 
         for calculator in self.calculators:
             calculator.calculate()
@@ -711,22 +699,13 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         ## cursor_z added to allow for multi level placement
         cursor_z = context.scene.cursor.location.z
 
-        if self.closet.is_inside_corner:
-            self.placement, self.selected_cabinet, self.selected_wall, override_height = utils_placement.position_corner_unit(self.closet,
-                                                                                                            selected_point,
-                                                                                                            selected_obj,
-                                                                                                            cursor_z,
-                                                                                                            selected_normal,
-                                                                                                            self.placement_obj,
-                                                                                                            0)
-        else:
-            self.placement, self.selected_cabinet, self.current_wall, override_height = utils_placement.position_closet(self.closet,
-                                                                                                        selected_point,
-                                                                                                        selected_obj,
-                                                                                                        cursor_z,
-                                                                                                        selected_normal,
-                                                                                                        self.placement_obj,
-                                                                                                        0)
+        self.placement, self.selected_cabinet, self.current_wall, override_height = utils_placement.position_closet(self.cabinet,
+                                                                                                    selected_point,
+                                                                                                    selected_obj,
+                                                                                                    cursor_z,
+                                                                                                    selected_normal,
+                                                                                                    self.placement_obj,
+                                                                                                    0)
 
         if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context,override_height)
@@ -742,36 +721,207 @@ class hb_sample_cabinets_OT_drop_closet_starter(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def cancel_drop(self,context):
-        pc_utils.delete_object_and_children(self.closet.obj_bp)
+        pc_utils.delete_object_and_children(self.cabinet.obj_bp)
         pc_utils.delete_object_and_children(self.drawing_plane)
         if self.placement_obj:
             pc_utils.delete_object_and_children(self.placement_obj)        
         return {'CANCELLED'}
 
-    def refresh_data(self,hide=True):
-        ''' For some reason matrix world doesn't evaluate correctly
-            when placing cabinets next to this if object is hidden
-            For now set x, y, z object to not be hidden.
-        '''
-        self.closet.obj_x.hide_viewport = hide
-        self.closet.obj_y.hide_viewport = hide
-        self.closet.obj_z.hide_viewport = hide
-        self.closet.obj_x.empty_display_size = .001
-        self.closet.obj_y.empty_display_size = .001
-        self.closet.obj_z.empty_display_size = .001
- 
-    def delete_reference_object(self):
-        for obj in self.closet.obj_bp.children:
-            if "IS_REFERENCE" in obj:
-                pc_utils.delete_object_and_children(obj)
+    def finish(self,context,is_recursive):
+        context.window.cursor_set('DEFAULT')
+        if self.drawing_plane:
+            pc_utils.delete_obj_list([self.drawing_plane])
         if self.placement_obj:
-            pc_utils.delete_object_and_children(self.placement_obj)
+            pc_utils.delete_obj_list([self.placement_obj])
+        self.set_placed_properties(self.cabinet.obj_bp) 
+        self.delete_reference_object()
+        bpy.ops.object.select_all(action='DESELECT')
+        context.area.tag_redraw()
+        #Reset Object Base Point Name for Duplicate Command
+        self.obj_bp_name = ""        
+        ## keep placing until event_is_cancel_command
+        # if is_recursive:
+        #     bpy.ops.home_builder.place_closet(filepath=self.filepath)
+        return {'FINISHED'}
+
+
+class hb_sample_cabinets_OT_drop_cabinet_corner(Cabinet_Drop):
+    bl_idname = "hb_sample_cabinets.drop_cabinet_corner"
+    bl_label = "Drop Cabinet Corner"
+    bl_options = {'UNDO'}
+    
+    filepath: bpy.props.StringProperty(name="Filepath",default="Error")
+
+    obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
+
+    mouse_x = 0
+    mouse_y = 0
+
+    selected_cabinet = None
+
+    next_wall = None
+    current_wall = None
+    previous_wall = None
+
+    height_above_floor = 0
+
+    starting_point = ()
+    placement = ''
+
+    assembly = None
+    obj = None
+
+    class_name = ""
+
+    region = None
+
+    def reset_selection(self):
+        self.current_wall = None
+        self.selected_cabinet = None    
+        self.next_wall = None
+        self.previous_wall = None  
+        self.placement = ''
+        # self.placement_obj = None
+
+    def reset_properties(self):
+        self.cabinet = None
+        self.selected_cabinet = None
+        self.calculators = []
+        self.drawing_plane = None
+        self.next_wall = None
+        self.current_wall = None
+        self.previous_wall = None
+        self.starting_point = ()
+        self.placement = ''
+        self.assembly = None
+        self.obj = None
+        self.exclude_objects = []
+        self.class_name = ""
+
+    def execute(self, context):
+        self.region = pc_utils.get_3d_view_region(context)
+        self.reset_properties()
+        self.create_drawing_plane(context)
+        self.get_cabinet(context)
+        self.placement_obj = utils_placement.create_placement_obj(context)
+        context.window_manager.modal_handler_add(self)
+        context.area.tag_redraw()
+        return {'RUNNING_MODAL'}
+
+    def get_cabinet(self,context):
+        scene_props = utils_cabinet.get_scene_props(context.scene)
+
+        wm_props = context.window_manager.home_builder
+        asset = wm_props.get_active_asset(context)
+        self.cabinet = eval("library_cabinet_starters." + asset.file_data.name.replace(" ","_") + "()")
+
+        if hasattr(self.cabinet,'pre_draw'):
+            self.cabinet.pre_draw()
+        else:
+            self.cabinet.draw()
+
+        if self.cabinet.is_hanging:
+            self.height_above_floor = scene_props.height_above_floor - self.cabinet.obj_z.location.z
+            print('HAF',self.height_above_floor)
+
+        self.cabinet.set_name(asset.file_data.name)
+        self.set_child_properties(self.cabinet.obj_bp)
+        self.get_calculators(self.cabinet.obj_bp)
+
+    def confirm_placement(self,context, override_height):
+        if self.placement == 'LEFT':
+            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.cabinet.obj_x
+            constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint.target = constraint_obj
+            constraint.use_x = True
+            constraint.use_y = True
+            constraint.use_z = False
+
+        if self.placement == 'RIGHT':
+            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+            constraint_obj = self.selected_cabinet.obj_x
+            constraint = self.cabinet.obj_bp.constraints.new('COPY_LOCATION')
+            constraint.target = constraint_obj
+            constraint.use_x = True
+            constraint.use_y = True
+            constraint.use_z = False
+
+        if hasattr(self.cabinet,'pre_draw'):
+            self.cabinet.draw()
+
+        if override_height != 0:
+            for i in range(1,9):
+                opening_height_prompt = self.cabinet.get_prompt("Opening " + str(i) + " Height")
+                if opening_height_prompt:
+                    for index, height in enumerate(const.PANEL_HEIGHTS):
+                        if not override_height >= float(height[0])/1000:
+                            opening_height_prompt.set_value(float(const.PANEL_HEIGHTS[index - 1][0])/1000)
+                            break
+
+        self.set_child_properties(self.cabinet.obj_bp)
+        for cal in self.calculators:
+            cal.calculate()
+        self.refresh_data(False)
+
+    def modal(self, context, event):
+        
+        bpy.ops.object.select_all(action='DESELECT')
+
+        context.view_layer.update()
+        #EMPTY MUST BE VISIBLE TO CALCULATE CORRECT SIZE FOR HEIGHT COLLISION
+        self.cabinet.obj_z.empty_display_size = .001
+        self.cabinet.obj_z.hide_viewport = False
+
+        for calculator in self.calculators:
+            calculator.calculate()
+
+        self.mouse_x = event.mouse_x
+        self.mouse_y = event.mouse_y
+        self.reset_selection()
+
+        ## selected_normal added in to pass this info on from ray cast to position_cabinet
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
+
+        ## cursor_z added to allow for multi level placement
+        cursor_z = context.scene.cursor.location.z
+
+        self.placement, self.selected_cabinet, self.selected_wall, override_height = utils_placement.position_corner_unit(self.cabinet,
+                                                                                                        selected_point,
+                                                                                                        selected_obj,
+                                                                                                        cursor_z,
+                                                                                                        selected_normal,
+                                                                                                        self.placement_obj,
+                                                                                                        self.height_above_floor)
+
+        if pc_placement_utils.event_is_place_asset(event):
+            self.confirm_placement(context,override_height)
+
+            return self.finish(context,event.shift)
+            
+        if pc_placement_utils.event_is_cancel_command(event):
+            return self.cancel_drop(context)
+
+        if pc_placement_utils.event_is_pass_through(event):
+            return {'PASS_THROUGH'}
+
+        return {'RUNNING_MODAL'}
+
+    def cancel_drop(self,context):
+        pc_utils.delete_object_and_children(self.cabinet.obj_bp)
+        pc_utils.delete_object_and_children(self.drawing_plane)
+        if self.placement_obj:
+            pc_utils.delete_object_and_children(self.placement_obj)        
+        return {'CANCELLED'}
 
     def finish(self,context,is_recursive):
         context.window.cursor_set('DEFAULT')
         if self.drawing_plane:
             pc_utils.delete_obj_list([self.drawing_plane])
-        self.set_placed_properties(self.closet.obj_bp) 
+        if self.placement_obj:
+            pc_utils.delete_obj_list([self.placement_obj])
+        self.set_placed_properties(self.cabinet.obj_bp) 
+        self.delete_reference_object()
         bpy.ops.object.select_all(action='DESELECT')
         context.area.tag_redraw()
         #Reset Object Base Point Name for Duplicate Command
@@ -859,7 +1009,7 @@ class hb_sample_cabinets_OT_place_closet_insert(bpy.types.Operator):
         else:        
             wm_props = context.window_manager.home_builder
             asset = wm_props.get_active_asset(context)
-            self.insert = eval("library_closet_inserts." + asset.file_data.name.replace(" ","_") + "()")
+            self.insert = eval("library_cabinet_inserts." + asset.file_data.name.replace(" ","_") + "()")
 
             if hasattr(self.insert,'pre_draw'):
                 self.insert.pre_draw()
@@ -1044,7 +1194,7 @@ class hb_sample_cabinets_OT_place_closet_part(bpy.types.Operator):
     def execute(self, context):
         wm_props = context.window_manager.home_builder
         asset = wm_props.get_active_asset(context)
-        part = eval("library_closet_parts." + asset.file_data.name.replace(" ","_") + "()")
+        part = eval("library_cabinet_parts." + asset.file_data.name.replace(" ","_") + "()")
         eval("bpy.ops." + part.drop_id + "()")
         return {'FINISHED'}
 
@@ -1761,7 +1911,7 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
             world_opening_z = opening.obj_z.matrix_world[2][3]
             sel_loc = self.part.obj_bp.location.z
             top_opening_height = world_opening_z - sel_loc
-            self.insert = types_closet_inserts.Vertical_Splitter()
+            self.insert = types_cabinet_inserts.Vertical_Splitter()
             # self.insert.pre_draw()
             self.insert.draw()
             self.insert.obj_bp["PROMPT_ID"] = "hb_closet_parts.closet_single_fixed_shelf_prompts"
@@ -1814,7 +1964,8 @@ class hb_sample_cabinets_OT_place_single_fixed_shelf_part(bpy.types.Operator):
 classes = (
     hb_sample_cabinets_OT_drop_cabinet,
     hb_sample_cabinets_OT_drop_appliance,
-    hb_sample_cabinets_OT_drop_closet_starter,
+    hb_sample_cabinets_OT_drop_cabinet_fill_wall,
+    hb_sample_cabinets_OT_drop_cabinet_corner,
     hb_sample_cabinets_OT_place_closet_insert,
     hb_sample_cabinets_OT_place_closet_part,
     hb_sample_cabinets_OT_place_closet_shelf,
