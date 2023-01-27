@@ -1947,6 +1947,337 @@ class hb_sample_cabinets_OT_drop_single_fixed_shelf_part(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class hb_sample_cabinets_OT_place_molding(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.place_molding"
+    bl_label = "Place Molding"
+    bl_options = {'UNDO'}
+    
+    filepath: bpy.props.StringProperty(name="Filepath",default="Error")
+
+    curve = None
+    profile = None
+
+    exclude_objects = []
+
+    is_base_molding = False
+
+    def reset_properties(self):
+        self.curve = None
+        self.profile = None
+        self.exclude_objects = []
+
+    def execute(self, context):
+        self.region = pc_utils.get_3d_view_region(context)
+        self.reset_properties()
+        self.get_profile(context)
+        context.window_manager.modal_handler_add(self)
+        context.area.tag_redraw()
+        return {'RUNNING_MODAL'}
+
+    def get_profile(self,context):
+        wm_props = context.window_manager.home_builder
+        library = wm_props.get_active_library(context)
+        asset = wm_props.get_active_asset(context)
+        asset_name = asset.file_data.name
+        if "CR" in asset_name:
+            self.is_base_molding = False
+        else:
+            self.is_base_molding = True
+        self.profile = pc_utils.get_object_by_name(os.path.join(library.library_path,"library.blend"),asset_name)
+
+    def create_curve(self):
+        bpy.ops.curve.primitive_bezier_curve_add(enter_editmode=False)
+        obj_curve = bpy.context.active_object
+        obj_curve[const.IS_MOLDING_TAG] = True
+        obj_curve.modifiers.new("Edge Split",type='EDGE_SPLIT')     
+        obj_curve.data.splines.clear()   
+        obj_curve.data.bevel_mode = 'OBJECT'
+        obj_curve.location = (0,0,0)
+        obj_curve.data.dimensions = '2D'
+        obj_curve.data.bevel_object = self.profile
+        obj_curve.data.use_fill_caps = True
+        return obj_curve
+
+    def position_part(self,mouse_location,selected_obj,event,cursor_z,selected_normal):
+        bpy.ops.object.select_all(action='DESELECT')
+        wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
+        closet_bp = pc_utils.get_bp_by_tag(selected_obj,const.CLOSET_TAG)
+        if closet_bp:
+            for child in closet_bp.children_recursive:
+                if child.type == 'MESH':
+                    child.select_set(True)
+            return closet_bp
+        elif wall_bp:
+            for child in wall_bp.children:
+                if child.type == 'MESH':
+                    child.select_set(True)
+            return wall_bp
+
+    def add_exclude_objects(self,obj):
+        self.exclude_objects.append(obj)
+        for child in obj.children:
+            self.add_exclude_objects(child)
+
+    def create_part(self,context,selected_obj):
+        
+        if 'IS_WALL_BP' in selected_obj:
+            curve_obj = self.create_curve()
+            self.assign_curve_to_wall(selected_obj,curve_obj)
+
+        if const.CLOSET_TAG in selected_obj:
+            if self.is_base_molding:
+                self.assign_base_curve_to_closet(selected_obj)
+            else:
+                self.assign_crown_curve_to_closet(selected_obj)
+    
+    def assign_active_curve_properties(self,obj_curve):
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.curve.select_all(action='SELECT')
+        bpy.ops.curve.handle_type_set(type='VECTOR')
+        bpy.ops.object.editmode_toggle()
+
+    def assign_curve_to_wall(self,selected_obj,curve_obj):
+        wall = pc_types.Assembly(selected_obj)
+        curve_obj.parent = selected_obj
+        spline = curve_obj.data.splines.new('BEZIER')
+
+        if not self.is_base_molding:
+            profile_height = self.profile.dimensions.y
+            curve_obj.location.z = wall.obj_z.location.z - profile_height
+
+        spline.bezier_points.add(count=1)   
+        spline.bezier_points[0].co = (0,0,0)
+        spline.bezier_points[1].co = (wall.obj_x.location.x,0,0)          
+
+        self.assign_active_curve_properties(curve_obj)
+
+    def assign_crown_curve_to_closet(self,selected_obj):
+        closet = pc_types.Assembly(selected_obj)
+        
+        pt = closet.get_prompt("Panel Thickness").get_value()
+        start_x = 0
+        for i in range(1,10):
+            width_p = closet.get_prompt("Opening " + str(i) + " Width")
+            if width_p:
+                curve_obj = self.create_curve()
+                curve_obj.parent = closet.obj_bp
+                spline = curve_obj.data.splines.new('BEZIER')
+
+                width = width_p.get_value()
+                
+                next_width_p = closet.get_prompt("Opening " + str(i + 1) + " Width")
+                next_height_p = closet.get_prompt("Opening " + str(i + 1) + " Height")
+                next_depth_p = closet.get_prompt("Opening " + str(i + 1) + " Depth")
+
+                prev_depth_p = closet.get_prompt("Opening " + str(i - 1) + " Depth")       
+                prev_height_p = closet.get_prompt("Opening " + str(i - 1) + " Height")
+                depth = closet.get_prompt("Opening " + str(i) + " Depth").get_value()
+                height = closet.get_prompt("Opening " + str(i) + " Height").get_value()
+
+                next_floor = closet.get_prompt("Opening " + str(i + 1) + " Floor Mounted")  
+                prev_floor = closet.get_prompt("Opening " + str(i - 1) + " Floor Mounted")                 
+                floor = closet.get_prompt("Opening " + str(i) + " Floor Mounted").get_value()
+
+                hanging_height = closet.obj_z.location.z
+
+                if floor:
+                    curve_obj.location.z = height
+                else:
+                    curve_obj.location.z = hanging_height
+                current_index = 0
+
+                no_back_left_point = False
+                #BACK LEFT
+                if prev_depth_p:
+                    prev_depth = prev_depth_p.get_value()
+                    prev_height = prev_height_p.get_value()
+                    if prev_depth >= depth:
+                        no_back_left_point = True
+                    else:
+                        if prev_height < height:
+                            spline.bezier_points[current_index].co = (start_x,0,0)  
+                        else:
+                            spline.bezier_points[current_index].co = (start_x,-prev_depth,0)  
+                else:
+                    spline.bezier_points[current_index].co = (start_x,0,0)  
+
+                #FRONT LEFT
+
+                move_x = 0
+                if not no_back_left_point:
+                    spline.bezier_points.add(count=1)
+                    current_index += 1              
+                else:
+                    move_x = pt  
+
+                spline.bezier_points[current_index].co = (start_x+move_x,-depth,0)  
+
+                #FRONT RIGHT
+                spline.bezier_points.add(count=1)  
+                current_index += 1  
+                spline.bezier_points[current_index].co = (start_x+width+(pt*2),-depth,0)  
+
+                #BACK RIGHT
+                if next_width_p:
+                    next_depth = next_depth_p.get_value()
+                    next_height = next_height_p.get_value()
+                    if next_depth >= depth:
+                        pass
+                    else:
+                        spline.bezier_points.add(count=1)  
+                        current_index += 1 
+                        if next_height < height:
+                            spline.bezier_points[current_index].co = (start_x+width+(pt*2),0,0)  
+                        else:
+                            spline.bezier_points[current_index].co = (start_x+width+(pt*2),-next_depth,0) 
+                else:
+                    #LAST RETURN
+                    spline.bezier_points.add(count=1)  
+                    current_index += 1
+                    spline.bezier_points[current_index].co = (start_x+width+(pt*2),0,0)  
+
+                start_x += width + pt
+
+            self.assign_active_curve_properties(curve_obj)
+
+    def assign_base_curve_to_closet(self,selected_obj):
+        closet = pc_types.Assembly(selected_obj)
+        
+        pt = closet.get_prompt("Panel Thickness").get_value()
+        start_x = 0
+        for i in range(1,10):
+            width_p = closet.get_prompt("Opening " + str(i) + " Width")
+            if width_p:
+                width = width_p.get_value()
+                floor = closet.get_prompt("Opening " + str(i) + " Floor Mounted").get_value()
+                if not floor:
+                    start_x += width + pt
+                    continue #DONT ADD MOLDING TO HANGING UNITS
+                
+                curve_obj = self.create_curve()
+                curve_obj.parent = closet.obj_bp
+
+                spline = curve_obj.data.splines.new('BEZIER')
+            
+                next_width_p = closet.get_prompt("Opening " + str(i + 1) + " Width")
+                next_depth_p = closet.get_prompt("Opening " + str(i + 1) + " Depth")
+                next_floor = closet.get_prompt("Opening " + str(i + 1) + " Floor Mounted")  
+                prev_floor = closet.get_prompt("Opening " + str(i - 1) + " Floor Mounted") 
+                prev_depth_p = closet.get_prompt("Opening " + str(i - 1) + " Depth")       
+                depth = closet.get_prompt("Opening " + str(i) + " Depth").get_value()
+                
+                current_index = 0
+                no_back_left_point = False
+
+                #BACK LEFT
+                if prev_depth_p:
+                    if not prev_floor.get_value():
+                        #PREVIOUS OPENING IS FLOOR
+                        spline.bezier_points[current_index].co = (start_x,0,0)  
+                    else:
+                        prev_depth = prev_depth_p.get_value()
+                        if prev_depth >= depth:
+                            no_back_left_point = True
+                        else:
+                            spline.bezier_points[current_index].co = (start_x,-prev_depth,0)  
+                else:
+                    #FIRST POINT
+                    spline.bezier_points[current_index].co = (start_x,0,0)  
+
+                #FRONT LEFT
+                move_x = 0
+                if not no_back_left_point:
+                    spline.bezier_points.add(count=1)
+                    current_index += 1    
+                else:
+                    move_x = pt
+                
+                spline.bezier_points[current_index].co = (start_x+move_x,-depth,0)  
+
+                #FRONT RIGHT
+                spline.bezier_points.add(count=1)  
+                current_index += 1  
+                spline.bezier_points[current_index].co = (start_x+width+(pt*2),-depth,0)  
+
+                #BACK RIGHT
+                if next_width_p:
+                    next_depth = next_depth_p.get_value()
+                    if not next_floor.get_value():
+                        spline.bezier_points.add(count=1)  
+                        current_index += 1                        
+                        spline.bezier_points[current_index].co = (start_x+width+(pt*2),0,0)  
+                    else:
+                        if next_depth >= depth:
+                            pass
+                        else:
+                            spline.bezier_points.add(count=1)  
+                            current_index += 1 
+                            spline.bezier_points[current_index].co = (start_x+width+(pt*2),-next_depth,0)  
+                else:
+                    #LAST RETURN
+                    spline.bezier_points.add(count=1)  
+                    current_index += 1
+                    spline.bezier_points[current_index].co = (start_x+width+(pt*2),0,0)  
+
+                start_x += width + pt
+
+            self.assign_active_curve_properties(curve_obj) 
+
+    def set_child_properties(self,obj):
+        pc_utils.update_id_props(obj,self.part.obj_bp)
+        if obj.type == 'EMPTY':
+            obj.hide_viewport = True    
+        if obj.type == 'MESH':
+            obj.display_type = 'WIRE'            
+        for child in obj.children:
+            self.set_child_properties(child)
+
+    def set_placed_properties(self,obj):
+        if obj.type == 'MESH' and obj.hide_render == False:
+            obj.display_type = 'TEXTURED'          
+        for child in obj.children:
+            self.set_placed_properties(child) 
+
+    def modal(self, context, event):
+        bpy.ops.object.select_all(action='DESELECT')
+
+        context.view_layer.update()
+
+        self.mouse_x = event.mouse_x
+        self.mouse_y = event.mouse_y
+
+        ## selected_normal added in to pass this info on from ray cast to position_cabinet
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
+
+        ## cursor_z added to allow for multi level placement
+        cursor_z = context.scene.cursor.location.z
+
+        obj = self.position_part(selected_point,selected_obj,event,cursor_z,selected_normal)
+
+        if utils_placement.event_is_place_asset(event):
+            return self.finish(context,obj,event.shift)
+            
+        if utils_placement.event_is_cancel_command(event):
+            return self.cancel_drop(context)
+
+        if utils_placement.event_is_pass_through(event):
+            return {'PASS_THROUGH'}
+
+        return {'RUNNING_MODAL'}
+
+    def cancel_drop(self,context):
+        return {'CANCELLED'}
+
+    def finish(self,context,obj,is_recursive):
+        if obj:
+            self.create_part(context,obj)
+        if is_recursive:
+            return {'RUNNING_MODAL'}
+        context.window.cursor_set('DEFAULT')
+        bpy.ops.object.select_all(action='DESELECT')
+        context.area.tag_redraw()
+        return {'FINISHED'}
+
 classes = (
     hb_sample_cabinets_OT_drop_cabinet,
     hb_sample_cabinets_OT_drop_appliance,
@@ -1957,6 +2288,7 @@ classes = (
     hb_sample_cabinets_OT_drop_cleat,
     hb_sample_cabinets_OT_drop_back,
     hb_sample_cabinets_OT_drop_single_fixed_shelf_part,
+    hb_sample_cabinets_OT_place_molding,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)

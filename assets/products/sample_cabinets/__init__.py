@@ -13,6 +13,7 @@ CABINET_STARTER_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',
 CABINET_INSERT_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Inserts")
 CABINET_ACCESSORY_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Accessories")
 CABINET_PART_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Cabinet Parts")
+MOLDING_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Moldings")
 
 CABINETS = {"library_name": "Cabinets",
             "library_type": "PRODUCTS",
@@ -52,6 +53,12 @@ CABINET_PARTS = {"library_name": "Cabinet Parts",
                  "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
                  "libary_drop_id": "home_builder.lookup_drop_id"}
 
+MOLDING = {"library_name": "Moldings",
+           "library_type": "PARTS",
+           "library_path": MOLDING_LIBRARY_PATH,
+           "library_menu_id": "HOME_BUILDER_MT_cabinet_settings",
+           "libary_drop_id": "hb_sample_cabinets.place_molding"}
+
 SAMPLE_CABINET_MATERIALS = {"library_name": "Sample Cabinet Materials",
                             "library_type": "MATERIALS",
                             "library_path": material_pointers_cabinet.SAMPLE_CABINET_MATERIALS,
@@ -64,6 +71,7 @@ LIBRARIES = [CABINETS,
              CABINET_INSERTS,
              CABINET_ACCESSORIES,
              CABINET_PARTS,
+             MOLDING,
              SAMPLE_CABINET_MATERIALS]
 
 CABINET_POINTERS = {}

@@ -423,6 +423,18 @@ def get_object(path):
         for obj in data_to.objects:
             return obj    
 
+def get_object_by_name(path,name):
+    if os.path.exists(path):
+
+        with bpy.data.libraries.load(path) as (data_from, data_to):
+            for obj in data_from.objects:
+                if obj == name:
+                    data_to.objects = [name]
+                    break
+        
+        for obj in data_to.objects:
+            return obj    
+            
 def get_material(library_path,material_name):
     if material_name in bpy.data.materials:
         return bpy.data.materials[material_name]
