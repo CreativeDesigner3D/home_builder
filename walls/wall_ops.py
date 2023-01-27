@@ -174,6 +174,39 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
                 if self.typed_value != "":
                     self.typed_value = self.typed_value[:-1]
 
+    def get_first_wall(self,wall):
+        if len(wall.obj_bp.constraints) > 0:
+            obj_bp = wall.obj_bp.constraints[0].target.parent
+            return self.get_first_wall(pc_types.Assembly(obj_bp))
+        else:
+            return wall 
+
+    def get_number_of_walls(self,wall,counter):
+        if len(wall.obj_bp.constraints) > 0:
+            counter += 1
+            obj_bp = wall.obj_bp.constraints[0].target.parent
+            return self.get_number_of_walls(pc_types.Assembly(obj_bp),counter)
+        else:
+            return counter
+
+    def connect_to_first_wall(self,first_wall,current_wall):
+        constraint_obj = first_wall.obj_bp
+        constraint = current_wall.obj_bp.constraints.new('LOCKED_TRACK')
+        constraint.target = constraint_obj
+        constraint.track_axis = 'TRACK_X'
+        constraint.lock_axis = 'LOCK_Z'
+
+        driver = current_wall.obj_x.driver_add('location',0)
+        driver.driver.type = 'SCRIPTED'
+
+        var = driver.driver.variables.new()
+        var.name = 'distance'
+        var.type = 'LOC_DIFF'
+        var.targets[0].id = current_wall.obj_bp
+        var.targets[1].id = first_wall.obj_bp
+
+        driver.driver.expression = 'distance'
+
     def modal(self, context, event):
         context.area.tag_redraw()
         self.set_type_value(event)
@@ -191,6 +224,15 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
         self.position_object(selected_point,selected_obj)
         self.set_end_angles()            
+
+        number_of_walls = self.get_number_of_walls(self.current_wall,0)
+        if self.event_close_room(event) and number_of_walls > 1:
+            first_wall = self.get_first_wall(self.current_wall)
+            self.connect_to_first_wall(first_wall,self.current_wall)
+            self.set_placed_properties(self.current_wall.obj_bp)
+            pc_utils.delete_object_and_children(self.dim.obj_bp)
+            pc_utils.delete_object_and_children(self.drawing_plane)
+            return {'FINISHED'}
 
         if self.event_is_place_first_point(event):
             self.starting_point = (selected_point[0],selected_point[1],0)
@@ -250,6 +292,12 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
     
     def event_is_pass_through(self,event):
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            return True
+        else:
+            return False
+
+    def event_close_room(self,event):
+        if event.type in {'C'}:
             return True
         else:
             return False
@@ -577,6 +625,7 @@ class home_builder_OT_draw_floor_plane(bpy.types.Operator):
         if length == 0:
             length = pc_unit.inch(-48)
         obj_plane = self.create_floor_mesh('Floor',(length,width,0.0))
+        obj_plane['IS_FLOOR'] = True
         context.view_layer.active_layer_collection.collection.objects.link(obj_plane)
         obj_plane.location = loc
         hb_utils.unwrap_obj(context,obj_plane)
@@ -655,6 +704,7 @@ class home_builder_OT_add_room_light(bpy.types.Operator):
 
         bpy.ops.object.light_add(type = 'AREA')
         obj_lamp = context.active_object
+        obj_lamp['IS_ROOM_LIGHT'] = True
         obj_lamp.location.x = x
         obj_lamp.location.y = y
         obj_lamp.location.z = z
