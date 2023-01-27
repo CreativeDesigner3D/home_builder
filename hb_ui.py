@@ -1,6 +1,6 @@
 import bpy
 import os
-from pc_lib import pc_utils
+from pc_lib import pc_utils, pc_types
 from . import hb_utils
 
 class HOME_BUILDER_PT_library(bpy.types.Panel):
@@ -87,27 +87,59 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 box = col.box()
                 box.use_property_split = True
                 box.use_property_decorate = False
-                box.label(text="Wall Settings")
+                box.label(text="Default Wall Settings")
                 row = box.row()
                 row.prop(hb_scene,'wall_height')
                 row.operator('home_builder.update_wall_height',text="",icon='FILE_REFRESH',emboss=False)
                 row = box.row()
                 row.prop(hb_scene,'wall_thickness')
                 row.operator('home_builder.update_wall_thickness',text="",icon='FILE_REFRESH',emboss=False)
-            
-            if hb_scene.room_tabs == 'CURRENT_ROOM':
 
+                wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
+                if wall_bp:
+                    wall = pc_types.Assembly(wall_bp)
+                    col.separator()
+                    box = col.box()
+                    box.use_property_split = True
+                    box.use_property_decorate = False
+                    box.label(text="Selected Wall Settings")
+                    row = box.row()
+                    row.prop(wall.obj_x,'location',index=0,text="Wall Length")                    
+                    row = box.row()
+                    row.prop(wall.obj_z,'location',index=2,text="Wall Height")
+                    row = box.row()
+                    row.prop(wall.obj_y,'location',index=1,text="Wall Thickness")
+
+            if hb_scene.room_tabs == 'CURRENT_ROOM':
                 layout = self.layout
                 box = layout.box()
                 row = box.row()
                 row.scale_y = 1.3
                 row.operator('home_builder.collect_walls')
+                
                 if len(hb_scene.walls) > 0:
+                    box.label(text="Room Tools",icon='MODIFIER')
+                    row = box.row()
+                    row.operator('home_builder.add_room_light',text='Add Room Light',icon='LIGHT_SUN')
+                    row.operator('home_builder.draw_floor_plane',text='Add Floor',icon='MESH_PLANE')   
+
                     box.template_list("HOMEBUILDER_UL_walls"," ", hb_scene, "walls", hb_scene, "wall_index",rows=5,type='DEFAULT')
+                 
                 if hb_scene.wall_index + 1 <= len(hb_scene.walls):
-                    wall = hb_scene.walls[hb_scene.wall_index]
-                    box.prop(wall.obj_bp,'name')
-     
+                    wall_prop_box = box.box()
+                    wall_prop_box.use_property_split = True
+                    wall_prop_box.use_property_decorate = False                    
+                    wall_bp = hb_scene.walls[hb_scene.wall_index].obj_bp
+                    wall = pc_types.Assembly(wall_bp)
+                    wall_prop_box.label(text="Properties")
+                    wall_prop_box.prop(wall.obj_bp,'name',text="Wall Name")
+                    row = wall_prop_box.row()
+                    row.prop(wall.obj_x,'location',index=0,text="Wall Length")                    
+                    row = wall_prop_box.row()
+                    row.prop(wall.obj_z,'location',index=2,text="Wall Height")
+                    row = wall_prop_box.row()
+                    row.prop(wall.obj_y,'location',index=1,text="Wall Thickness")
+
         if hb_scene.library_tabs == 'DECORATIONS':
             col.separator()
             row = col.row(align=True)
