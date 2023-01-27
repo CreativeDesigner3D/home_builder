@@ -7,6 +7,7 @@ class HOME_BUILDER_MT_wall_commands(bpy.types.Menu):
     def draw(self, context):
         wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
         layout = self.layout
+        layout.operator('home_builder.add_wall_length_dimension',text="Add Wall Length Dimension")
 
 
 def draw_home_builder(self,context):

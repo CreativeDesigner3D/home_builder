@@ -900,6 +900,7 @@ class Dimension(Assembly):
         #     hll.set_value(hll.get_value()*-1)
 
     def draw_ui(self,context,layout):
+        font_size = self.get_prompt("Font Size")
         arrow_height = self.get_prompt("Arrow Height")
         arrow_length = self.get_prompt("Arrow Length")
         extend_first_line_amount = self.get_prompt("Extend First Line Amount")
@@ -927,6 +928,10 @@ class Dimension(Assembly):
         row = layout.row()
         row.label(text="Line Thickness:")
         row.prop(line_thickness,'distance_value',text="")   
+
+        row = layout.row()
+        row.label(text="Font Size:")
+        row.prop(font_size,'float_value',text="")  
 
         row = layout.row()
         row.label(text="Flip Text:")

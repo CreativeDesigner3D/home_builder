@@ -1119,6 +1119,27 @@ class home_builder_OT_update_wall_height(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_add_wall_length_dimension(bpy.types.Operator):
+    bl_idname = "home_builder.add_wall_length_dimension"
+    bl_label = "Add Wall Length Dimension"
+    bl_description = "This will add a length dimension to the selected wall"
+
+    def execute(self, context):
+        wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
+        wall = pc_types.Assembly(wall_bp)
+
+        dim = pc_types.Dimension()
+        dim.create_dimension()
+        dim.obj_y.location.y = wall.obj_y.location.y + .2
+        dim.obj_bp.parent = wall.obj_bp
+        dim.obj_bp.location = (0,0,0)
+        dim.obj_bp.location.z += wall.obj_z.location.z
+        dim.obj_x.location.x = wall.obj_x.location.x
+        dim.update_dim_text()
+
+        return {'FINISHED'}
+
+
 class home_builder_OT_update_wall_thickness(bpy.types.Operator):
     bl_idname = "home_builder.update_wall_thickness"
     bl_label = "Update Wall Thickness"
@@ -1181,6 +1202,7 @@ classes = (
     home_builder_OT_update_distance_prompt_in_scene,
     home_builder_OT_update_wall_height,
     home_builder_OT_update_wall_thickness,
+    home_builder_OT_add_wall_length_dimension,
     home_builder_OT_open_browser_window,
 )
 
