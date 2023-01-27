@@ -5,7 +5,6 @@ from . import library_cabinet
 from . import library_appliance
 from . import library_cabinet_starters
 from . import library_cabinet_inserts
-from . import library_cabinet_parts
 from . import types_cabinet_inserts
 from . import utils_placement
 from . import utils_cabinet
