@@ -6,6 +6,7 @@ from . import library_appliance
 from . import library_cabinet_starters
 from . import library_cabinet_inserts
 from . import types_cabinet_inserts
+from . import types_cabinet
 from . import utils_placement
 from . import utils_cabinet
 from . import material_pointers_cabinet
@@ -2002,11 +2003,17 @@ class hb_sample_cabinets_OT_place_molding(bpy.types.Operator):
         bpy.ops.object.select_all(action='DESELECT')
         wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
         closet_bp = pc_utils.get_bp_by_tag(selected_obj,const.CLOSET_TAG)
+        cabinet_bp = pc_utils.get_bp_by_tag(selected_obj,const.CABINET_TAG)
         if closet_bp:
             for child in closet_bp.children_recursive:
                 if child.type == 'MESH':
                     child.select_set(True)
             return closet_bp
+        elif cabinet_bp:
+            for child in cabinet_bp.children_recursive:
+                if child.type == 'MESH':
+                    child.select_set(True)
+            return cabinet_bp
         elif wall_bp:
             for child in wall_bp.children:
                 if child.type == 'MESH':
@@ -2030,11 +2037,23 @@ class hb_sample_cabinets_OT_place_molding(bpy.types.Operator):
             else:
                 self.assign_crown_curve_to_closet(selected_obj)
     
+        if const.CABINET_TAG in selected_obj:
+            curve_obj = self.create_curve()
+            self.assign_curve_to_cabinet(selected_obj,curve_obj)
+
     def assign_active_curve_properties(self,obj_curve):
         bpy.ops.object.editmode_toggle()
         bpy.ops.curve.select_all(action='SELECT')
         bpy.ops.curve.handle_type_set(type='VECTOR')
         bpy.ops.object.editmode_toggle()
+
+        bpy.ops.pc_material.add_material_slot(object_name=obj_curve.name)
+
+        for pointer in obj_curve.pyclone.pointers:
+            pointer.name == 'Molding'
+            pointer.pointer_name = "Molding"       
+
+        material_pointers_cabinet.assign_materials_to_object(obj_curve)
 
     def assign_curve_to_wall(self,selected_obj,curve_obj):
         wall = pc_types.Assembly(selected_obj)
@@ -2048,6 +2067,85 @@ class hb_sample_cabinets_OT_place_molding(bpy.types.Operator):
         spline.bezier_points.add(count=1)   
         spline.bezier_points[0].co = (0,0,0)
         spline.bezier_points[1].co = (wall.obj_x.location.x,0,0)          
+
+        self.assign_active_curve_properties(curve_obj)
+
+    def assign_curve_to_cabinet(self,selected_obj,curve_obj):
+        cabinet = types_cabinet.Cabinet(selected_obj)
+        curve_obj.parent = selected_obj
+
+        if not self.is_base_molding:
+            curve_obj.location.z = cabinet.obj_z.location.z
+            for carcass in cabinet.carcasses:
+                lfe_p = carcass.get_prompt("Left Finished End")
+                rfe_p = carcass.get_prompt("Right Finished End")
+
+            if lfe_p and rfe_p:
+                lfe = lfe_p.get_value()
+                rfe = rfe_p.get_value()
+                width = cabinet.obj_x.location.x
+                depth = cabinet.obj_y.location.y
+                spline = curve_obj.data.splines.new('BEZIER')       
+
+                if lfe:
+                    spline.bezier_points.add(count=2)   
+                    spline.bezier_points[0].co = (0,0,0)
+                    spline.bezier_points[1].co = (0,depth,0)
+                    spline.bezier_points[2].co = (width,depth,0)
+                else:
+                    spline.bezier_points.add(count=1)   
+                    spline.bezier_points[0].co = (0,depth,0)
+                    spline.bezier_points[1].co = (width,depth,0)
+
+                if rfe:
+                    spline.bezier_points.add(count=1) 
+                    if lfe:
+                        spline.bezier_points[3].co = (width,0,0)
+                    else:
+                        spline.bezier_points[2].co = (width,0,0) 
+
+        else:
+            lfe_p = None
+            rfe_p = None
+            for carcass in cabinet.carcasses:
+                curve_obj.name = "Base Molding"
+                
+                c_type = carcass.get_prompt("Cabinet Type")
+                cabinet_type = "Base"
+                if c_type:
+                    cabinet_type = c_type.get_value()
+                if cabinet_type not in ("Base","Tall"):
+                    continue   
+                toe_kick_setback_p = carcass.get_prompt("Toe Kick Setback")
+                lfe_p = carcass.get_prompt("Left Finished End")
+                rfe_p = carcass.get_prompt("Right Finished End")
+                if toe_kick_setback_p and lfe_p and rfe_p:
+                    break
+ 
+            if lfe_p and rfe_p and toe_kick_setback_p:
+                toe_kick_setback = toe_kick_setback_p.get_value()
+                lfe = lfe_p.get_value()
+                rfe = rfe_p.get_value()
+                width = cabinet.obj_x.location.x
+                depth = cabinet.obj_y.location.y
+                spline = curve_obj.data.splines.new('BEZIER')
+
+                if lfe:
+                    spline.bezier_points.add(count=2)   
+                    spline.bezier_points[0].co = (0,0,0)
+                    spline.bezier_points[1].co = (0,depth+toe_kick_setback,0)
+                    spline.bezier_points[2].co = (width,depth+toe_kick_setback,0)
+                else:
+                    spline.bezier_points.add(count=1)   
+                    spline.bezier_points[0].co = (0,depth+toe_kick_setback,0)
+                    spline.bezier_points[1].co = (width,depth+toe_kick_setback,0)
+
+                if rfe:
+                    spline.bezier_points.add(count=1) 
+                    if lfe:
+                        spline.bezier_points[3].co = (width,0,0)
+                    else:
+                        spline.bezier_points[2].co = (width,0,0)     
 
         self.assign_active_curve_properties(curve_obj)
 

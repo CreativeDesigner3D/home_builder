@@ -13,6 +13,7 @@ CABINET_POINTERS.append(("Cabinet Interior Surfaces",SAMPLE_CABINET_MATERIALS,"W
 CABINET_POINTERS.append(("Cabinet Interior Edges",SAMPLE_CABINET_MATERIALS,"White Melamine"))
 CABINET_POINTERS.append(("Cabinet Door Surfaces",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
 CABINET_POINTERS.append(("Cabinet Door Edges",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
+CABINET_POINTERS.append(("Molding",SAMPLE_CABINET_MATERIALS,"Autumn Leaves"))
 CABINET_POINTERS.append(("Cabinet Pull Finish",SAMPLE_CABINET_MATERIALS,"Polished Chrome"))
 CABINET_POINTERS.append(("Countertop Surface",SAMPLE_CABINET_MATERIALS,"Midnight Granite"))
 CABINET_POINTERS.append(("Shelf Holes",SAMPLE_CABINET_MATERIALS,"Black Melamine"))
