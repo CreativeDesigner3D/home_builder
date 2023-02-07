@@ -24,7 +24,8 @@ class HOME_BUILDER_MT_cabinet_commands(bpy.types.Menu):
         bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_TAG)
         layout = self.layout
         layout.operator('hb_sample_cabinets.cabinet_prompts',icon='WINDOW')   
-        layout.operator('hb_sample_cabinets.place_cabinet_on_wall',icon='EMPTY_ARROWS')     
+        layout.operator('hb_sample_cabinets.place_cabinet_on_wall',icon='EMPTY_ARROWS')   
+        layout.operator('hb_sample_cabinets.clear_cabinet_carcass',icon='CUBE') 
         layout.separator()
         layout.operator('home_builder.delete_assembly',text="Delete Cabinet",icon='X').obj_name = bp.name
 

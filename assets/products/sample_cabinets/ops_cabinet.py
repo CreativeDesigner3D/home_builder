@@ -20,6 +20,8 @@ from . import utils_cabinet
 from . import utils_placement
 from . import types_cabinet_starters
 from . import types_cabinet
+from . import types_cabinet_carcass
+from . import types_cabinet_exteriors
 from . import assemblies_cabinet
 from . import const_cabinets as const
 from . import types_fronts
@@ -504,7 +506,7 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
 
         pc_utils.hide_empties(new_cabinet.obj_bp)
 
-        bpy.ops.hb_sample_cabinets.place_closet_insert(obj_bp_name=new_cabinet.obj_bp.name)
+        bpy.ops.hb_sample_cabinets.drop_cabinet_insert(obj_bp_name=new_cabinet.obj_bp.name)
 
         return {'FINISHED'}
 
@@ -539,6 +541,39 @@ class hb_sample_cabinets_OT_delete_cabinet_insert(bpy.types.Operator):
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
         self.insert = pc_types.Assembly(bp)
+
+
+class hb_sample_cabinets_OT_clear_cabinet_carcass(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.clear_cabinet_carcass"
+    bl_label = "Clear Cabinet Carcass"
+
+    carcass = None
+
+    @classmethod
+    def poll(cls, context):
+        if not context.object:
+            return False
+        bp = pc_utils.get_bp_by_tag(context.object,const.CARCASS_TAG)
+        if bp:
+            return True
+        else:
+            return False    
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.CARCASS_TAG)
+        self.carcass = types_cabinet_carcass.Design_Carcass(bp)
+
+    def execute(self, context):
+        self.get_assemblies(context)
+        if self.carcass.interior and self.carcass.interior.obj_bp:
+            pc_utils.delete_object_and_children(self.carcass.interior.obj_bp) 
+        if self.carcass.exterior and self.carcass.exterior.obj_bp:
+            pc_utils.delete_object_and_children(self.carcass.exterior.obj_bp) 
+
+        opening = types_cabinet_exteriors.Opening()
+
+        self.carcass.add_insert(opening)
+        return {'FINISHED'}
 
 
 class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
@@ -1053,6 +1088,7 @@ classes = (
     hb_sample_cabinets_OT_add_closet_opening,
     hb_sample_cabinets_OT_delete_closet_opening,
     hb_sample_cabinets_OT_duplicate_closet_insert,
+    hb_sample_cabinets_OT_clear_cabinet_carcass,
     hb_sample_cabinets_OT_delete_cabinet_insert,
     hb_sample_cabinets_OT_place_cabinet_on_wall,
     hb_sample_cabinets_OT_update_all_pulls_in_room,
