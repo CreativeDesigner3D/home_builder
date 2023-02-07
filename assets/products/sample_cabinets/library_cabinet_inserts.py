@@ -31,19 +31,19 @@ class Cubbies(types_cabinet_inserts.Cubbies):
         pass        
 
 
-class Base_Doors(types_cabinet_exteriors.Doors):
+class Doors_Base(types_cabinet_exteriors.Doors):
 
     def __init__(self):
         self.door_type = "Base"      
 
 
-class Tall_Doors(types_cabinet_exteriors.Doors):
+class Doors_Tall(types_cabinet_exteriors.Doors):
 
     def __init__(self):
         self.door_type = "Tall"          
 
 
-class Upper_Doors(types_cabinet_exteriors.Doors):
+class Doors_Upper(types_cabinet_exteriors.Doors):
 
     def __init__(self):
         self.door_type = "Upper"                  
@@ -53,6 +53,12 @@ class Drawers(types_cabinet_exteriors.Drawers):
 
     def __init__(self):
         pass            
+
+
+class Single_Fixed_Shelf(types_cabinet_inserts.Vertical_Splitter):
+
+    def __init__(self):
+        self.splitter_qty = 1
 
 
 class Wire_Baskets(types_cabinet_inserts.Wire_Baskets):

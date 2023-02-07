@@ -509,9 +509,9 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class hb_sample_cabinets_OT_delete_closet_insert(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.delete_closet_insert"
-    bl_label = "Delete Closet insert"
+class hb_sample_cabinets_OT_delete_cabinet_insert(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.delete_cabinet_insert"
+    bl_label = "Delete Cabinet insert"
 
     insert = None
 
@@ -1053,7 +1053,7 @@ classes = (
     hb_sample_cabinets_OT_add_closet_opening,
     hb_sample_cabinets_OT_delete_closet_opening,
     hb_sample_cabinets_OT_duplicate_closet_insert,
-    hb_sample_cabinets_OT_delete_closet_insert,
+    hb_sample_cabinets_OT_delete_cabinet_insert,
     hb_sample_cabinets_OT_place_cabinet_on_wall,
     hb_sample_cabinets_OT_update_all_pulls_in_room,
     hb_sample_cabinets_OT_update_selected_pulls_in_room,

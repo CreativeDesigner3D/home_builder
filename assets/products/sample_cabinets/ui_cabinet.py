@@ -41,7 +41,7 @@ class HOME_BUILDER_MT_closet_commands(bpy.types.Menu):
         layout.operator('hb_sample_cabinets.change_closet_openings',icon='UV_ISLANDSEL')  
         layout.operator('hb_sample_cabinets.duplicate_closet_insert',icon='DUPLICATE')
         layout.separator()
-        layout.operator('hb_sample_cabinets.delete_closet_insert',text="Delete Insert",icon='X')
+        layout.operator('hb_sample_cabinets.delete_cabinet_insert',text="Delete Insert",icon='X')
         layout.operator('home_builder.delete_assembly',text="Delete Starter",icon='X').obj_name = bp.name
         
 

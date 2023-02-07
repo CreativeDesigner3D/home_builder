@@ -961,7 +961,10 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
     def execute(self, context):
         self.region = pc_utils.get_3d_view_region(context)
         self.reset_properties()
-        self.get_insert(context)
+        custom_drop_id = self.get_insert(context)
+        if custom_drop_id:
+            eval("bpy.ops." + custom_drop_id + "()")
+            return {'FINISHED'}
 
         if self.snap_cursor_to_cabinet:
             if self.obj_bp_name != "":
@@ -1001,6 +1004,12 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
         for child in obj.children:
             self.add_exclude_objects(child)
 
+    def get_custom_drop_operator(self,asset):
+        for tag in asset.file_data.asset_data.tags:
+            if "drop_id:" in tag.name:
+                drop_id = tag.name.split(":")[-1]
+                return drop_id
+
     def get_insert(self,context):
 
         if self.obj_bp_name in bpy.data.objects:
@@ -1009,6 +1018,11 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
         else:        
             wm_props = context.window_manager.home_builder
             asset = wm_props.get_active_asset(context)
+            custom_drop_id = self.get_custom_drop_operator(asset)
+            if custom_drop_id:
+                # eval("bpy.ops." + custom_drop_id + "()")
+                return custom_drop_id
+
             self.insert = eval("library_cabinet_inserts." + asset.file_data.name.replace(" ","_") + "()")
 
             if hasattr(self.insert,'pre_draw'):
@@ -1017,6 +1031,7 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
                 self.insert.draw()
 
             self.insert.set_name(asset.file_data.name)
+            self.insert.obj_bp[const.INSERT_TAG] = True
 
         self.add_exclude_objects(self.insert.obj_bp)
         self.set_child_properties(self.insert.obj_bp)
