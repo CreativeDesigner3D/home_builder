@@ -2,8 +2,10 @@ import bpy
 import os
 import sys
 import xml.etree.ElementTree as ET
+from pc_lib import pc_utils
 from . import hb_paths
 from . import pyclone_utils
+
 
 addon_version = ()
 
@@ -80,15 +82,9 @@ def get_active_library(context):
     if hb_scene.library_tabs == 'MATERIALS':
         return get_library(wm_props,'MATERIALS')       
 
-def apply_hook_modifiers(context,obj):
-    context.view_layer.objects.active = obj
-    for mod in obj.modifiers:
-        if mod.type == 'HOOK':
-            bpy.ops.object.modifier_apply(modifier=mod.name)            
-
 def unwrap_obj(context,obj):
     context.view_layer.objects.active = obj
-    apply_hook_modifiers(context,obj)       
+    pc_utils.apply_hook_modifiers(context,obj)       
 
     mode = obj.mode
     if obj.mode == 'OBJECT':

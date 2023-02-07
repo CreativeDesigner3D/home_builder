@@ -1055,30 +1055,6 @@ class HOMEBUILDER_UL_walls(bpy.types.UIList):
                 layout.operator('home_builder.show_hide_walls',text="",icon='HIDE_OFF').wall_obj_bp = item.obj_bp.name
 
 
-class HOMEBUILDER_MT_wall_menu(bpy.types.Menu):
-    bl_label = "Wall Commands"
-
-    def draw(self, context):
-        layout = self.layout
-        obj_bp = pc_utils.get_assembly_bp(context.object)
-        wall_bp = None
-
-        wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')  
-        if wall_bp:
-
-            layout.operator_context = 'INVOKE_DEFAULT'
-
-            #TODO: Implement additional wall commands
-            # if wall_bp:
-            #     layout.operator('home_builder.move_wall',text="Move Wall - " + door_window_bp.name,icon='OBJECT_ORIGIN').obj_bp_name = door_window_bp.name
-            #     layout.operator('home_builder.free_move_wall',text="Grab Wall - " + door_window_bp.name,icon='VIEW_PAN').obj_bp_name = door_window_bp.name
-            #     layout.operator('home_builder.duplicate_wall',text="Duplicate Wall - " + door_window_bp.name,icon='DUPLICATE').obj_bp_name = door_window_bp.name
-            #     layout.separator()
-
-            layout.operator('home_builder.edit_part',text="Edit Wall",icon='EDITMODE_HLT')
-            layout.separator()
-            layout.operator('home_builder.delete_wall',text="Delete Wall",icon='X').obj_name = wall_bp.name
-
 classes = (
     home_builder_OT_wall_prompts,
     home_builder_OT_draw_multiple_walls,
@@ -1093,7 +1069,6 @@ classes = (
     home_builder_OT_show_wall,
     home_builder_OT_show_wall_front_view,
     HOMEBUILDER_UL_walls,
-    HOMEBUILDER_MT_wall_menu
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

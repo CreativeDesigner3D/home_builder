@@ -1177,6 +1177,26 @@ class home_builder_OT_open_browser_window(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_edit_part(bpy.types.Operator):
+    bl_idname = "home_builder.edit_part"
+    bl_label = "Edit Part"
+
+    def execute(self, context):
+        obj_bps = []
+        for obj in context.selected_objects:
+            obj_bp = pc_utils.get_assembly_bp(obj)
+            if obj_bp is not None and obj_bp not in obj_bps:
+                obj_bps.append(obj_bp)
+
+        for obj_bp in obj_bps:
+            for child in obj_bp.children:
+                if child.type == 'MESH':
+                    pc_utils.apply_hook_modifiers(context,child)
+
+        bpy.ops.object.editmode_toggle()
+        return {'FINISHED'}
+
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_update_library_xml,
@@ -1204,6 +1224,7 @@ classes = (
     home_builder_OT_update_wall_thickness,
     home_builder_OT_add_wall_length_dimension,
     home_builder_OT_open_browser_window,
+    home_builder_OT_edit_part,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

@@ -7,7 +7,9 @@ class HOME_BUILDER_MT_wall_commands(bpy.types.Menu):
     def draw(self, context):
         wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
         layout = self.layout
-        layout.operator('home_builder.add_wall_length_dimension',text="Add Wall Length Dimension")
+        layout.operator('home_builder.edit_part',text="Edit Wall",icon='EDITMODE_HLT')
+        layout.operator('home_builder.add_wall_length_dimension',text="Add Wall Length Dimension",icon='DRIVER_DISTANCE')
+        layout.separator()
         layout.operator('home_builder.delete_wall',text="Delete Wall",icon='X').wall_obj_bp_name = wall_bp.name
 
 
