@@ -945,10 +945,16 @@ class home_builder_OT_delete_wall(bpy.types.Operator):
             obj_bp = bpy.data.objects[self.wall_obj_bp_name]
             wall = pc_types.Assembly(obj_bp)
             prev_wall_bp = pc_utils.get_connected_left_wall_bp(wall)
+            next_wall_bp = pc_utils.get_connected_right_wall_bp(wall)
             if prev_wall_bp:
                 prev_wall_bp.home_builder.connected_object = None
                 prev_wall = pc_types.Assembly(prev_wall_bp)
                 prev_wall.get_prompt("Right Angle").set_value(0)
+            if next_wall_bp:
+                mat_world = next_wall_bp.matrix_world.translation.copy()
+                next_wall = pc_types.Assembly(next_wall_bp)
+                next_wall.get_prompt("Left Angle").set_value(0)
+                next_wall.obj_bp.matrix_world.translation = mat_world
             pc_utils.delete_object_and_children(obj_bp)
         return {'FINISHED'}    
 
