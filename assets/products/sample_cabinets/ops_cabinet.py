@@ -40,48 +40,6 @@ class hb_sample_cabinets_OT_active_cabinet_library(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class hb_sample_cabinets_OT_assign_handle_pointer(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.assign_handle_pointer"
-    bl_label = "Assign Handle Pointer"
-
-    pointer_name: StringProperty(name="Pointer Name")
-
-    def execute(self, context):
-        props = utils_cabinet.get_scene_props(context.scene)
-        pointer = eval("props." + self.pointer_name)
-        pointer.category_name = props.cabinet_handle_category
-        pointer.item_name = props.cabinet_handle
-        return {'FINISHED'}
-
-
-class hb_sample_cabinets_OT_assign_door_pointer(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.assign_door_pointer"
-    bl_label = "Assign Door Pointer"
-
-    pointer_name: StringProperty(name="Pointer Name")
-
-    def execute(self, context):
-        props = utils_cabinet.get_scene_props(context.scene)
-        pointer = eval("props." + self.pointer_name)
-        pointer.category_name = props.cabinet_door_category
-        pointer.item_name = props.cabinet_door
-        return {'FINISHED'}
-
-
-class hb_sample_cabinets_OT_assign_molding_pointer(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.assign_molding_pointer"
-    bl_label = "Assign Molding Pointer"
-
-    pointer_name: StringProperty(name="Pointer Name")
-
-    def execute(self, context):
-        props = utils_cabinet.get_scene_props(context.scene)
-        pointer = eval("props." + self.pointer_name)
-        pointer.category_name = props.molding_category
-        pointer.item_name = props.molding
-        return {'FINISHED'}
-
-
 class hb_sample_cabinets_OT_change_closet_offsets(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.change_closet_offsets"
     bl_label = "Change Closet Offsets"
@@ -1090,9 +1048,6 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
 classes = (
     Cabinet_Library_Item,
     hb_sample_cabinets_OT_active_cabinet_library,
-    hb_sample_cabinets_OT_assign_handle_pointer,
-    hb_sample_cabinets_OT_assign_door_pointer,
-    hb_sample_cabinets_OT_assign_molding_pointer,
     hb_sample_cabinets_OT_change_closet_offsets,
     hb_sample_cabinets_OT_change_closet_openings,
     hb_sample_cabinets_OT_add_closet_opening,

@@ -50,12 +50,6 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                     description="This will show the door library", 
                                     default=False)
 
-    #POINTERS
-    base_molding: PointerProperty(name="Base Molding",type=Pointer)
-    crown_molding: PointerProperty(name="Crown Molding",type=Pointer)
-    light_rail_molding: PointerProperty(name="Light Rail Molding",type=Pointer)
-    wall_crown_molding: PointerProperty(name="Wall Crown Molding",type=Pointer)
-
     #CABINET SIZES
     base_cabinet_depth: FloatProperty(name="Base Cabinet Depth",
                                                  description="Default depth for base cabinets",

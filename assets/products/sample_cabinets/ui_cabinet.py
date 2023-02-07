@@ -13,7 +13,6 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
         layout.popover(panel="HOME_BUILDER_PT_cabinet_material_thickness",text="Cabinet Material Thickness",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_hardware",text="Cabinet Hardware",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_fronts",text="Cabinet Fronts",icon='SNAP_FACE')
-        layout.popover(panel="HOME_BUILDER_PT_cabinet_moldings",text="Cabinet Moldings",icon='IPO_CONSTANT')
         layout.separator()
         layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
 
@@ -298,43 +297,6 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
             row.template_icon_view(props,"cabinet_door",show_labels=True)     
 
 
-class HOME_BUILDER_PT_cabinet_moldings(bpy.types.Panel):
-    bl_space_type = 'FILE_BROWSER'
-    bl_label = "Cabinet Moldings"
-    bl_region_type = 'HEADER'
-    bl_ui_units_x = 16
-
-    def draw(self, context):
-        props = utils_cabinet.get_scene_props(context.scene)
-
-        layout = self.layout
-
-        box = layout.box()
-        box.label(text="Molding Library")
-        row = box.row()
-        row.prop(props,'molding_category',text="")    
-
-        row = box.row()
-        row.template_icon_view(props,"molding",show_labels=True)   
-
-        box = layout.box()
-        box.label(text="Molding Pointers")   
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "base_molding"
-        row.label(text="Base Molding: " + props.base_molding.category_name + " - " + props.base_molding.item_name)  
-
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "crown_molding"
-        row.label(text="Crown Molding: " + props.crown_molding.category_name + " - " + props.crown_molding.item_name)  
-
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "light_rail_molding"
-        row.label(text="Light Rail Molding: " + props.light_rail_molding.category_name + " - " + props.light_rail_molding.item_name)  
-
-        row = box.row()
-        row.operator('hb_sample_cabinets.assign_molding_pointer',text="",icon='TRIA_RIGHT').pointer_name = "wall_crown_molding"
-        row.label(text="Wall Crown Molding: " + props.wall_crown_molding.category_name + " - " + props.wall_crown_molding.item_name)   
-
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_MT_cabinet_commands,
@@ -346,7 +308,6 @@ classes = (
     HOME_BUILDER_PT_cabinet_material_thickness,
     HOME_BUILDER_PT_cabinet_hardware,
     HOME_BUILDER_PT_cabinet_fronts,
-    HOME_BUILDER_PT_cabinet_moldings,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)          
