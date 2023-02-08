@@ -2,6 +2,8 @@ import os
 from . import props_cabinet
 from . import drop_ops_cabinet
 from . import prompt_ops_cabinet
+from . import prompt_ops_inserts
+from . import prompt_ops_parts
 from . import library_cabinet
 from . import ui_cabinet
 from . import ops_cabinet
@@ -84,6 +86,8 @@ def register():
     drop_ops_cabinet.register()
     ops_cabinet.register()
     prompt_ops_cabinet.register()
+    prompt_ops_inserts.register()
+    prompt_ops_parts.register()
     ui_cabinet.register()
 
 def unregister():
@@ -91,4 +95,6 @@ def unregister():
     drop_ops_cabinet.unregister()
     ops_cabinet.unregister()
     prompt_ops_cabinet.unregister()
-    ui_cabinet.unregister()    
+    prompt_ops_inserts.unregister()
+    prompt_ops_parts.unregister()
+    ui_cabinet.unregister()

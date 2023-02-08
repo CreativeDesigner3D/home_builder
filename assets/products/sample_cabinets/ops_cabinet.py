@@ -987,6 +987,31 @@ class hb_sample_cabinets_OT_update_selected_fronts_in_room(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class hb_sample_cabinets_OT_show_hide_opening(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.show_hide_opening"
+    bl_label = "Show Hide Opening"
+    bl_description = "This toggles the opening visibility"
+    bl_options = {'UNDO'}
+
+    insert_obj_bp: bpy.props.StringProperty(name="Insert Base Point Name")
+    hide: bpy.props.BoolProperty(name="Hide")
+
+    def execute(self,context):
+        insert_bp = bpy.data.objects[self.insert_obj_bp]
+        opening_bp = insert_bp.parent
+        if opening_bp:
+            if 'IS_FILLED' in opening_bp:
+                if self.hide == False:
+                    del(opening_bp['IS_FILLED'])
+            else:
+                if self.hide == True:
+                    opening_bp['IS_FILLED'] = True              
+            for child in opening_bp.children:
+                if child.type == 'MESH':
+                    child.hide_viewport = self.hide
+        return {'FINISHED'}   
+
+
 class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.build_library"
     bl_label = "Build Library"
@@ -1095,6 +1120,7 @@ classes = (
     hb_sample_cabinets_OT_update_selected_pulls_in_room,
     hb_sample_cabinets_OT_update_all_fronts_in_room,
     hb_sample_cabinets_OT_update_selected_fronts_in_room,
+    hb_sample_cabinets_OT_show_hide_opening,
     hb_sample_cabinets_OT_build_library,
 )
 

@@ -1145,7 +1145,7 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
 
         if self.obj_bp_name == "" and hasattr(self.insert,'update_prompts_after_placement'):
             self.insert.update_prompts_after_placement(context)
-            
+
         if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context,opening)
 
@@ -1255,7 +1255,7 @@ class hb_sample_cabinets_OT_drop_adj_shelf(bpy.types.Operator):
 
         self.part.set_name("Single Shelf")
         self.part.obj_bp[const.CLOSET_SINGLE_ADJ_SHELF_TAG] = True
-        self.part.obj_bp['PROMPT_ID'] = 'hb_closet_parts.closet_single_adj_shelf_prompts'
+        self.part.obj_bp['PROMPT_ID'] = 'hb_sample_cabinets.single_adj_shelf_prompts'
         self.set_child_properties(self.part.obj_bp)
 
     def set_child_properties(self,obj):
@@ -1442,7 +1442,7 @@ class hb_sample_cabinets_OT_drop_cleat(bpy.types.Operator):
         self.part.set_name("Cleat")
         self.part.obj_bp[const.CLOSET_CLEAT_TAG] = True
         self.part.obj_bp['IS_CUTPART_BP'] = True
-        self.part.obj_bp['PROMPT_ID'] = 'hb_closet_parts.closet_cleat_prompts'
+        self.part.obj_bp['PROMPT_ID'] = 'hb_sample_cabinets.cleat_prompts'
         self.set_child_properties(self.part.obj_bp)
 
     def set_child_properties(self,obj):
@@ -1612,7 +1612,7 @@ class hb_sample_cabinets_OT_drop_back(bpy.types.Operator):
         self.part.set_name("Back")
         self.part.obj_bp[const.CLOSET_BACK_TAG] = True
         self.part.obj_bp['IS_CUTPART_BP'] = True
-        self.part.obj_bp['PROMPT_ID'] = 'hb_closet_parts.closet_back_prompts'
+        self.part.obj_bp['PROMPT_ID'] = 'hb_sample_cabinets.back_prompts'
         self.set_child_properties(self.part.obj_bp)
 
     def set_child_properties(self,obj):
@@ -1819,7 +1819,7 @@ class hb_sample_cabinets_OT_drop_single_fixed_shelf_part(bpy.types.Operator):
         self.part.obj_x.hide_viewport = True
         self.part.obj_y.hide_viewport = True
         self.part.obj_z.hide_viewport = True
-        # self.part.obj_bp['PROMPT_ID'] = "hb_closet_parts.closet_single_fixed_shelf_prompts"
+        # self.part.obj_bp['PROMPT_ID'] = "hb_closet_parts.single_fixed_shelf_prompts"
         # self.part.obj_bp[const.CLOSET_SINGLE_FIXED_SHELF_TAG] = True
 
     def set_child_properties(self,obj):
@@ -1910,7 +1910,7 @@ class hb_sample_cabinets_OT_drop_single_fixed_shelf_part(bpy.types.Operator):
             self.insert = types_cabinet_inserts.Vertical_Splitter()
             # self.insert.pre_draw()
             self.insert.draw()
-            self.insert.obj_bp["PROMPT_ID"] = "hb_closet_parts.closet_single_fixed_shelf_prompts"
+            self.insert.obj_bp["PROMPT_ID"] = "hb_closet_parts.single_fixed_shelf_prompts"
             self.insert.set_name("Splitter Shelf")
             add_insert_to_opening(self.insert,opening)
             calculator = self.insert.get_calculator("Opening Calculator")
