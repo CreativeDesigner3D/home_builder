@@ -1920,7 +1920,7 @@ class hb_closet_inserts_OT_closet_shoe_shelf_prompts(bpy.types.Operator):
     def invoke(self,context,event):
         self.get_assemblies(context)
         wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=250)
+        return wm.invoke_props_dialog(self, width=300)
 
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_SLANTED_SHOE_SHELVES)

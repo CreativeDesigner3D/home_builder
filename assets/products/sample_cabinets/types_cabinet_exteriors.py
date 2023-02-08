@@ -148,6 +148,13 @@ class Doors(types_fronts.Fronts):
         r_door = assemblies_cabinet.add_door_assembly(self)
         self.add_door_panel(r_door,"Bottom",to_var,bo_var,ro_var,lo_var)         
 
+    def update_prompts_after_placement(self,context):
+        door_swing = self.get_prompt("Door Swing")
+        width = self.obj_x.location.x
+        if width > pc_unit.inch(20):
+            door_swing.set_value(2)
+        else:
+            door_swing.set_value(0)
 
 class Drawers(types_fronts.Fronts):
 
@@ -285,6 +292,22 @@ class Drawers(types_fronts.Fronts):
         drawer = None
         for i in range(1,9):
             drawer = self.add_drawer_front(i,drawer,fh_cal,to,bo,lo,ro)
+
+    def update_prompts_after_placement(self,context):
+        qty_prompt = self.get_prompt("Drawer Quantity")
+        height = self.obj_z.location.z
+        qty_prompt.set_value(min(math.ceil(height/pc_unit.inch(8)),8))
+        qty = qty_prompt.get_value()
+        calculator = self.get_calculator("Front Height Calculator")
+        for i in range(1,9):
+            dfh = calculator.get_calculator_prompt("Drawer Front " + str(i) + " Height")
+            if i <= qty:
+                dfh.include = True
+            else:
+                dfh.include = False
+
+        for calculator in self.obj_prompts.pyclone.calculators:
+            calculator.calculate()
 
 
 class Door_Drawer(types_fronts.Fronts):

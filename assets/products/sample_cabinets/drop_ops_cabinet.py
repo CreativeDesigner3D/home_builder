@@ -1116,17 +1116,8 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
         for cal in self.calculators:
             cal.calculate()
         self.refresh_data(False)
-        self.set_prompts_for_insert()
-
-    def set_prompts_for_insert(self):
-        props = utils_cabinet.get_scene_props(bpy.context.scene)
-        
-        closet_doors = pc_utils.get_bp_by_tag(self.insert.obj_bp,const.CLOSET_DOORS_TAG)
-        if closet_doors:
-            if self.insert.obj_z.location.z < props.opening_height_to_fill_doors:
-                fill_opening = self.insert.get_prompt("Fill Opening")
-                if fill_opening:
-                    fill_opening.set_value(True)
+        if self.obj_bp_name == "" and hasattr(self.insert,'update_prompts_after_placement'):
+            self.insert.update_prompts_after_placement(context)
 
     def modal(self, context, event):
         
@@ -1152,6 +1143,9 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
 
         opening = self.position_insert(selected_point,selected_obj,event,cursor_z,selected_normal)
 
+        if self.obj_bp_name == "" and hasattr(self.insert,'update_prompts_after_placement'):
+            self.insert.update_prompts_after_placement(context)
+            
         if pc_placement_utils.event_is_place_asset(event):
             self.confirm_placement(context,opening)
 

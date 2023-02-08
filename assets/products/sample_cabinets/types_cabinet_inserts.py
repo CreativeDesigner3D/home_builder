@@ -113,6 +113,10 @@ class Shelves(Closet_Insert):
 
         self.add_shelves()
 
+    def update_prompts_after_placement(self,context):
+        shelf_qty = self.get_prompt("Shelf Quantity")
+        shelf_qty.set_value(math.ceil(self.obj_z.location.z/pc_unit.inch(15)))
+
     def render(self):
         self.pre_draw()
         self.draw()
@@ -316,6 +320,10 @@ class Slanted_Shoe_Shelf(Closet_Insert):
             hide = shelf_lip.get_prompt('Hide')
             hide.set_formula('IF(' + str(i) + '>qty,True,False)',[qty])
 
+    def update_prompts_after_placement(self,context):
+        shelf_qty = self.get_prompt("Shelf Quantity")
+        shelf_qty.set_value(math.ceil(self.obj_z.location.z/pc_unit.inch(15)))
+
 
 class Cubbies(Closet_Insert):
 
@@ -413,6 +421,15 @@ class Cubbies(Closet_Insert):
         qty.set_formula('h_qty',[h_qty])
         offset.set_formula(v_spacing + '+s_thickness',[placement,height,c_height,h_qty,s_thickness])
 
+    def update_prompts_after_placement(self,context):
+        placement = self.get_prompt("Cubby Placement")
+        cubby_height = self.get_prompt("Cubby Height")
+        insert_height = self.obj_z.location.z
+        if cubby_height.get_value() > insert_height:
+            placement.set_value(2)
+        else:
+            placement.set_value(0)
+
 
 class Wire_Baskets(Closet_Insert):
     
@@ -503,6 +520,10 @@ class Wire_Baskets(Closet_Insert):
 
             prev_wire_basket_empty = wire_basket_empty
                
+    def update_prompts_after_placement(self,context):
+        qty = self.get_prompt("Wire Basket Quantity")
+        qty.set_value(math.ceil(self.obj_z.location.z/pc_unit.inch(15)))
+            
 
 class Wine_Rack(Closet_Insert):
     
@@ -550,6 +571,13 @@ class Wine_Rack(Closet_Insert):
         z_offset = rack.get_prompt("Z Offset")
         z_quantity.set_formula('qty',[qty]) 
         z_offset.set_formula('vert_spacing',[vert_spacing])         
+
+    def update_prompts_after_placement(self,context):
+        qty = self.get_prompt("Wine Rack Quantity")
+        space_from_bottom = self.get_prompt("Space From Bottom").get_value()
+        vertical_spacing = self.get_prompt("Vertical Spacing").get_value()
+        height = self.obj_z.location.z
+        qty.set_value(math.floor((height/vertical_spacing)-(space_from_bottom*2)))
 
 
 class Vertical_Splitter(Closet_Insert):
