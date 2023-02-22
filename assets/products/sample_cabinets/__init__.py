@@ -6,7 +6,9 @@ from . import prompt_ops_inserts
 from . import prompt_ops_parts
 from . import library_cabinet
 from . import ui_cabinet
+from . import ui_menu_cabinet
 from . import ops_cabinet
+from . import ops_2d_cabinet_views
 from . import material_pointers_cabinet
 
 CABINET_LIBRARY_PATH = os.path.join(os.path.dirname(__file__),'library',"Sample Cabinets")
@@ -85,16 +87,20 @@ def register():
     props_cabinet.register()
     drop_ops_cabinet.register()
     ops_cabinet.register()
+    ops_2d_cabinet_views.register()
     prompt_ops_cabinet.register()
     prompt_ops_inserts.register()
     prompt_ops_parts.register()
     ui_cabinet.register()
+    ui_menu_cabinet.register()
 
 def unregister():
     props_cabinet.unregister()
     drop_ops_cabinet.unregister()
     ops_cabinet.unregister()
+    ops_2d_cabinet_views.unregister()
     prompt_ops_cabinet.unregister()
     prompt_ops_inserts.unregister()
     prompt_ops_parts.unregister()
     ui_cabinet.unregister()
+    ui_menu_cabinet.unregister()

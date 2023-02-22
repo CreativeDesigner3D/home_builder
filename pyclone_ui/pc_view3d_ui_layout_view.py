@@ -64,13 +64,15 @@ class VIEW3D_PT_pc_layout_view(Panel):
             row.prop(scene_props,'page_scale_unit_type',text="")
 
             row = box.row()
-            row.label(text="Drawing Scale")            
+            row.label(text="Drawing Scale")        
+            row.prop(scene_props,'numeric_page_scale',text="")
+
             # row.prop(scene_props,'fit_to_paper',text="Fit to Paper")
-            if not scene_props.fit_to_paper:
-                if scene_props.page_scale_unit_type == 'METRIC':
-                    row.prop(scene_props,'metric_page_scale',text="")
-                else:
-                    row.prop(scene_props,'imperial_page_scale',text="")
+            # if not scene_props.fit_to_paper:
+            #     if scene_props.page_scale_unit_type == 'METRIC':
+            #         row.prop(scene_props,'metric_page_scale',text="")
+            #     else:
+            #         row.prop(scene_props,'imperial_page_scale',text="")
             row = box.row()
             row.label(text="Print Style")                   
             row.prop(scene_props,'page_style',text="")
@@ -98,7 +100,9 @@ class VIEW3D_PT_pc_layout_view(Panel):
 
         else:
             box = layout.box()
-            box.operator('pc_assembly.create_render_view',text="Add Render View",icon='MENU_PANEL')
+            box.menu('VIEW3D_MT_layout_view_creation')
+
+            # box.operator('pc_assembly.create_render_view',text="Add Render View",icon='MENU_PANEL')
 
 
     def draw(self, context):
@@ -123,8 +127,16 @@ class VIEW3D_PT_pc_layout_view(Panel):
                     pass
 
 
+class VIEW3D_MT_layout_view_creation(bpy.types.Menu):
+    bl_label = "Layout View Creation Commands"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('pc_assembly.create_render_view',text="Add Current 3D View",icon='MENU_PANEL')
+
 classes = (
     VIEW3D_PT_pc_layout_view,
+    VIEW3D_MT_layout_view_creation,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)

@@ -597,16 +597,19 @@ class Assembly_Layout():
     def add_layout_camera(self):
         cam = bpy.data.cameras.new('Camera ' + self.scene.name)
         cam.type = 'ORTHO'
+        cam.ortho_scale = 1
         self.camera = bpy.data.objects.new('Camera ' + self.scene.name,cam)
-        self.camera.location.x = 0.13951
-        self.camera.location.y = -2.0573
-        self.camera.location.z = 0.10793
-        self.camera.rotation_euler.x = math.radians(90)
-        self.camera.rotation_euler.y = 0
-        self.camera.rotation_euler.z = 0
+        # self.camera.location.z = -0.649351
+        # self.camera.location.x = 0.13951
+        # self.camera.location.y = -2.0573
+        # self.camera.location.z = 0.10793
+        # self.camera.rotation_euler.x = math.radians(90)
+        # self.camera.rotation_euler.y = 0
+        # self.camera.rotation_euler.z = 0
         self.scene.view_layers[0].active_layer_collection.collection.objects.link(self.camera)  
-        self.scene.render.resolution_x = 1920
-        self.scene.render.resolution_y = 1486
+        #SET RESOLUTION TO PAGE SIZE RATIO DEFAULT PAGE SIZE IS 8.5 x 11
+        self.scene.render.resolution_x = int(11 * 140)
+        self.scene.render.resolution_y = int(8.5 * 140)
         self.scene.camera = self.camera
 
         for window in bpy.context.window_manager.windows:
@@ -710,21 +713,26 @@ class Title_Block(Assembly):
             collection.objects.link(obj)
 
         self.obj_bp.parent = layout_view.camera
-        if bpy.context.scene.pyclone.page_size == 'LETTER':
-            self.obj_bp.location.x = -0.13959
-            self.obj_bp.location.y = -0.108
-            if layout_view.camera.type == 'ORTHO':
-                self.obj_bp.location.z = -1.001
-            else:
-                self.obj_bp.location.z = -0.19328
-            self.obj_x.location.x = pc_unit.inch(11)
-            self.obj_y.location.y = pc_unit.inch(8.5)
-        else:
-            self.obj_bp.location.x = -0.177502
-            self.obj_bp.location.y = -0.108
-            self.obj_bp.location.z = -1.001
-            self.obj_x.location.x = pc_unit.inch(14)
-            self.obj_y.location.y = pc_unit.inch(8.5)
+        self.obj_bp.location.x = -0.5
+        self.obj_bp.location.y = -0.386363 
+        self.obj_bp.location.z = -1
+        self.obj_bp.scale = (3.5791,3.5791,3.5791)
+        # if bpy.context.scene.pyclone.page_size == 'LETTER':
+        #     self.obj_bp.location.x = -0.13959
+        #     self.obj_bp.location.y = -0.108
+        #     if layout_view.camera.type == 'ORTHO':
+        #         self.obj_bp.location.z = -0.649351
+        #         # self.obj_bp.location.z = -1.001
+        #     else:
+        #         self.obj_bp.location.z = -0.19328
+        #     self.obj_x.location.x = pc_unit.inch(11)
+        #     self.obj_y.location.y = pc_unit.inch(8.5)
+        # else:
+        #     self.obj_bp.location.x = -0.177502
+        #     self.obj_bp.location.y = -0.108
+        #     self.obj_bp.location.z = -1.001
+        #     self.obj_x.location.x = pc_unit.inch(14)
+        #     self.obj_y.location.y = pc_unit.inch(8.5)
 
         for child in self.obj_bp.children:
             if child.type == 'EMPTY':

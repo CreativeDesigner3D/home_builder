@@ -533,64 +533,70 @@ class PC_Window_Manager_Props(bpy.types.PropertyGroup):
 def update_page_scale(self,context):
     scene = context.scene
 
-    if self.page_size == 'LETTER':
-        scene.render.resolution_x = 1920
-        scene.render.resolution_y = 1486
-        cam_obj = context.scene.camera
-        cam_obj.data.ortho_scale = .279
-    else:
-        scene.render.resolution_x = 1920
-        scene.render.resolution_y = 1169
-        cam_obj = context.scene.camera
-        cam_obj.data.ortho_scale = .355
+    # if self.page_size == 'LETTER':
+    #     scene.render.resolution_x = 1920
+    #     scene.render.resolution_y = 1486
+    #     cam_obj = context.scene.camera
+    #     cam_obj.data.ortho_scale = .279
+    # else:
+    #     scene.render.resolution_x = 1920
+    #     scene.render.resolution_y = 1169
+    #     cam_obj = context.scene.camera
+    #     cam_obj.data.ortho_scale = .355
 
-    if self.fit_to_paper:
-        return 
+    # if self.fit_to_paper:
+    #     return 
 
-    if self.page_scale_unit_type == 'IMPERIAL':
-        if self.imperial_page_scale == '1:1':
-            scale = (1,1,1)
-        elif self.imperial_page_scale == '3/4in_1ft':
-            scale = (0.0625,0.0625,0.0625)             
-        elif self.imperial_page_scale == '1/2in_1ft':
-            scale = (0.04166,0.04166,0.04166)    
-        elif self.imperial_page_scale == '1/4in_1ft':
-            scale = (0.020833,0.020833,0.020833)    
-        elif self.imperial_page_scale == '1in_1ft':
-            scale = (.083333,.083333,.083333)    
-        else:
-            scale = (.08332,.08332,.08332)
-    else:
-        if self.metric_page_scale == '1:1':
-            scale = (1,1,1)
-        elif self.metric_page_scale == '1:10':
-            scale = (.1,.1,.1)
-        elif self.metric_page_scale == '1:20':
-            scale = (.05,.05,.05)
-        elif self.metric_page_scale == '1:30':
-            scale = (.03333,.03333,.03333)
-        elif self.metric_page_scale == '1:40':
-            scale = (.025,.025,.025)
-        elif self.metric_page_scale == '1:45':
-            scale = (.02222,.02222,.02222)
-        elif self.metric_page_scale == '1:50':
-            scale = (.02,.02,.02)
-        elif self.metric_page_scale == '1:60':
-            scale = (.016666,.016666,.016666)                  
-        elif self.metric_page_scale == '1:70':
-            scale = (.014333,.014333,.014333)              
-        elif self.metric_page_scale == '1:80':
-            scale = (.0125,.0125,.0125)              
-        elif self.metric_page_scale == '1:90':
-            scale = (.011111,.011111,.011111)               
-        elif self.metric_page_scale == '1:100':
-            scale = (.01,.01,.01)            
-        else:
-            scale = (.01,.01,.01)
+    # if self.page_scale_unit_type == 'IMPERIAL':
+    #     if self.imperial_page_scale == '1:1':
+    #         scale = (1,1,1)
+    #     elif self.imperial_page_scale == '3/4in_1ft':
+    #         scale = (0.0625,0.0625,0.0625)             
+    #     elif self.imperial_page_scale == '1/2in_1ft':
+    #         scale = (0.04166,0.04166,0.04166)    
+    #     elif self.imperial_page_scale == '1/4in_1ft':
+    #         scale = (0.020833,0.020833,0.020833)    
+    #     elif self.imperial_page_scale == '1in_1ft':
+    #         scale = (.083333,.083333,.083333)    
+    #     else:
+    #         scale = (.08332,.08332,.08332)
+    # else:
+    #     if self.metric_page_scale == '1:1':
+    #         scale = (1,1,1)
+    #     elif self.metric_page_scale == '1:10':
+    #         scale = (.1,.1,.1)
+    #     elif self.metric_page_scale == '1:20':
+    #         scale = (.05,.05,.05)
+    #     elif self.metric_page_scale == '1:30':
+    #         scale = (.03333,.03333,.03333)
+    #     elif self.metric_page_scale == '1:40':
+    #         scale = (.025,.025,.025)
+    #     elif self.metric_page_scale == '1:45':
+    #         scale = (.02222,.02222,.02222)
+    #     elif self.metric_page_scale == '1:50':
+    #         scale = (.02,.02,.02)
+    #     elif self.metric_page_scale == '1:60':
+    #         scale = (.016666,.016666,.016666)                  
+    #     elif self.metric_page_scale == '1:70':
+    #         scale = (.014333,.014333,.014333)              
+    #     elif self.metric_page_scale == '1:80':
+    #         scale = (.0125,.0125,.0125)              
+    #     elif self.metric_page_scale == '1:90':
+    #         scale = (.011111,.011111,.011111)               
+    #     elif self.metric_page_scale == '1:100':
+    #         scale = (.01,.01,.01)            
+    #     else:
+    #         scale = (.01,.01,.01)
 
-    for obj in context.visible_objects:
-        if obj.pyclone.is_view_object and obj.type == 'EMPTY':
-            obj.scale = scale
+    # for obj in context.visible_objects:
+    #     if obj.pyclone.is_view_object and obj.type == 'EMPTY':
+    #         obj.scale = scale
+
+def update_numeric_page_scale(self,context):
+    scene = context.scene
+    cam_obj = scene.camera
+    cam_obj.scale = (self.numeric_page_scale,self.numeric_page_scale,self.numeric_page_scale)
+    cam_obj.data.ortho_scale = self.numeric_page_scale
 
 class PC_Scene_Props(PropertyGroup):
     assembly_tabs: EnumProperty(name="Assembly Tabs",
@@ -618,6 +624,8 @@ class PC_Scene_Props(PropertyGroup):
     driver_override_object: PointerProperty(name="Active Library Name",type=bpy.types.Object)
 
     active_library_name: StringProperty(name="Active Library Name",default="")
+
+    numeric_page_scale: FloatProperty(name="Numeric Page Scale",default=1.00,update=update_numeric_page_scale)
 
     is_view_scene: BoolProperty(name="Is View Scene",default=False)
     
