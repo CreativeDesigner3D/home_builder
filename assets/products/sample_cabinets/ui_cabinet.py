@@ -283,18 +283,18 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
         layout = self.layout
 
         box = layout.box()
-        box.prop(props,'show_door_library')
-        if props.show_door_library:
-            box.label(text="Cabinet Front Library")
-            row = box.row()
-            row.operator('hb_sample_cabinets.update_all_fronts_in_room',text="Update All",icon='FILE_REFRESH')
-            row.operator('hb_sample_cabinets.update_selected_fronts_in_room',text="Update Selected",icon='FILE_REFRESH')     
+        box.prop(props,'show_door_library',text="Use Front Library")
 
-            row = box.row()
-            row.prop(props,'cabinet_door_category',text="")    
+        box.label(text="Cabinet Front Library")
+        row = box.row()
+        row.operator('hb_sample_cabinets.update_all_fronts_in_room',text="Update All",icon='FILE_REFRESH')
+        row.operator('hb_sample_cabinets.update_selected_fronts_in_room',text="Update Selected",icon='FILE_REFRESH')     
 
-            row = box.row()
-            row.template_icon_view(props,"cabinet_door",show_labels=True)     
+        row = box.row()
+        row.prop(props,'cabinet_door_category',text="")    
+
+        row = box.row()
+        row.template_icon_view(props,"cabinet_door",show_labels=True)     
 
 
 classes = (
