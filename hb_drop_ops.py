@@ -249,7 +249,7 @@ class home_builder_OT_drop_build_library(bpy.types.Operator):
             context.view_layer.active_layer_collection.collection.objects.link(obj)  
 
     def set_placed_properties(self,obj):
-        if obj.type in {'MESH','CURVE'}:
+        if obj.type in {'MESH','CURVE'} and 'IS_OPENING_MESH' not in obj:
             obj.display_type = 'TEXTURED'          
         for child in obj.children:
             self.set_placed_properties(child) 
