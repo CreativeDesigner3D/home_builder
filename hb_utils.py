@@ -229,15 +229,16 @@ def load_library_from_path(context,path,library_type):
     if library_type == 'BUILD_LIBRARY':
         drop_id = 'home_builder.drop_build_library'
 
-    library_dirs = os.listdir(path)
-    for dir in library_dirs:
-        cat_path = os.path.join(path,dir)
-        if os.path.isdir(cat_path):
-            asset_lib = wm_props.asset_libraries.add()
-            asset_lib.name = dir
-            asset_lib.library_type = library_type
-            asset_lib.library_path = os.path.join(cat_path,"library.blend")
-            asset_lib.drop_id = drop_id
+    if os.path.exists(path):
+        library_dirs = os.listdir(path)
+        for dir in library_dirs:
+            cat_path = os.path.join(path,dir)
+            if os.path.isdir(cat_path):
+                asset_lib = wm_props.asset_libraries.add()
+                asset_lib.name = dir
+                asset_lib.library_type = library_type
+                asset_lib.library_path = os.path.join(cat_path,"library.blend")
+                asset_lib.drop_id = drop_id
 
 def load_custom_driver_functions():
     import inspect
