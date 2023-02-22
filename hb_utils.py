@@ -153,6 +153,9 @@ def load_libraries(context):
 
     wm_props = context.window_manager.home_builder
     
+    for lib in wm_props.asset_libraries:
+        wm_props.asset_libraries.remove(0)
+
     mat_library_path = os.path.join(os.path.dirname(__file__),'assets','materials','Default Room Materials','library.blend')
     pointer_list = []
     pointer_list.append(("Walls","Room Materials","Default Room Materials","White Wall Paint",mat_library_path))

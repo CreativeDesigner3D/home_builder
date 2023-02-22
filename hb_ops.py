@@ -6,6 +6,7 @@ import inspect
 import sys
 import codecs
 import subprocess
+from bpy_extras.io_utils import ImportHelper
 from pc_lib import pc_utils, pc_unit, pc_types
 from . import addon_updater_ops
 from . import hb_utils
@@ -198,14 +199,34 @@ class home_builder_OT_load_library(bpy.types.Operator):
         layout.prop(paths, "use_scripts_auto_execute")
 
 
-class home_builder_OT_add_external_library(bpy.types.Operator):
+class home_builder_OT_add_external_library(bpy.types.Operator, ImportHelper):
     bl_idname = "home_builder.add_external_library"
     bl_label = "Add External Library"
     bl_description = "Add a new library"
 
+    directory: bpy.props.StringProperty(name="Directory",subtype='DIR_PATH')
+    filter_glob: bpy.props.StringProperty(default="*.blend", options={'HIDDEN'})
+    display_type: bpy.props.EnumProperty(name="Display Type",
+                                        items=[('DEFAULT',"Standard","Standard"),
+                                               ('LIST_VERTICAL',"Standard","Standard"),
+                                               ('LIST_HORIZONTAL',"Standard","Standard"),
+                                               ('THUMBNAIL',"Blum Soft Close","Blum Soft Close")],
+                                        default='LIST_VERTICAL')
+    hide_props_region: bpy.props.BoolProperty(name="Hide Props Region",default=True)
+
+    def invoke(self, context, event):
+        self.display_type = 'LIST_VERTICAL'
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
     def execute(self, context):
         wm_props = context.window_manager.home_builder
         lib = wm_props.library_packages.add()
+        lib.name = self.directory
+        lib.package_path = self.directory
+        lib.enabled = True
+        hb_utils.load_libraries(context)
         return {'FINISHED'}
 
 
@@ -222,6 +243,7 @@ class home_builder_OT_delete_external_library(bpy.types.Operator):
             if package.package_path == self.package_path:
                 wm_props.library_packages.remove(i)
         bpy.ops.home_builder.update_library_xml()
+        hb_utils.load_libraries(context)
         return {'FINISHED'}
 
 

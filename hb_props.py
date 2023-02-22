@@ -41,6 +41,7 @@ def update_library_tab(self,context):
 
 def update_library_package_path(self,context):
     bpy.ops.home_builder.update_library_xml()
+    hb_utils.load_libraries(context)
 
 def update_wall_index(self,context):
     bpy.ops.object.select_all(action='DESELECT')
