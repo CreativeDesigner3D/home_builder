@@ -532,8 +532,15 @@ class home_builder_OT_save_assembly_to_build_library(bpy.types.Operator):
         file.write("with bpy.data.libraries.load(r'" + source_file + "') as (data_from, data_to):\n")
         file.write("    data_to.objects = " + str(obj_list) + "\n")        
 
+        file.write("parent_obj = None\n")
         file.write("for obj in data_to.objects:\n")
         file.write("    bpy.context.view_layer.active_layer_collection.collection.objects.link(obj)\n")
+        file.write("    if obj.parent == None:\n")
+        file.write("        parent_obj = obj\n")
+
+        file.write("if parent_obj:\n")
+        file.write("    parent_obj.location = (0,0,0)\n")
+        file.write("    parent_obj.rotation_euler = (0,0,0)\n")
 
         file.write("for mat in bpy.data.materials:\n")
         file.write("    mat.asset_clear()\n")
