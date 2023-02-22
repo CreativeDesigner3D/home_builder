@@ -96,7 +96,7 @@ class QRNumber(QR):
     lengthbits = (10, 12, 14)
 
 class QRAlphaNum(QR):
-    valid = re.compile(u'[-0-9A-Z $%*+-./:]*$').match
+    valid = re.compile(u'[-0-9A-Z $%*+./:]*$').match
     chars = u'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:'
     bits = (6,5)
     group = 2
@@ -587,7 +587,7 @@ class QRMaskPattern:
     PATTERN110 = 6
     PATTERN111 = 7
 
-class QRUtil(object):
+class QRUtil:
     PATTERN_POSITION_TABLE = [
         [],
         [6, 18],

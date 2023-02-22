@@ -1,6 +1,6 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""
 Module to analyze Python source code; for syntax coloring tools.
 
@@ -49,7 +49,8 @@ keywordsList = [
     "break", "else", "if", "or", "while",
     "class", "except", "import", "pass",
     "continue", "finally", "in", "print",
-    "def", "for", "is", "raise", "yield"]
+    "def", "for", "is", "raise", "yield",
+    "with"]
 
 # Build up a regular expression which will match anything
 # interesting, including multi-line triple-quoted strings.

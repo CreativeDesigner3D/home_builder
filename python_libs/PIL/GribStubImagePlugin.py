@@ -10,7 +10,6 @@
 #
 
 from . import Image, ImageFile
-from ._binary import i8
 
 _handler = None
 
@@ -28,8 +27,9 @@ def register_handler(handler):
 # --------------------------------------------------------------------
 # Image adapter
 
+
 def _accept(prefix):
-    return prefix[0:4] == b"GRIB" and i8(prefix[7]) == 1
+    return prefix[:4] == b"GRIB" and prefix[7] == 1
 
 
 class GribStubImageFile(ImageFile.StubImageFile):
@@ -42,7 +42,8 @@ class GribStubImageFile(ImageFile.StubImageFile):
         offset = self.fp.tell()
 
         if not _accept(self.fp.read(8)):
-            raise SyntaxError("Not a GRIB file")
+            msg = "Not a GRIB file"
+            raise SyntaxError(msg)
 
         self.fp.seek(offset)
 
@@ -59,8 +60,9 @@ class GribStubImageFile(ImageFile.StubImageFile):
 
 
 def _save(im, fp, filename):
-    if _handler is None or not hasattr("_handler", "save"):
-        raise IOError("GRIB save handler not installed")
+    if _handler is None or not hasattr(_handler, "save"):
+        msg = "GRIB save handler not installed"
+        raise OSError(msg)
     _handler.save(im, fp, filename)
 
 

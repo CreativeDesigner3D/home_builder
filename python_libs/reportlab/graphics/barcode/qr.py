@@ -23,24 +23,11 @@ import itertools
 from reportlab.platypus.flowables import Flowable
 from reportlab.graphics.shapes import Group, Rect
 from reportlab.lib import colors
-from reportlab.lib.validators import isNumber, isNumberOrNone, isColor, isString, Validator
+from reportlab.lib.validators import isNumber, isNumberOrNone, isColor, Validator
 from reportlab.lib.attrmap import AttrMap, AttrMapValue
 from reportlab.graphics.widgetbase import Widget
 from reportlab.lib.units import mm
-try:
-    from reportlab.lib.utils import asUnicodeEx, isUnicode
-except ImportError:
-    # ReportLab 2.x compatibility
-    def asUnicodeEx(v, enc='utf8'):
-        if isinstance(v, unicode):
-            return v
-        if isinstance(v, str):
-            return v.decode(enc)
-        return str(v).decode(enc)
-
-    def isUnicode(v):
-        return isinstance(v, unicode)
-
+from reportlab.lib.utils import asUnicodeEx, isUnicode
 from reportlab.graphics.barcode import qrencoder
 
 class isLevel(Validator):
@@ -137,8 +124,8 @@ class QrCodeWidget(Widget):
         moduleCount = self.qr.getModuleCount()
         minwh = float(min(width, height))
         boxsize = minwh / (moduleCount + border * 2.0)
-        offsetX = (width - minwh) / 2.0
-        offsetY = (minwh - height) / 2.0
+        offsetX = x + (width - minwh) / 2.0
+        offsetY = y + (minwh - height) / 2.0
 
         for r, row in enumerate(self.qr.modules):
             row = map(bool, row)
@@ -149,7 +136,8 @@ class QrCodeWidget(Widget):
                 if isDark:
                     x = (c + border) * boxsize
                     y = (r + border + 1) * boxsize
-                    s = SRect(offsetX + x, offsetY + height - y, count * boxsize, boxsize)
+                    s = SRect(offsetX + x, offsetY + height - y, count * boxsize, boxsize,
+                            fillColor=color)
                     g.add(s)
                 c += count
 

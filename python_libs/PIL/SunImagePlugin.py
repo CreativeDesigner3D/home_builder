@@ -20,15 +20,14 @@
 from . import Image, ImageFile, ImagePalette
 from ._binary import i32be as i32
 
-__version__ = "0.3"
-
 
 def _accept(prefix):
-    return len(prefix) >= 4 and i32(prefix) == 0x59a66a95
+    return len(prefix) >= 4 and i32(prefix) == 0x59A66A95
 
 
 ##
 # Image plugin for Sun raster files.
+
 
 class SunImageFile(ImageFile.ImageFile):
 
@@ -54,18 +53,19 @@ class SunImageFile(ImageFile.ImageFile):
 
         # HEAD
         s = self.fp.read(32)
-        if i32(s) != 0x59a66a95:
-            raise SyntaxError("not an SUN raster file")
+        if not _accept(s):
+            msg = "not an SUN raster file"
+            raise SyntaxError(msg)
 
         offset = 32
 
-        self._size = i32(s[4:8]), i32(s[8:12])
+        self._size = i32(s, 4), i32(s, 8)
 
-        depth = i32(s[12:16])
-        # data_length = i32(s[16:20])   # unreliable, ignore.
-        file_type = i32(s[20:24])
-        palette_type = i32(s[24:28])  # 0: None, 1: RGB, 2: Raw/arbitrary
-        palette_length = i32(s[28:32])
+        depth = i32(s, 12)
+        # data_length = i32(s, 16)   # unreliable, ignore.
+        file_type = i32(s, 20)
+        palette_type = i32(s, 24)  # 0: None, 1: RGB, 2: Raw/arbitrary
+        palette_length = i32(s, 28)
 
         if depth == 1:
             self.mode, rawmode = "1", "1;I"
@@ -80,25 +80,27 @@ class SunImageFile(ImageFile.ImageFile):
                 self.mode, rawmode = "RGB", "BGR"
         elif depth == 32:
             if file_type == 3:
-                self.mode, rawmode = 'RGB', 'RGBX'
+                self.mode, rawmode = "RGB", "RGBX"
             else:
-                self.mode, rawmode = 'RGB', 'BGRX'
+                self.mode, rawmode = "RGB", "BGRX"
         else:
-            raise SyntaxError("Unsupported Mode/Bit Depth")
+            msg = "Unsupported Mode/Bit Depth"
+            raise SyntaxError(msg)
 
         if palette_length:
             if palette_length > 1024:
-                raise SyntaxError("Unsupported Color Palette Length")
+                msg = "Unsupported Color Palette Length"
+                raise SyntaxError(msg)
 
             if palette_type != 1:
-                raise SyntaxError("Unsupported Palette Type")
+                msg = "Unsupported Palette Type"
+                raise SyntaxError(msg)
 
             offset = offset + palette_length
-            self.palette = ImagePalette.raw("RGB;L",
-                                            self.fp.read(palette_length))
+            self.palette = ImagePalette.raw("RGB;L", self.fp.read(palette_length))
             if self.mode == "L":
                 self.mode = "P"
-                rawmode = rawmode.replace('L', 'P')
+                rawmode = rawmode.replace("L", "P")
 
         # 16 bit boundaries on stride
         stride = ((self.size[0] * depth + 15) // 16) * 2
@@ -122,11 +124,13 @@ class SunImageFile(ImageFile.ImageFile):
         # (https://www.fileformat.info/format/sunraster/egff.htm)
 
         if file_type in (0, 1, 3, 4, 5):
-            self.tile = [("raw", (0, 0)+self.size, offset, (rawmode, stride))]
+            self.tile = [("raw", (0, 0) + self.size, offset, (rawmode, stride))]
         elif file_type == 2:
-            self.tile = [("sun_rle", (0, 0)+self.size, offset, rawmode)]
+            self.tile = [("sun_rle", (0, 0) + self.size, offset, rawmode)]
         else:
-            raise SyntaxError('Unsupported Sun Raster file type')
+            msg = "Unsupported Sun Raster file type"
+            raise SyntaxError(msg)
+
 
 #
 # registry

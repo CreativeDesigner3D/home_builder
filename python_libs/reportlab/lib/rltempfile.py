@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
 # $URI:$
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__='''Helper for the test suite - determines where to write output.
 
 When our test suite runs as source, a script "test_foo.py" will typically

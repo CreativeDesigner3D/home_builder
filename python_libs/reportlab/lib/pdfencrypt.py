@@ -1,15 +1,29 @@
-#copyright ReportLab Europe Limited. 2000-2012
+#copyright ReportLab Europe Limited. 2000-2016
 #see license.txt for license details
-__version__=''' $Id$ '''
+__version__='3.3.0'
 
 """helpers for pdf encryption/decryption"""
-import sys, os, tempfile
-from reportlab.lib.utils import getBytesIO, md5, asBytes, int2Byte, char2int, rawUnicode, rawBytes, isPy3
+import sys, os
+from binascii import hexlify, unhexlify
+from hashlib import md5
+from io import BytesIO
+
+from reportlab.lib.utils import asBytes, int2Byte, rawBytes, asNative
 from reportlab.pdfgen.canvas import Canvas
-from reportlab.pdfbase import pdfutils
 from reportlab.pdfbase.pdfdoc import PDFObject
 from reportlab.platypus.flowables import Flowable
 from reportlab import rl_config
+
+try:
+    import pyaes
+    from hashlib import sha256
+except ImportError:
+    pyaes = None
+
+def xorKey(num,key):
+    "xor's each byte of the key with the number, which is <256"
+    if num==0: return key
+    return bytes(num^k for k in key)
 
 #AR debug hooks - leaving in for now
 CLOBBERID = 0  # set a constant Doc ID to allow comparison with other software like iText
@@ -28,10 +42,22 @@ higherbits = 0
 for i in range(6,31):
     higherbits = higherbits | (1<<i)
 
+if rl_config.invariant:
+    _os_random_x=0
+    _os_random_b = b'\xbd\x8f\xdc\xabovp\xe8\x15\xec\\C\x9d\x92B~\xb8\xf4\xdeEg8\xb2f\x80Sj\'y\xcfG\xcaY\xb9\xdc-\xc4Q\x17\x88\xaf\xd1\xf7\x7f\xa1L>\x99\x89i\xf7\xc4\xb4\'\xe9k\xc9\xfa\xa6p\x80\xcd\xaa\xaf|\x97\xf7\xcc \xc1\xef\xc7\x97\xd2;\xaf\xe1\xfc\x16,\xd3\x0b\x19\xa1\x02\xe6\x01\xcb\x1c\xd8\xe6\\H}\r\xdc\x85\xe1\xbc\xc4\x02>|\xc5\x97\xb5T\xad\x0cT\x95\xb1\xdc!\xb6+E#\xa1\xa4O\xf3j\x98"\xc2\x1a\xcb\x8cHB\xd8B~\xa7\x7f7\xd2\xe8\x131.\xd7\xa9\x0b\r\xdd2\x0b}\xc0\xffm\x9e3\xe2/\xea\x84W\x82\xbd\xc8K\xc2;?\xbe#\x84`W\xf3\xe0\xec\x9e\x85\x9c\xcb\xc7\xc9#\x19\xff\xde\x17\xea\xb2\xd4\x0e\x9a\xbd\xbaz\xbd\x87O\xd4\xf4\xac\xb3(z\x92\xfc\xbc\x85i\x8d\x1f\xfb!\t|w,\x8bI\xc9_D`A\xbc}\x0e+r\x1b-%F(@\xc8\\cL\x172(\x9c\x95BM\xa1\x89UG\x9d\xfd\xed\xce\xd8\x1f\xb1'
+    def os_urandom(n):
+        global _os_random_x
+        b = [_os_random_b[(i+_os_random_x)%256] for i in range(n)]
+        b = bytes(b)
+        _os_random_x = (_os_random_x + n) % 256
+        return b
+else:
+    os_urandom = os.urandom
+
 # no encryption
 class StandardEncryption:
     prepared = 0
-    def __init__(self, userPassword, ownerPassword=None, canPrint=1, canModify=1, canCopy=1, canAnnotate=1, strength=40):
+    def __init__(self, userPassword, ownerPassword=None, canPrint=1, canModify=1, canCopy=1, canAnnotate=1, strength=None):
         '''
         This class defines the encryption properties to be used while creating a pdf document.
         Once initiated, a StandardEncryption object can be applied to a Canvas or a BaseDocTemplate.
@@ -43,17 +69,28 @@ class StandardEncryption:
         of the flags.
         Note that the security provided by these encryption settings (and even more so for the flags) is very weak.
         '''
-        self.ownerPassword = ownerPassword
         self.userPassword = userPassword
+        if ownerPassword:
+            self.ownerPassword = ownerPassword    
+        else:
+            self.ownerPassword = userPassword
+        if strength is None:
+            strength = rl_config.encryptionStrength
         if strength == 40:
             self.revision = 2
         elif strength == 128:
             self.revision = 3
+        elif strength == 256:
+            if not pyaes:
+                raise ValueError('strength==256 is not supported as package pyaes is not importable')
+            self.revision = 5
+        else:
+            raise ValueError('Unknown encryption strength=%s' % repr(strength))
         self.canPrint = canPrint
         self.canModify = canModify
         self.canCopy = canCopy
         self.canAnnotate = canAnnotate
-        self.O = self.U = self.P = self.key = None
+        self.O = self.U = self.P = self.key = self.OE = self.UE = self.Perms =  None
     def setAllPermissions(self, value):
         self.canPrint = \
         self.canModify = \
@@ -92,24 +129,110 @@ class StandardEncryption:
                 internalID = "xxxxxxxxxxxxxxxx"
 
         if DEBUG:
-            print('userPassword    = %s' % self.userPassword)
-            print('ownerPassword   = %s' % self.ownerPassword)
-            print('internalID      = %s' % internalID)
+            print('userPassword    = %r' % self.userPassword)
+            print('ownerPassword   = %r' % self.ownerPassword)
+            print('internalID      = %r' % internalID)
         self.P = int(self.permissionBits() - 2**31)
         if CLOBBERPERMISSIONS: self.P = -44 # AR hack
         if DEBUG:
             print("self.P          = %s" % repr(self.P))
-        self.O = computeO(self.userPassword, self.ownerPassword, self.revision)
-        if DEBUG:
-            print("self.O (as hex) = %s" % hexText(self.O))
+        if self.revision == 5:
+            
+            # Init vectro for AES cipher (should be 16 bytes null array)
+            iv  = b'\x00' * 16
 
-        #print "\nself.O", self.O, repr(self.O)
-        self.key = encryptionkey(self.userPassword, self.O, self.P, internalID, revision=self.revision)
-        if DEBUG:
-            print("self.key (hex)  = %s" % hexText(self.key))
-        self.U = computeU(self.key, revision=self.revision, documentId=internalID)
-        if DEBUG:
-            print("self.U (as hex) = %s" % hexText(self.U))
+            # Random User salts
+            uvs = os_urandom(8)
+            uks = os_urandom(8)
+            
+            # the main encryption key
+            self.key = asBytes(os_urandom(32))
+            
+            if DEBUG:
+                print("uvs      (hex)  = %s" % hexText(uvs))
+                print("uks      (hex)  = %s" % hexText(uks))
+                print("self.key (hex)  = %s" % hexText(self.key))
+
+            # Calculate the sha-256 hash of the User password (U)
+            md = sha256(asBytes(self.userPassword[:127]) + uvs)
+            self.U = md.digest() + uvs + uks
+
+            if DEBUG:
+                print("self.U (hex)  = %s" % hexText(self.U))
+
+            # Calculate the User encryption key (UE)
+            md = sha256(asBytes(self.userPassword[:127]) + uks)
+            
+            encrypter = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(md.digest(), iv=iv))
+            self.UE = encrypter.feed(self.key)
+            self.UE += encrypter.feed()
+
+            if DEBUG:
+                print("self.UE (hex)  = %s" % hexText(self.UE))
+
+            # Random Owner salts
+            ovs = os_urandom(8)
+            oks = os_urandom(8)
+
+            # Calculate the hash of the Owner password (U)
+            md = sha256(asBytes(self.ownerPassword[:127]) + ovs + self.U )
+            self.O = md.digest() + ovs + oks
+
+            if DEBUG:
+                print("self.O (hex)  = %s" % hexText(self.O))
+
+            # Calculate the User encryption key (OE)
+            md = sha256(asBytes(self.ownerPassword[:127]) + oks + self.U)
+
+            encrypter = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(md.digest(), iv=iv))
+            self.OE = encrypter.feed(self.key)
+            self.OE += encrypter.feed()
+
+            if DEBUG:
+                print("self.OE (hex)  = %s" % hexText(self.OE))
+
+            # Compute permissions array 
+            permsarr = [
+                self.P       & 0xFF, # store the permission value in the first 32-bits
+                self.P >> 8  & 0xFF,
+                self.P >> 16 & 0xFF,
+                self.P >> 24 & 0xFF,
+                0xFF,
+                0xFF,
+                0xFF,
+                0xFF,
+                ord('T'),             # 'T' if EncryptMetaData is True (default), 'F' otherwise
+                ord('a'),             # a, d, b are magic values 
+                ord('d'),
+                ord('b'),
+                0x01,                   # trailing zeros will be ignored
+                0x01,
+                0x01,
+                0x01
+            ]
+
+            # the permission array should be enrypted in the Perms field
+            encrypter = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(self.key, iv=iv))
+            self.Perms = encrypter.feed(bytes(permsarr))
+            self.Perms += encrypter.feed()
+                        
+            if DEBUG:
+                print("self.Perms (hex)  = %s" % hexText(self.Perms))
+
+        elif self.revision in (2, 3):
+            self.O = computeO(self.userPassword, self.ownerPassword, self.revision)
+
+            if DEBUG:
+                print("self.O (as hex) = %s" % hexText(self.O))
+
+            #print "\nself.O", self.O, repr(self.O)
+            self.key = encryptionkey(self.userPassword, self.O, self.P, internalID, revision=self.revision)
+            if DEBUG:
+                print("self.key (hex)  = %s" % hexText(self.key))
+            self.U = computeU(self.key, revision=self.revision, documentId=internalID)
+            if DEBUG:
+                print("self.U (as hex) = %s" % hexText(self.U))
+
         self.objnum = self.version = None
         self.prepared = 1
     def register(self, objnum, version):
@@ -122,22 +245,44 @@ class StandardEncryption:
         # the representation of self in file if any (should be None or PDFDict)
         if not self.prepared:
             raise ValueError("encryption not prepared!")
-        return StandardEncryptionDictionary(O=self.O, U=self.U, P=self.P, revision=self.revision)
+        return StandardEncryptionDictionary(O=self.O, OE=self.OE, U=self.U, UE=self.UE, P=self.P, Perms=self.Perms, revision=self.revision)
 
 class StandardEncryptionDictionary(PDFObject):
     __RefOnly__ = 1
-    def __init__(self, O, U, P, revision):
-        self.O, self.U, self.P = O,U,P
+    def __init__(self, O, OE, U, UE,  P, Perms, revision):
+        self.O,  self.OE, self.U, self.UE, self.P, self.Perms = O, OE, U, UE, P, Perms
         self.revision = revision
     def format(self, document):
         # use a dummy document to bypass encryption
-        from reportlab.pdfbase.pdfdoc import DummyDoc, PDFDictionary, PDFString, PDFName
+        from reportlab.pdfbase.pdfdoc import DummyDoc, PDFDictionary, PDFName
         dummy = DummyDoc()
         dict = {"Filter": PDFName("Standard"),
-                "O": hexText(self.O), #PDFString(self.O),
-                "U": hexText(self.U), #PDFString(self.U),
+                "O": hexText(self.O),
+                "U": hexText(self.U),
                 "P": self.P}
-        if self.revision == 3:
+        if self.revision == 5:
+            dict['Length'] = 256
+            dict['R'] = 5
+            dict['V'] = 5
+            dict['O'] = hexText(self.O)
+            dict['U'] = hexText(self.U)
+            dict['OE'] = hexText(self.OE)
+            dict['UE'] = hexText(self.UE)
+            dict['Perms'] = hexText(self.Perms)
+            dict['StrF'] = PDFName("StdCF")
+            dict['StmF'] = PDFName("StdCF")
+            stdcf = {
+                "Length": 32,
+                "AuthEvent": PDFName("DocOpen"),
+                "CFM": PDFName("AESV3")
+            }
+            cf = {
+                "StdCF": PDFDictionary(stdcf)
+            }
+
+            dict['CF'] = PDFDictionary(cf)
+
+        elif self.revision == 3:
             dict['Length'] = 128
             dict['R'] = 3
             dict['V'] = 2
@@ -152,35 +297,35 @@ padding = """
 28 BF 4E 5E 4E 75 8A 41 64 00 4E 56 FF FA 01 08
 2E 2E 00 B6 D0 68 3E 80 2F 0C A9 FE 64 53 69 7A
 """
-if isPy3:
-    def xorKey(num,key):
-        "xor's each byte of the key with the number, which is <256"
-        if num==0: return key
-        return bytes(num^k for k in key)
-else:
-    def xorKey(num,key):
-        "xor's each bytes of the key with the number, which is <256"
-        if num==0: return key
-        return ''.join(chr(num^ord(k)) for k in key)
 
 def hexText(text):
     "a legitimate way to show strings in PDF"
-    return '<' + ''.join('%02X' % ord(c) for c in rawUnicode(text)) + '>'
+    return '<%s>' % asNative(hexlify(rawBytes(text))).upper()
 
 def unHexText(hexText):
     equalityCheck(hexText[0], '<', 'bad hex text')
     equalityCheck(hexText[-1], '>', 'bad hex text')
-    hexText = hexText[1:-1]
-    out = b''
-    for i in range(int(len(hexText)/2.0)):
-        slice = hexText[i*2: i*2+2]
-        char = int2Byte(eval('0x'+slice))
-        out = out + char
-    return out
+    return unhexlify(hexText[1:-1])
 
 PadString = rawBytes(''.join(chr(int(c, 16)) for c in padding.strip().split()))
 
-def encryptionkey(password, OwnerKey, Permissions, FileId1, revision=2):
+def checkRevision(revision):
+    if revision is None:
+        strength = rl_config.encryptionStrength
+        if strength == 40:
+            revision = 2
+        elif strength == 128:
+            revision = 3
+        elif strength == 256:
+            if not pyaes:
+                raise ValueError('strength==256 is not supported as package pyaes is not importable')
+            revision = 5
+        else:
+            raise ValueError('Unknown encryption strength=%s' % repr(strength))
+    return revision
+
+def encryptionkey(password, OwnerKey, Permissions, FileId1, revision=None):
+    revision = checkRevision(revision)
     # FileId1 is first string of the fileid array
     # add padding string
     #AR force same as iText example
@@ -240,7 +385,8 @@ def computeO(userPassword, ownerPassword, revision):
     if DEBUG: print('computeO(%s,%s,%s)==>%s' % tuple([hexText(str(x)) for x in (userPassword, ownerPassword, revision,O)]))
     return O
 
-def computeU(encryptionkey, encodestring=PadString,revision=2,documentId=None):
+def computeU(encryptionkey, encodestring=PadString,revision=None,documentId=None):
+    revision = checkRevision(revision)
     from reportlab.lib.arciv import ArcIV
     if revision == 2:
         result = ArcIV(encryptionkey).encode(encodestring)
@@ -267,28 +413,49 @@ def checkU(encryptionkey, U):
             raise ValueError("lengths don't match! (password failed)")
         raise ValueError("decode of U doesn't match fixed padstring (password failed)")
 
-def encodePDF(key, objectNumber, generationNumber, string, revision=2):
+def encodePDF(key, objectNumber, generationNumber, string, revision=None):
     "Encodes a string or stream"
+    revision = checkRevision(revision)
     #print 'encodePDF (%s, %d, %d, %s)' % (hexText(key), objectNumber, generationNumber, string)
     # extend 3 bytes of the object Number, low byte first
-    newkey = key
-    n = objectNumber
-    for i in range(3):
-        newkey += int2Byte(n & 0xff)
-        n = n>>8
-    # extend 2 bytes of the generationNumber
-    n = generationNumber
-    for i in range(2):
-        newkey += int2Byte(n & 0xff)
-        n = n>>8
-    md5output = md5(newkey).digest()
-    if revision == 2:
-        key = md5output[:10]
-    elif revision == 3:
-        key = md5output #all 16 bytes
-    from reportlab.lib.arciv import ArcIV
-    encrypted = ArcIV(key).encode(string)
-    #print 'encrypted=', hexText(encrypted)
+    if revision in (2,3):
+        newkey = key
+        n = objectNumber
+        for i in range(3):
+            newkey += int2Byte(n & 0xff)
+            n = n>>8
+        # extend 2 bytes of the generationNumber
+        n = generationNumber
+        for i in range(2):
+            newkey += int2Byte(n & 0xff)
+            n = n>>8
+        md5output = md5(newkey).digest()
+        if revision == 2:
+            key = md5output[:10]
+        elif revision == 3:
+            key = md5output #all 16 bytes
+        from reportlab.lib.arciv import ArcIV
+        encrypted = ArcIV(key).encode(string)
+        #print 'encrypted=', hexText(encrypted)
+    elif revision == 5:
+        iv = os_urandom(16)
+        encrypter = pyaes.Encrypter(pyaes.AESModeOfOperationCBC(key, iv=iv))
+       
+        # pkcs7 style padding so that the size of the encrypted block is multiple of 16 
+        string_len = len(string)
+        padding = ""
+        padding_len = (16 - (string_len % 16)) if string_len > 16 else (16 - string_len)
+        if padding_len > 0:
+            padding = chr(padding_len) * padding_len
+            
+        if isinstance(string, str):
+            string = (string + padding).encode("utf-8")    
+        else:
+            string += asBytes(padding)
+            
+        encrypted = iv + encrypter.feed(string)
+        encrypted += encrypter.feed()
+
     if DEBUG: print('encodePDF(%s,%s,%s,%s,%s)==>%s' % tuple([hexText(str(x)) for x in (key, objectNumber, generationNumber, string, revision,encrypted)]))
     return encrypted
 
@@ -392,22 +559,22 @@ See https://www.reportlab.com/downloads''')
     firstPageSize = bboxInfo['PageForms0'][2:]
 
     #now make a new PDF document
-    buf = getBytesIO()
+    buf = BytesIO()
     canv = Canvas(buf, pagesize=firstPageSize)
 
     # set a standard ID while debugging
     if CLOBBERID:
         canv._doc._ID = "[(xxxxxxxxxxxxxxxx)(xxxxxxxxxxxxxxxx)]"
-    encryptCanvas(canv,
-                  userPassword, ownerPassword,
-                  canPrint, canModify, canCopy, canAnnotate,
-                  strength=strength)
 
     formNames = restoreFormsInMemory(pickledForms, canv)
     for formName in formNames:
         canv.setPageSize(bboxInfo[formName][2:])
         canv.doForm(formName)
         canv.showPage()
+    encryptCanvas(canv,
+                  userPassword, ownerPassword,
+                  canPrint, canModify, canCopy, canAnnotate,
+                  strength=strength)
     canv.save()
     return buf.getvalue()
 
@@ -456,6 +623,7 @@ Line mode usage:
 -v or verbose prints useful output to the screen.
       (this defaults to 'pdffile_encrypted.pdf').
 '-e128' or 'encrypt128' allows you to use 128 bit encryption (in beta).
+'-e256' or 'encrypt256' allows you to use 256 bit encryption (in beta AES).
 
 -h or help prints this message.
 
@@ -471,7 +639,9 @@ See PdfEncryptIntro.pdf for more information.
                    '-s', 'savefile',
                    '-v', 'verbose',
                    '-h', 'help',
-                   '-e128', 'encrypt128']
+                   '-e128', 'encrypt128',
+                   '-e256', 'encryptAES',
+                   ]
 
     OWNER        = ''
     USER         = ''
@@ -500,12 +670,11 @@ See PdfEncryptIntro.pdf for more information.
 
         # meaningful name at this stage
         STRENGTH = 40
-        if 'encrypt128' in argv:
-            STRENGTH = 128
-            argv.remove('encrypt128')
-        if '-e128' in argv:
-            STRENGTH = 128
-            argv.remove('-e128')
+        for (s,_a) in ((128,('-e128','encrypt128')),(256,('-e256','encrypt256'))):
+            for a in _a:
+                if a in argv:
+                    STRENGTH = s
+                    argv.remove(a)
 
         if ('-v' in argv) or ('verbose' in argv):
             if '-v' in argv:
@@ -551,9 +720,9 @@ See PdfEncryptIntro.pdf for more information.
                 try:
                     if argv[pos+1] not in known_modes:
                         if thisarg[0] in binaryrequired:
-                            exec(thisarg[1] +' = int(argv[pos+1])')
+                            exec(thisarg[1] +' = int(argv[pos+1])',vars())
                         else:
-                            exec(thisarg[1] +' = argv[pos+1]')
+                            exec(thisarg[1] +' = argv[pos+1]',vars())
                         if verbose:
                             print("%s set to: '%s'." % (thisarg[3], argv[pos+1]))
                         argv.remove(argv[pos+1])
@@ -596,7 +765,6 @@ See PdfEncryptIntro.pdf for more information.
         print(usage)
 
 def main():
-    from reportlab.rl_config import verbose
     scriptInterp()
 
 if __name__=="__main__": #NO RUNTESTS

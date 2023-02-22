@@ -27,6 +27,7 @@ def register_handler(handler):
 # --------------------------------------------------------------------
 # Image adapter
 
+
 def _accept(prefix):
     return prefix[:4] == b"BUFR" or prefix[:4] == b"ZCZC"
 
@@ -41,7 +42,8 @@ class BufrStubImageFile(ImageFile.StubImageFile):
         offset = self.fp.tell()
 
         if not _accept(self.fp.read(4)):
-            raise SyntaxError("Not a BUFR file")
+            msg = "Not a BUFR file"
+            raise SyntaxError(msg)
 
         self.fp.seek(offset)
 
@@ -58,8 +60,9 @@ class BufrStubImageFile(ImageFile.StubImageFile):
 
 
 def _save(im, fp, filename):
-    if _handler is None or not hasattr("_handler", "save"):
-        raise IOError("BUFR save handler not installed")
+    if _handler is None or not hasattr(_handler, "save"):
+        msg = "BUFR save handler not installed"
+        raise OSError(msg)
     _handler.save(im, fp, filename)
 
 

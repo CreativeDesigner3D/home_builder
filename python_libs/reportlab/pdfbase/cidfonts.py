@@ -1,8 +1,8 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/cidfonts.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/pdfbase/cidfonts.py
 #$Header $
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""CID (Asian multi-byte) font support.
 
 This defines classes to represent CID fonts.  They know how to calculate
@@ -11,12 +11,8 @@ their own width and how to write themselves into PDF files."""
 import os
 import marshal
 import time
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
+from hashlib import md5
 
-import reportlab
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase._cidfontdata import allowedTypeFaces, allowedEncodings, CIDFontInfo, \
      defaultUnicodeEncodings, widthsByUnichar

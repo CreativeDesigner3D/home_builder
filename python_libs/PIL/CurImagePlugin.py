@@ -15,13 +15,9 @@
 #
 # See the README file for information on usage and redistribution.
 #
-
-from __future__ import print_function
-
-from . import Image, BmpImagePlugin
-from ._binary import i8, i16le as i16, i32le as i32
-
-__version__ = "0.1"
+from . import BmpImagePlugin, Image
+from ._binary import i16le as i16
+from ._binary import i32le as i32
 
 #
 # --------------------------------------------------------------------
@@ -33,6 +29,7 @@ def _accept(prefix):
 
 ##
 # Image plugin for Windows Cursor files.
+
 
 class CurImageFile(BmpImagePlugin.BmpImageFile):
 
@@ -46,26 +43,28 @@ class CurImageFile(BmpImagePlugin.BmpImageFile):
         # check magic
         s = self.fp.read(6)
         if not _accept(s):
-            raise SyntaxError("not a CUR file")
+            msg = "not a CUR file"
+            raise SyntaxError(msg)
 
         # pick the largest cursor in the file
         m = b""
-        for i in range(i16(s[4:])):
+        for i in range(i16(s, 4)):
             s = self.fp.read(16)
             if not m:
                 m = s
-            elif i8(s[0]) > i8(m[0]) and i8(s[1]) > i8(m[1]):
+            elif s[0] > m[0] and s[1] > m[1]:
                 m = s
         if not m:
-            raise TypeError("No cursors were found")
+            msg = "No cursors were found"
+            raise TypeError(msg)
 
         # load as bitmap
-        self._bitmap(i32(m[12:]) + offset)
+        self._bitmap(i32(m, 12) + offset)
 
         # patch up the bitmap height
-        self._size = self.size[0], self.size[1]//2
+        self._size = self.size[0], self.size[1] // 2
         d, e, o, a = self.tile[0]
-        self.tile[0] = d, (0, 0)+self.size, o, a
+        self.tile[0] = d, (0, 0) + self.size, o, a
 
         return
 

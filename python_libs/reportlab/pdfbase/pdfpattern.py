@@ -78,7 +78,7 @@ class PDFPattern(PDFObject):
         c.arguments = self.arguments
         return c
 
-class PDFPatternIf(object):
+class PDFPatternIf:
     '''cond will be evaluated as [cond] in PDFpattern eval.
     It should evaluate to a list with value 0/1 etc etc.
     thenPart is a list to be evaluated if the cond evaulates true,

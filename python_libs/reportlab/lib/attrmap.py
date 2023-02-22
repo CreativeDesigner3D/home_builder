@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/attrmap.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/attrmap.py
+__version__='3.3.0'
 __doc__='''Framework for objects whose assignments are checked. Used by graphics.
 
 We developed reportlab/graphics prior to Python 2 and metaclasses. For the
@@ -113,7 +113,17 @@ def validateSetattr(obj,name,value):
                         raise AttributeError("Illegal assignment of '%s' to '%s' in class %s" % (value, name, obj.__class__.__name__))
                 except KeyError:
                     raise AttributeError("Illegal attribute '%s' in class %s" % (name, obj.__class__.__name__))
-    obj.__dict__[name] = value
+    prop = getattr(obj.__class__,name,None)
+    if isinstance(prop,property):
+        try:
+            prop.__set__(obj,value)
+        except AttributeError:
+            pass
+    elif name=='__dict__':
+        obj.__dict__.clear()
+        obj.__dict__.update(value)
+    else:
+        obj.__dict__[name] = value
 
 def _privateAttrMap(obj,ret=0):
     '''clone obj._attrMap if required'''

@@ -1,10 +1,14 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/xpreformatted.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/platypus/xpreformatted.py
+__all__ = (
+            'XPreformatted',
+            'PythonPreformatted',
+            )
+__version__='3.5.20'
 __doc__='''A 'rich preformatted text' widget allowing internal markup'''
 from reportlab.lib import PyFontify
-from reportlab.platypus.paragraph import Paragraph, cleanBlockQuotedText, _handleBulletWidth, \
+from reportlab.platypus.paragraph import Paragraph, _handleBulletWidth, \
      ParaLines, _getFragWords, stringWidth, getAscentDescent, imgVRange, imgNormV
 from reportlab.lib.utils import isSeq
 from reportlab.platypus.flowables import _dedenter
@@ -65,10 +69,10 @@ def _getFragWord(frags,maxWidth):
             _w = getattr(cb,'width',0)
             if hasattr(_w,'normalizedValue'):
                 _w._normalizer = maxWidth
-        n = n + stringWidth(text, f.fontName, f.fontSize)
+        n += stringWidth(text, f.fontName, f.fontSize)
 
         #s = s + _countSpaces(text)
-        s = s + text.count(' ') # much faster for many blanks
+        s += text.count(' ') # much faster for many blanks
 
         #del f.text # we can't do this until we sort out splitting
                     # of paragraphs
@@ -112,6 +116,7 @@ class XPreformatted(Paragraph):
         different first line indent; a longer list could be created to facilitate custom wraps
         around irregular objects."""
 
+        self._width_max = 0
         if not isSeq(width): maxWidths = [width]
         else: maxWidths = width
         lines = []
@@ -139,6 +144,7 @@ class XPreformatted(Paragraph):
                 L=f.text.split('\n')
                 for l in L:
                     currentWidth = stringWidth(l,fontName,fontSize)
+                    if currentWidth > self._width_max: self._width_max = currentWidth
                     requiredWidth = max(currentWidth,requiredWidth)
                     extraSpace = maxWidth-currentWidth
                     lines.append((extraSpace,l.split(' '),currentWidth))
@@ -192,7 +198,8 @@ class XPreformatted(Paragraph):
                 maxWidth = lineno<len(maxWidths) and maxWidths[lineno] or maxWidths[-1]
                 requiredWidth = max(currentWidth,requiredWidth)
                 extraSpace = maxWidth - currentWidth
-                lines.append(ParaLines(extraSpace=extraSpace,wordCount=n, words=words, fontSize=maxSize, ascent=maxAscent,descent=minDescent,currentWidth=currentWidth))
+                if currentWidth > self._width_max: self._width_max = currentWidth
+                lines.append(ParaLines(extraSpace=extraSpace,wordCount=n, words=words, fontSize=maxSize, ascent=maxAscent,descent=minDescent,currentWidth=currentWidth,preformatted=True))
 
             self.width = max(self.width,requiredWidth)
             return ParaLines(kind=1, lines=lines)

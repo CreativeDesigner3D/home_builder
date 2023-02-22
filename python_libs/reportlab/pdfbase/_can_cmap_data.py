@@ -19,8 +19,6 @@ Running off CMAP files we get the following widths...::
 
 """
 
-from pprint import pprint as pp
-
 from reportlab.pdfbase._cidfontdata import defaultUnicodeEncodings
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 

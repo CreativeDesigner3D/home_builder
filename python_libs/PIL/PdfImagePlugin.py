@@ -20,13 +20,12 @@
 # Image plugin for PDF images (output only).
 ##
 
-from . import Image, ImageFile, ImageSequence, PdfParser
 import io
+import math
 import os
 import time
 
-__version__ = "0.5"
-
+from . import Image, ImageFile, ImageSequence, PdfParser, __version__, features
 
 #
 # --------------------------------------------------------------------
@@ -46,6 +45,7 @@ def _save_all(im, fp, filename):
 ##
 # (Internal) Image save plugin for the PDF format.
 
+
 def _save(im, fp, filename, save_all=False):
     is_appending = im.encoderinfo.get("append", False)
     if is_appending:
@@ -56,16 +56,16 @@ def _save(im, fp, filename, save_all=False):
     resolution = im.encoderinfo.get("resolution", 72.0)
 
     info = {
-        "title": None if is_appending else os.path.splitext(
-                                               os.path.basename(filename)
-                                           )[0],
+        "title": None
+        if is_appending
+        else os.path.splitext(os.path.basename(filename))[0],
         "author": None,
         "subject": None,
         "keywords": None,
         "creator": None,
         "producer": None,
         "creationDate": None if is_appending else time.gmtime(),
-        "modDate": None if is_appending else time.gmtime()
+        "modDate": None if is_appending else time.gmtime(),
     }
     for k, default in info.items():
         v = im.encoderinfo.get(k) if k in im.encoderinfo else default
@@ -78,7 +78,7 @@ def _save(im, fp, filename, save_all=False):
 
     existing_pdf.start_writing()
     existing_pdf.write_header()
-    existing_pdf.write_comment("created by PIL PDF driver " + __version__)
+    existing_pdf.write_comment(f"created by Pillow {__version__} PDF driver")
 
     #
     # pages
@@ -88,21 +88,21 @@ def _save(im, fp, filename, save_all=False):
         for append_im in append_images:
             append_im.encoderinfo = im.encoderinfo.copy()
             ims.append(append_im)
-    numberOfPages = 0
+    number_of_pages = 0
     image_refs = []
     page_refs = []
     contents_refs = []
     for im in ims:
-        im_numberOfPages = 1
+        im_number_of_pages = 1
         if save_all:
             try:
-                im_numberOfPages = im.n_frames
+                im_number_of_pages = im.n_frames
             except AttributeError:
                 # Image format does not have n_frames.
                 # It is a single frame image
                 pass
-        numberOfPages += im_numberOfPages
-        for i in range(im_numberOfPages):
+        number_of_pages += im_number_of_pages
+        for i in range(im_number_of_pages):
             image_refs.append(existing_pdf.next_object_id(0))
             page_refs.append(existing_pdf.next_object_id(0))
             contents_refs.append(existing_pdf.next_object_id(0))
@@ -112,9 +112,9 @@ def _save(im, fp, filename, save_all=False):
     # catalog and list of pages
     existing_pdf.write_catalog()
 
-    pageNumber = 0
-    for imSequence in ims:
-        im_pages = ImageSequence.Iterator(imSequence) if save_all else [imSequence]
+    page_number = 0
+    for im_sequence in ims:
+        im_pages = ImageSequence.Iterator(im_sequence) if save_all else [im_sequence]
         for im in im_pages:
             # FIXME: Should replace ASCIIHexDecode with RunLengthDecode
             # (packbits) or LZWDecode (tiff/lzw compression).  Note that
@@ -122,25 +122,46 @@ def _save(im, fp, filename, save_all=False):
 
             bits = 8
             params = None
+            decode = None
+
+            #
+            # Get image characteristics
+
+            width, height = im.size
 
             if im.mode == "1":
-                filter = "ASCIIHexDecode"
+                if features.check("libtiff"):
+                    filter = "CCITTFaxDecode"
+                    bits = 1
+                    params = PdfParser.PdfArray(
+                        [
+                            PdfParser.PdfDict(
+                                {
+                                    "K": -1,
+                                    "BlackIs1": True,
+                                    "Columns": width,
+                                    "Rows": height,
+                                }
+                            )
+                        ]
+                    )
+                else:
+                    filter = "DCTDecode"
                 colorspace = PdfParser.PdfName("DeviceGray")
                 procset = "ImageB"  # grayscale
-                bits = 1
             elif im.mode == "L":
                 filter = "DCTDecode"
-                # params = "<< /Predictor 15 /Columns %d >>" % (width-2)
+                # params = f"<< /Predictor 15 /Columns {width-2} >>"
                 colorspace = PdfParser.PdfName("DeviceGray")
                 procset = "ImageB"  # grayscale
             elif im.mode == "P":
                 filter = "ASCIIHexDecode"
-                palette = im.im.getpalette("RGB")
+                palette = im.getpalette()
                 colorspace = [
                     PdfParser.PdfName("Indexed"),
                     PdfParser.PdfName("DeviceRGB"),
                     255,
-                    PdfParser.PdfBinary(palette)
+                    PdfParser.PdfBinary(palette),
                 ]
                 procset = "ImageI"  # indexed color
             elif im.mode == "RGB":
@@ -151,8 +172,10 @@ def _save(im, fp, filename, save_all=False):
                 filter = "DCTDecode"
                 colorspace = PdfParser.PdfName("DeviceCMYK")
                 procset = "ImageC"  # color images
+                decode = [1, 0, 1, 0, 1, 0, 1, 0]
             else:
-                raise ValueError("cannot save mode %s" % im.mode)
+                msg = f"cannot save mode {im.mode}"
+                raise ValueError(msg)
 
             #
             # image
@@ -160,72 +183,75 @@ def _save(im, fp, filename, save_all=False):
             op = io.BytesIO()
 
             if filter == "ASCIIHexDecode":
-                if bits == 1:
-                    # FIXME: the hex encoder doesn't support packed 1-bit
-                    # images; do things the hard way...
-                    data = im.tobytes("raw", "1")
-                    im = Image.new("L", (len(data), 1), None)
-                    im.putdata(data)
-                ImageFile._save(im, op, [("hex", (0, 0)+im.size, 0, im.mode)])
+                ImageFile._save(im, op, [("hex", (0, 0) + im.size, 0, im.mode)])
+            elif filter == "CCITTFaxDecode":
+                im.save(
+                    op,
+                    "TIFF",
+                    compression="group4",
+                    # use a single strip
+                    strip_size=math.ceil(im.width / 8) * im.height,
+                )
             elif filter == "DCTDecode":
                 Image.SAVE["JPEG"](im, op, filename)
             elif filter == "FlateDecode":
-                ImageFile._save(im, op, [("zip", (0, 0)+im.size, 0, im.mode)])
+                ImageFile._save(im, op, [("zip", (0, 0) + im.size, 0, im.mode)])
             elif filter == "RunLengthDecode":
-                ImageFile._save(im, op,
-                                [("packbits", (0, 0)+im.size, 0, im.mode)])
+                ImageFile._save(im, op, [("packbits", (0, 0) + im.size, 0, im.mode)])
             else:
-                raise ValueError("unsupported PDF filter (%s)" % filter)
+                msg = f"unsupported PDF filter ({filter})"
+                raise ValueError(msg)
 
-            #
-            # Get image characteristics
+            stream = op.getvalue()
+            if filter == "CCITTFaxDecode":
+                stream = stream[8:]
+                filter = PdfParser.PdfArray([PdfParser.PdfName(filter)])
+            else:
+                filter = PdfParser.PdfName(filter)
 
-            width, height = im.size
-
-            existing_pdf.write_obj(image_refs[pageNumber],
-                                   stream=op.getvalue(),
-                                   Type=PdfParser.PdfName("XObject"),
-                                   Subtype=PdfParser.PdfName("Image"),
-                                   Width=width,  # * 72.0 / resolution,
-                                   Height=height,  # * 72.0 / resolution,
-                                   Filter=PdfParser.PdfName(filter),
-                                   BitsPerComponent=bits,
-                                   DecodeParams=params,
-                                   ColorSpace=colorspace)
+            existing_pdf.write_obj(
+                image_refs[page_number],
+                stream=stream,
+                Type=PdfParser.PdfName("XObject"),
+                Subtype=PdfParser.PdfName("Image"),
+                Width=width,  # * 72.0 / resolution,
+                Height=height,  # * 72.0 / resolution,
+                Filter=filter,
+                BitsPerComponent=bits,
+                Decode=decode,
+                DecodeParms=params,
+                ColorSpace=colorspace,
+            )
 
             #
             # page
 
-            existing_pdf.write_page(page_refs[pageNumber],
-                                    Resources=PdfParser.PdfDict(
-                                        ProcSet=[
-                                            PdfParser.PdfName("PDF"),
-                                            PdfParser.PdfName(procset)
-                                        ],
-                                        XObject=PdfParser.PdfDict(
-                                            image=image_refs[pageNumber]
-                                        )
-                                    ),
-                                    MediaBox=[
-                                        0,
-                                        0,
-                                        int(width * 72.0 / resolution),
-                                        int(height * 72.0 / resolution)
-                                    ],
-                                    Contents=contents_refs[pageNumber])
+            existing_pdf.write_page(
+                page_refs[page_number],
+                Resources=PdfParser.PdfDict(
+                    ProcSet=[PdfParser.PdfName("PDF"), PdfParser.PdfName(procset)],
+                    XObject=PdfParser.PdfDict(image=image_refs[page_number]),
+                ),
+                MediaBox=[
+                    0,
+                    0,
+                    width * 72.0 / resolution,
+                    height * 72.0 / resolution,
+                ],
+                Contents=contents_refs[page_number],
+            )
 
             #
             # page contents
 
-            page_contents = PdfParser.make_bytes(
-                "q %d 0 0 %d 0 0 cm /image Do Q\n" % (
-                    int(width * 72.0 / resolution),
-                    int(height * 72.0 / resolution)))
+            page_contents = b"q %f 0 0 %f 0 0 cm /image Do Q\n" % (
+                width * 72.0 / resolution,
+                height * 72.0 / resolution,
+            )
 
-            existing_pdf.write_obj(contents_refs[pageNumber],
-                                   stream=page_contents)
+            existing_pdf.write_obj(contents_refs[page_number], stream=page_contents)
 
-            pageNumber += 1
+            page_number += 1
 
     #
     # trailer
@@ -233,6 +259,7 @@ def _save(im, fp, filename, save_all=False):
     if hasattr(fp, "flush"):
         fp.flush()
     existing_pdf.close()
+
 
 #
 # --------------------------------------------------------------------

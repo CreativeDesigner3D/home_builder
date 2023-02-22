@@ -1,13 +1,13 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/utils.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/charts/utils.py
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="Utilities used here and there."
 from time import mktime, gmtime, strftime
-from math import log10, pi, floor, sin, cos, sqrt, hypot
+from math import log10, pi, floor, sin, cos, hypot
 import weakref
-from reportlab.graphics.shapes import transformPoint, transformPoints, inverse, Ellipse, Group, String, Path, numericXShift
+from reportlab.graphics.shapes import transformPoints, inverse, Ellipse, Group, String, numericXShift
 from reportlab.lib.utils import flatten
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
@@ -15,11 +15,11 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 def mkTimeTuple(timeString):
     "Convert a 'dd/mm/yyyy' formatted string to a tuple for use in the time module."
 
-    list = [0] * 9
+    L = [0] * 9
     dd, mm, yyyy = list(map(int, timeString.split('/')))
-    list[:3] = [yyyy, mm, dd]
+    L[:3] = [yyyy, mm, dd]
 
-    return tuple(list)
+    return tuple(L)
 
 def str2seconds(timeString):
     "Convert a number of seconds since the epoch into a date string."
@@ -212,7 +212,7 @@ def maverage(data,n=6):
 def pairMaverage(data,n=6):
     return [(x[0],s) for x,s in zip(data, maverage([x[1] for x in data],n))]
 
-class DrawTimeCollector(object):
+class DrawTimeCollector:
     '''
     generic mechanism for collecting information about nodes at the time they are about to be drawn
     '''
@@ -388,3 +388,8 @@ class CustomDrawChanger:
         can restore them.
         '''
         raise RuntimeError('Abstract method _changer called')
+
+class FillPairedData(list):
+    def __init__(self,v,other=0):
+        list.__init__(self,v)
+        self.other = other

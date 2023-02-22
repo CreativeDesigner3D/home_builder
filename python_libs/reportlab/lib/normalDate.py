@@ -10,20 +10,24 @@
 # derived from an original version created
 # by Jeff Bauer of Rubicon Research and used
 # with his kind permission
-__version__=''' $Id$ '''
+__version__='3.3.18'
 __doc__="Jeff Bauer's lightweight date class, extended by us.  Predates Python's datetime module."
-
 
 _bigBangScalar = -4345732  # based on (-9999, 1, 1) BC/BCE minimum
 _bigCrunchScalar = 2958463  # based on (9999,12,31) AD/CE maximum
 _daysInMonthNormal = [31,28,31,30,31,30,31,31,30,31,30,31]
 _daysInMonthLeapYear = [31,29,31,30,31,30,31,31,30,31,30,31]
-_dayOfWeekName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
-                  'Friday', 'Saturday', 'Sunday']
-_monthName = ['January', 'February', 'March', 'April', 'May', 'June',
-              'July','August','September','October','November','December']
+_dayOfWeekName = '''Monday Tuesday Wednesday Thursday Friday Saturday Sunday'''
+_dayOfWeekNameLower = _dayOfWeekName.lower().split()
+_dayOfWeekName = _dayOfWeekName.split()
+_monthName = '''January February March April May June
+                July August September October November December'''
+_monthNameLower = _monthName.lower().split()
+_monthName = _monthName.split()
 
-import string, re, time, datetime
+import re, time, datetime
+from .utils import isStr
+
 if hasattr(time,'struct_time'):
     _DateSeqTypes = (list,tuple,time.struct_time)
 else:
@@ -33,13 +37,13 @@ _fmtPat = re.compile('\\{(m{1,5}|yyyy|yy|d{1,4})\\}',re.MULTILINE|re.IGNORECASE)
 _iso_re = re.compile(r'(\d\d\d\d|\d\d)-(\d\d)-(\d\d)')
 
 def getStdMonthNames():
-    return list(map(string.lower,_monthName))
+    return _monthNameLower
 
 def getStdShortMonthNames():
     return [x[:3] for x in getStdMonthNames()]
 
 def getStdDayNames():
-    return list(map(string.lower,_dayOfWeekName))
+    return _dayOfWeekNameLower
 
 def getStdShortDayNames():
     return [x[:3] for x in getStdDayNames()]
@@ -122,6 +126,8 @@ class NormalDate:
             2. integer in yyyymmdd format
             3. string in yyyymmdd format
             4. tuple in (yyyy, mm, dd) - localtime/gmtime can also be used
+            5. string iso date format see _iso_re above
+            6. datetime.datetime or datetime.date
         """
         if normalDate is None:
             self.setNormalDate(time.localtime(time.time()))
@@ -152,13 +158,35 @@ class NormalDate:
         """return a cloned instance of this normalDate"""
         return self.__class__(self.normalDate)
 
-    def __cmp__(self, target):
-        if target is None:
-            return 1
-        elif not hasattr(target, 'normalDate'):
-            return 1
-        else:
-            return cmp(self.normalDate, target.normalDate)
+    def __lt__(self,other):
+        if not hasattr(other,'normalDate'):
+            return False
+        return self.normalDate < other.normalDate
+
+    def __le__(self,other):
+        if not hasattr(other,'normalDate'):
+            return False
+        return self.normalDate <= other.normalDate
+
+    def __eq__(self,other):
+        if not hasattr(other,'normalDate'):
+            return False
+        return self.normalDate == other.normalDate
+
+    def __ne__(self,other):
+        if not hasattr(other,'normalDate'):
+            return True
+        return self.normalDate != other.normalDate
+
+    def __ge__(self,other):
+        if not hasattr(other,'normalDate'):
+            return True
+        return self.normalDate >= other.normalDate
+
+    def __gt__(self,other):
+        if not hasattr(other,'normalDate'):
+            return True
+        return self.normalDate > other.normalDate
 
     def day(self):
         """return the day as integer 1-31"""
@@ -168,13 +196,17 @@ class NormalDate:
         """return integer representing day of week, Mon=0, Tue=1, etc."""
         return dayOfWeek(*self.toTuple())
 
+    @property
+    def __day_of_week_name__(self):
+        return getattr(self,'_dayOfWeekName',_dayOfWeekName)
+
     def dayOfWeekAbbrev(self):
         """return day of week abbreviation for current date: Mon, Tue, etc."""
-        return _dayOfWeekName[self.dayOfWeek()][:3]
+        return self.__day_of_week_name__[self.dayOfWeek()][:3]
 
     def dayOfWeekName(self):
         """return day of week name for current date: Monday, Tuesday, etc."""
-        return _dayOfWeekName[self.dayOfWeek()]
+        return self.__day_of_week_name__[self.dayOfWeek()]
 
     def dayOfYear(self):
         """day of year"""
@@ -276,7 +308,7 @@ class NormalDate:
         while 1:
             m = _fmtPat.search(r,f)
             if m:
-                y = getattr(self,'_fmt'+string.upper(m.group()[1:-1]))()
+                y = getattr(self,'_fmt'+(m.group()[1:-1].upper()))()
                 i, j = m.span()
                 r = (r[0:i] + y) + r[j:]
                 f = i + len(y)
@@ -346,14 +378,18 @@ class NormalDate:
     def month(self):
         """returns month as integer 1-12"""
         return int(repr(self.normalDate)[-4:-2])
+    
+    @property
+    def __month_name__(self):
+        return getattr(self,'_monthName',_monthName)
 
     def monthAbbrev(self):
         """returns month as a 3-character abbreviation, i.e. Jan, Feb, etc."""
-        return _monthName[self.month() - 1][:3]
+        return self.__month_name__[self.month() - 1][:3]
 
     def monthName(self):
         """returns month name, i.e. January, February, etc."""
-        return _monthName[self.month() - 1]
+        return self.__month_name__[self.month() - 1]
 
     def normalize(self, scalar):
         """convert scalar to normalDate"""
@@ -459,7 +495,7 @@ class NormalDate:
         (year, month, day, ...)"""
         if isinstance(normalDate,int):
             self.normalDate = normalDate
-        elif isinstance(normalDate,str):
+        elif isStr(normalDate):
             try:
                 self.normalDate = int(normalDate)
             except:
@@ -474,6 +510,8 @@ class NormalDate:
             self.normalDate = normalDate.normalDate
         elif isinstance(normalDate,(datetime.datetime,datetime.date)):
             self.normalDate = (normalDate.year*100+normalDate.month)*100+normalDate.day
+        else:
+            self.normalDate = None
         if not self._isValidNormalDate(self.normalDate):
             raise NormalDateException("unable to setNormalDate(%s)" % repr(normalDate))
 

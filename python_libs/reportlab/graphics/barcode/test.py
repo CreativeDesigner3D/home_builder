@@ -1,84 +1,170 @@
 #!/usr/pkg/bin/python
 
-import os, sys, time
+import sys, time
 
+from reportlab import Version as __RL_Version__
 from reportlab.graphics.barcode.common import *
 from reportlab.graphics.barcode.code39 import *
 from reportlab.graphics.barcode.code93 import *
 from reportlab.graphics.barcode.code128 import *
 from reportlab.graphics.barcode.usps import *
 from reportlab.graphics.barcode.usps4s import USPS_4State
+from reportlab.graphics.barcode.qr import QrCodeWidget
+from reportlab.graphics.barcode.dmtx import DataMatrixWidget, pylibdmtx
 
-
-from reportlab.platypus import Spacer, SimpleDocTemplate, Table, TableStyle, Preformatted, PageBreak
-from reportlab.lib.units import inch, cm
+from reportlab.platypus import Spacer, SimpleDocTemplate, PageBreak
+from reportlab.lib.units import inch
 from reportlab.lib import colors
 
-from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus.paragraph import Paragraph
-from reportlab.platypus.frames import Frame
 from reportlab.platypus.flowables import XBox, KeepTogether
-from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.shapes import Drawing, Rect, Line
 
-from reportlab.graphics.barcode import getCodes, getCodeNames, createBarcodeDrawing, createBarcodeImageInMemory
+from reportlab.graphics.barcode import getCodeNames, createBarcodeDrawing, createBarcodeImageInMemory
+
 def run():
     styles = getSampleStyleSheet()
     styleN = styles['Normal']
     styleH = styles['Heading1']
     story = []
+    storyAdd = story.append
 
     #for codeNames in code
-    story.append(Paragraph('I2of5', styleN))
-    story.append(I2of5(1234, barWidth = inch*0.02, checksum=0))
-    story.append(Paragraph('MSI', styleN))
-    story.append(MSI(1234))
-    story.append(Paragraph('Codabar', styleN))
-    story.append(Codabar("A012345B", barWidth = inch*0.02))
-    story.append(Paragraph('Code 11', styleN))
-    story.append(Code11("01234545634563"))
-    story.append(Paragraph('Code 39', styleN))
-    story.append(Standard39("A012345B%R"))
-    story.append(Paragraph('Extended Code 39', styleN))
-    story.append(Extended39("A012345B}"))
-    story.append(Paragraph('Code93', styleN))
-    story.append(Standard93("CODE 93"))
-    story.append(Paragraph('Extended Code93', styleN))
-    story.append(Extended93("L@@K! Code 93 :-)")) #, barWidth=0.005 * inch))
-    story.append(Paragraph('Code 128', styleN))
-    c=Code128("AB-12345678") #, barWidth=0.005 * inch)
-    #print 'WIDTH =', (c.width / inch), 'barWidth =', (c.barWidth / inch)
-    #print 'LQ =', (c.lquiet / inch), 'RQ =', (c.rquiet / inch)
-    story.append(c)
-    story.append(Paragraph('USPS FIM', styleN))
-    story.append(FIM("A"))
-    story.append(Paragraph('USPS POSTNET', styleN))
-    story.append(POSTNET('78247-1043'))
-    story.append(Paragraph('USPS 4 State', styleN))
-    story.append(USPS_4State('01234567094987654321','01234567891'))
+    storyAdd(Paragraph('I2of5', styleN))
+    storyAdd(I2of5('05400141288766', barWidth = inch*0.02, checksum=0))
+    storyAdd(I2of5('0001234567890', barWidth = inch*0.02, checksum=1))
+    storyAdd(I2of5('00012345678905', barWidth = inch*0.02, checksum=0))
+    storyAdd(I2of5('0001234567890', barWidth = inch*0.02, checksum=1, bearerBox = True))
+    
+
+    storyAdd(Paragraph('MSI', styleN))
+    storyAdd(MSI(1234))
+
+    storyAdd(Paragraph('Codabar', styleN))
+    storyAdd(Codabar("A012345B", barWidth = inch*0.02))
+
+    storyAdd(Paragraph('Code 11', styleN))
+    storyAdd(Code11("01234545634563"))
+
+    storyAdd(Paragraph('Code 39', styleN))
+    storyAdd(Standard39("A012345B%R"))
+
+    storyAdd(Paragraph('Extended Code 39', styleN))
+    storyAdd(Extended39("A012345B}"))
+
+    storyAdd(Paragraph('Code93', styleN))
+    storyAdd(Standard93("CODE 93"))
+
+    storyAdd(Paragraph('Extended Code93', styleN))
+    storyAdd(Extended93("L@@K! Code 93 :-)")) #, barWidth=0.005 * inch))
+
+    storyAdd(Paragraph('Code 128', styleN))
+    storyAdd(Code128("AB-12345678"))
+
+    storyAdd(Paragraph('Code 128 Auto', styleN))
+    storyAdd(Code128Auto("AB-12345678"))
+
+    storyAdd(Paragraph('USPS FIM', styleN))
+    storyAdd(FIM("A"))
+
+    storyAdd(Paragraph('USPS POSTNET', styleN))
+    storyAdd(POSTNET('78247-1043'))
+
+    storyAdd(Paragraph('USPS 4 State', styleN))
+    storyAdd(USPS_4State('01234567094987654321','01234567891'))
 
     from reportlab.graphics.barcode import createBarcodeDrawing
-    story.append(Paragraph('EAN13', styleN))
-    bcd = createBarcodeDrawing('EAN13', value='123456789012')
-    story.append(bcd)
-    story.append(Paragraph('EAN8', styleN))
-    bcd = createBarcodeDrawing('EAN8', value='1234567')
-    story.append(bcd)
-    story.append(Paragraph('UPCA', styleN))
-    bcd = createBarcodeDrawing('UPCA', value='03600029145')
-    story.append(bcd)
-    story.append(Paragraph('USPS_4State', styleN))
-    bcd = createBarcodeDrawing('USPS_4State', value='01234567094987654321',routing='01234567891')
-    story.append(bcd)
 
-    story.append(Paragraph('Label Size', styleN))
-    story.append(XBox((2.0 + 5.0/8.0)*inch, 1 * inch, '1x2-5/8"'))
-    story.append(Paragraph('Label Size', styleN))
-    story.append(XBox((1.75)*inch, .5 * inch, '1/2x1-3/4"'))
-    c = Canvas('out.pdf')
-    f = Frame(inch, inch, 6*inch, 9*inch, showBoundary=1)
-    f.addFromList(story, c)
-    c.save()
+    storyAdd(Paragraph('EAN13', styleN))
+    storyAdd(createBarcodeDrawing('EAN13', value='123456789012'))
+
+    storyAdd(Paragraph('EAN13 quiet=False', styleN))
+    storyAdd(createBarcodeDrawing('EAN13', value='123456789012', quiet=False))
+
+    storyAdd(Paragraph('EAN8', styleN))
+    storyAdd(createBarcodeDrawing('EAN8', value='1234567'))
+
+    storyAdd(PageBreak())
+
+    storyAdd(Paragraph('EAN5 price=True', styleN))
+    storyAdd(createBarcodeDrawing('EAN5', value='11299', price=True))
+
+    storyAdd(Paragraph('EAN5 price=True quiet=False', styleN))
+    storyAdd(createBarcodeDrawing('EAN5', value='11299', price=True, quiet=False))
+
+    storyAdd(Paragraph('EAN5 price=False', styleN))
+    storyAdd(createBarcodeDrawing('EAN5', value='11299', price=False))
+
+    storyAdd(Paragraph('ISBN alone', styleN))
+    storyAdd(createBarcodeDrawing('ISBN', value='9781565924796'))
+
+    storyAdd(Paragraph('ISBN  with ean5 price', styleN))
+    storyAdd(createBarcodeDrawing('ISBN', value='9781565924796',price='01299'))
+
+    storyAdd(Paragraph('ISBN  with ean5 price, quiet=False', styleN))
+    storyAdd(createBarcodeDrawing('ISBN', value='9781565924796',price='01299',quiet=False))
+
+    storyAdd(Paragraph('UPCA', styleN))
+    storyAdd(createBarcodeDrawing('UPCA', value='03600029145'))
+
+    storyAdd(Paragraph('USPS_4State', styleN))
+    storyAdd(createBarcodeDrawing('USPS_4State', value='01234567094987654321',routing='01234567891'))
+
+    storyAdd(Paragraph('QR', styleN))
+    storyAdd(createBarcodeDrawing('QR', value='01234567094987654321'))
+
+    storyAdd(Paragraph('QR', styleN))
+    storyAdd(createBarcodeDrawing('QR', value='01234567094987654321',x=30,y=50))
+
+    def addCross(d,x,y,w=5,h=5, strokeColor='black', strokeWidth=0.5):
+        w *= 0.5
+        h *= 0.5
+        d.add(Line(x-w,y,x+w,y,strokeWidth=0.5,strokeColor=colors.blue))
+        d.add(Line(x, y-h, x, y+h,strokeWidth=0.5,strokeColor=colors.blue))
+    storyAdd(Paragraph('QR in drawing at (0,0)', styleN))
+    d = Drawing(100,100)
+    d.add(Rect(0,0,100,100,strokeWidth=1,strokeColor=colors.red,fillColor=None))
+    d.add(QrCodeWidget(value='01234567094987654321'))
+    storyAdd(d)
+
+    storyAdd(Paragraph('QR in drawing at (10,10)', styleN))
+    d = Drawing(100,100)
+    d.add(Rect(0,0,100,100,strokeWidth=1,strokeColor=colors.red,fillColor=None))
+    addCross(d,10,10)
+    d.add(QrCodeWidget(value='01234567094987654321',x=10,y=10))
+    storyAdd(d)
+
+    storyAdd(Paragraph('Label Size', styleN))
+    storyAdd(XBox((2.0 + 5.0/8.0)*inch, 1 * inch, '1x2-5/8"'))
+
+    storyAdd(Paragraph('Label Size', styleN))
+    storyAdd(XBox((1.75)*inch, .5 * inch, '1/2x1-3/4"'))
+
+    if pylibdmtx:
+        storyAdd(PageBreak())
+        storyAdd(Paragraph('DataMatrix in drawing at (10,10)', styleN))
+        d = Drawing(100,100)
+        d.add(Rect(0,0,100,100,strokeWidth=1,strokeColor=colors.red,fillColor=None))
+        addCross(d,10,10)
+        d.add(DataMatrixWidget(value='1234567890',x=10,y=10))
+        storyAdd(d)
+        storyAdd(Paragraph('DataMatrix in drawing at (10,10)', styleN))
+        d = Drawing(100,100)
+        d.add(Rect(0,0,100,100,strokeWidth=1,strokeColor=colors.red,fillColor=None))
+        addCross(d,10,10)
+        d.add(DataMatrixWidget(value='1234567890',x=10,y=10,color='black',bgColor='lime'))
+        storyAdd(d)
+
+        storyAdd(Paragraph('DataMatrix in drawing at (90,90) anchor=ne', styleN))
+        d = Drawing(100,100)
+        d.add(Rect(0,0,100,100,strokeWidth=1,strokeColor=colors.red,fillColor=None))
+        addCross(d,90,90)
+        d.add(DataMatrixWidget(value='1234567890',x=90,y=90,color='darkblue',bgColor='yellow', anchor='ne'))
+        storyAdd(d)
+    
+
+    SimpleDocTemplate('out.pdf').build(story)
     print('saved out.pdf')
 
 def fullTest(fileName="test_full.pdf"):
@@ -92,23 +178,14 @@ def fullTest(fileName="test_full.pdf"):
     styleH2 = styles['Heading2']
     story = []
 
-    story.append(Paragraph('ReportLab Barcode Test Suite - full output', styleH))
-    story.append(Paragraph('Generated on %s' % time.ctime(time.time()), styleN))
+    story.append(Paragraph('ReportLab %s Barcode Test Suite - full output' % __RL_Version__,styleH))
+    story.append(Paragraph('Generated at %s' % time.ctime(time.time()), styleN))
 
-    story.append(Paragraph('', styleN))
-    story.append(Paragraph('Repository information for this build:', styleN))
-    #see if we can figure out where it was built, if we're running in source
-    if os.path.split(os.getcwd())[-1] == 'barcode' and os.path.isdir('.svn'):
-        #runnning in a filesystem svn copy
-        infoLines = os.popen('svn info').read()
-        story.append(Preformatted(infoLines, styles["Code"]))
-        
     story.append(Paragraph('About this document', styleH2))
     story.append(Paragraph('History and Status', styleH2))
 
     story.append(Paragraph("""
-        This is the test suite and docoumentation for the ReportLab open source barcode API,
-        being re-released as part of the forthcoming ReportLab 2.0 release.
+        This is the test suite and docoumentation for the ReportLab open source barcode API.
         """, styleN))
 
     story.append(Paragraph("""
@@ -196,5 +273,5 @@ if __name__=='__main__':
         f.close()
     createSample('test_cbcim.png',createBarcodeImageInMemory('EAN13', value='123456789012'))
     createSample('test_cbcim.gif',createBarcodeImageInMemory('EAN8', value='1234567', format='gif'))
-    createSample('test_cbcim.pdf',createBarcodeImageInMemory('UPCA', value='03600029145',format='pdf'))
+    createSample('test_cbcim.pdf',createBarcodeImageInMemory('UPCA', value='03600029145',format='pdf', barHeight=40))
     createSample('test_cbcim.tiff',createBarcodeImageInMemory('USPS_4State', value='01234567094987654321',routing='01234567891',format='tiff'))

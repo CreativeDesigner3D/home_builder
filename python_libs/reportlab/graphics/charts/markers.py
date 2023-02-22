@@ -1,8 +1,8 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/markers.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/charts/markers.py
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""This modules defines a collection of markers used in charts.
 
 The make* functions return a simple shape or a widget as for
@@ -10,7 +10,7 @@ the smiley.
 """
 
 from reportlab.lib import colors
-from reportlab.graphics.shapes import Rect, Line, Circle, Polygon
+from reportlab.graphics.shapes import Rect, Circle, Polygon
 from reportlab.graphics.widgets.signsandsymbols import SmileyFace
 
 

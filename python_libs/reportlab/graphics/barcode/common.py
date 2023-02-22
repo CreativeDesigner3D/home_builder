@@ -32,8 +32,7 @@
 
 from reportlab.platypus.flowables import Flowable
 from reportlab.lib.units import inch
-from reportlab.lib.utils import ascii_uppercase, ascii_lowercase
-from string import digits as string_digits
+from string import ascii_lowercase, ascii_uppercase, digits as string_digits
 
 class Barcode(Flowable):
     """Abstract Base for barcodes. Includes implementations of
@@ -139,10 +138,21 @@ class Barcode(Flowable):
                 left = left + wx
 
         if self.bearers:
-            self.rect(self.lquiet, 0, \
-                self._width - (self.lquiet + self.rquiet), b)
-            self.rect(self.lquiet, self.barHeight - b, \
-                self._width - (self.lquiet + self.rquiet), b)
+            if getattr(self,'bearerBox', None):
+                canv = self.canv
+                if hasattr(canv,'_Gadd'):
+                    #this is a widget rect takes other arguments
+                    canv.rect(bb, bb, self.width, self.barHeight-b,
+                            strokeWidth=b, strokeColor=self.barFillColor or self.barStrokeColor, fillColor=None)
+                else:
+                    canv.saveState()
+                    canv.setLineWidth(b)
+                    canv.rect(bb, bb, self.width, self.barHeight-b, stroke=1, fill=0)
+                    canv.restoreState()
+            else:
+                w = self._width - (self.lquiet + self.rquiet)
+                self.rect(self.lquiet, 0, w, b)
+                self.rect(self.lquiet, self.barHeight - b, w, b)
 
         self.drawHumanReadable()
 
@@ -176,6 +186,12 @@ class Barcode(Flowable):
         else: func = 'drawString'
         getattr(canv,func)(x,y,text)
         canv.restoreState()
+
+    def _checkVal(self, name, v, allowed):
+        if v not in allowed:
+            raise ValueError('%s attribute %s is invalid %r\nnot in allowed %r' % (
+                self.__class__.__name__, name, v, allowed))
+        return v
 
 class MultiWidthBarcode(Barcode):
     """Base for variable-bar-width codes like Code93 and Code128"""
@@ -255,6 +271,9 @@ class I2of5(Barcode):
             Set to zero for no bearer bars. (Bearer bars help detect
             misscans, so it is suggested to leave them on).
 
+        bearerBox (bool default False)
+            if true draw a  true rectangle of width bearers around the barcode.
+
         quiet (bool, default 1):
             Whether to include quiet zones in the symbol.
 
@@ -299,6 +318,7 @@ class I2of5(Barcode):
     ratio = 2.2
     checksum = 1
     bearers = 3.0
+    bearerBox = False
     quiet = 1
     lquiet = None
     rquiet = None

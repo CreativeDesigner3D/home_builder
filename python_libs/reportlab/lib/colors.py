@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/colors.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/colors.py
+__version__='3.3.0'
 __doc__='''Defines standard colour-handling classes and colour names.
 
 We define standard classes to hold colours in two models:  RGB and CMYK.
@@ -40,10 +40,9 @@ Traceback (most recent call last):
 ValueError: css color 'pcmyka(100,0,0,0)' has wrong number of components
 '''
 import math, re, functools
-from reportlab import isPy3
 from reportlab.lib.rl_accel import fp_str
-from reportlab.lib.utils import asNative, isStr
-import collections
+from reportlab.lib.utils import asNative, isStr, rl_safe_eval
+from ast import literal_eval
 
 class Color:
     """This class is used to represent color.  Components red, green, blue
@@ -62,6 +61,7 @@ class Color:
     @property
     def __key__(self):
         '''simple comparison by component; cmyk != color ever
+        >>> from reportlab import cmp
         >>> cmp(Color(0,0,0),None)
         -1
         >>> cmp(Color(0,0,0),black)
@@ -146,7 +146,11 @@ class Color:
     @property
     def normalizedAlpha(self):
         return self.alpha
-if isPy3: Color = functools.total_ordering(Color)
+Color = functools.total_ordering(Color)
+
+def opaqueColor(c):
+    '''utility to check we have a color that's not fully transparent'''
+    return isinstance(c,Color) and c.alpha>0
 
 class CMYKColor(Color):
     """This represents colors using the CMYK (cyan, magenta, yellow, black)
@@ -765,8 +769,7 @@ class cssParse:
     def pcVal(self,v):
         v = v.strip()
         try:
-            c=eval(v[:-1])
-            if not isinstance(c,(float,int)): raise ValueError
+            c=float(v[:-1])
             c=min(100,max(0,c))/100.
         except:
             raise ValueError('bad percentage argument value %r in css color %r' % (v,self.s))
@@ -778,8 +781,8 @@ class cssParse:
     def rgbVal(self,v):
         v = v.strip()
         try:
-            c=eval(v[:])
-            if not isinstance(c,int): raise ValueError
+            c=float(v)
+            if 0<c<=1: c *= 255
             return int(min(255,max(0,c)))/255.
         except:
             raise ValueError('bad argument value %r in css color %r' % (v,self.s))
@@ -787,16 +790,14 @@ class cssParse:
     def hueVal(self,v):
         v = v.strip()
         try:
-            c=eval(v[:])
-            if not isinstance(c,(int,float)): raise ValueError
+            c=float(v)
             return ((c%360+360)%360)/360.
         except:
             raise ValueError('bad hue argument value %r in css color %r' % (v,self.s))
 
     def alphaVal(self,v,c=1,n='alpha'):
         try:
-            a = eval(v.strip())
-            if not isinstance(a,(int,float)): raise ValueError
+            a = float(v)
             return min(c,max(0,a))
         except:
             raise ValueError('bad %s argument value %r in css color %r' % (n,v,self.s))
@@ -834,6 +835,7 @@ class cssParse:
 cssParse=cssParse()
 
 class toColor:
+    _G = {} #globals we like (eventually)
 
     def __init__(self):
         self.extraColorsNS = {} #used for overriding/adding to existing color names
@@ -858,8 +860,18 @@ class toColor:
             C = getAllNamedColors()
             s = arg.lower()
             if s in C: return C[s]
+            G = C.copy()
+            G.update(self.extraColorsNS)
+            if not self._G:
+                C = globals()
+                self._G = {s:C[s] for s in '''Blacker CMYKColor CMYKColorSep Color ColorType HexColor PCMYKColor PCMYKColorSep Whiter
+                    _chooseEnforceColorSpace _enforceCMYK _enforceError _enforceRGB _enforceSEP _enforceSEP_BLACK
+                    _enforceSEP_CMYK _namedColors _re_css asNative cmyk2rgb cmykDistance color2bw colorDistance
+                    cssParse describe fade fp_str getAllNamedColors hsl2rgb hue2rgb isStr linearlyInterpolatedColor
+                    literal_eval obj_R_G_B opaqueColor rgb2cmyk setColors toColor toColorOrNone'''.split()}
+            G.update(self._G)
             try:
-                return toColor(eval(arg))
+                return toColor(rl_safe_eval(arg,g=G,l={}))
             except:
                 pass
 
@@ -1012,7 +1024,7 @@ def _enforceRGB(c):
     return tc
 
 def _chooseEnforceColorSpace(enforceColorSpace):
-    if enforceColorSpace is not None and not isinstance(enforceColorSpace, collections.Callable):
+    if enforceColorSpace is not None and not callable(enforceColorSpace):
         if isinstance(enforceColorSpace,str): enforceColorSpace=enforceColorSpace.upper()
         if enforceColorSpace=='CMYK':
             enforceColorSpace = _enforceCMYK

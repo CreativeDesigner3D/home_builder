@@ -1,6 +1,6 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/textsplit.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/textsplit.py
 
 """Helpers for text wrapping, hyphenation, Asian text splitting and kinsoku shori.
 
@@ -10,7 +10,7 @@ in based on possible knowledge of the language and desirable 'niceness' of the a
 
 """
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 
 from unicodedata import category
 from reportlab.pdfbase.pdfmetrics import stringWidth

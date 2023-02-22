@@ -1,28 +1,17 @@
 import os
-import sys
-
-py3 = sys.version_info.major >= 3
-
-if py3:
-    def isStringType(t):
-        return isinstance(t, str)
-
-    def isPath(f):
-        return isinstance(f, (bytes, str))
-else:
-    def isStringType(t):
-        return isinstance(t, basestring)  # noqa: F821
-
-    def isPath(f):
-        return isinstance(f, basestring)  # noqa: F821
+from pathlib import Path
 
 
-# Checks if an object is a string, and that it points to a directory.
-def isDirectory(f):
-    return isPath(f) and os.path.isdir(f)
+def is_path(f):
+    return isinstance(f, (bytes, str, Path))
 
 
-class deferred_error(object):
+def is_directory(f):
+    """Checks if an object is a string, and that it points to a directory."""
+    return is_path(f) and os.path.isdir(f)
+
+
+class DeferredError:
     def __init__(self, ex):
         self.ex = ex
 

@@ -1,7 +1,4 @@
-from reportlab.lib import colors
-from reportlab.lib.attrmap import *
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.graphics.shapes import Group, Drawing, Ellipse, Wedge, String, STATE_DEFAULTS, Polygon, Line
+from reportlab.graphics.shapes import Drawing, Polygon, Line
 
 def _getShaded(col,shd=None,shading=0.1):
     if shd is None:
@@ -98,7 +95,7 @@ def _make_3d_line_info( G, x0, x1, y0, y1, z0, z1,
         x_0 = x_1
         y_0 = y_1
 
-from math import pi, sin, cos
+from math import pi
 _pi_2 = pi*0.5
 _2pi = 2*pi
 _180_pi=180./pi

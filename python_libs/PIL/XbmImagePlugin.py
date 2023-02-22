@@ -20,19 +20,18 @@
 #
 
 import re
-from . import Image, ImageFile
 
-__version__ = "0.6"
+from . import Image, ImageFile
 
 # XBM header
 xbm_head = re.compile(
-    br"\s*#define[ \t]+.*_width[ \t]+(?P<width>[0-9]+)[\r\n]+"
+    rb"\s*#define[ \t]+.*_width[ \t]+(?P<width>[0-9]+)[\r\n]+"
     b"#define[ \t]+.*_height[ \t]+(?P<height>[0-9]+)[\r\n]+"
     b"(?P<hotspot>"
     b"#define[ \t]+[^_]*_x_hot[ \t]+(?P<xhot>[0-9]+)[\r\n]+"
     b"#define[ \t]+[^_]*_y_hot[ \t]+(?P<yhot>[0-9]+)[\r\n]+"
     b")?"
-    b"[\\000-\\377]*_bits\\[\\]"
+    rb"[\000-\377]*_bits\[]"
 )
 
 
@@ -43,6 +42,7 @@ def _accept(prefix):
 ##
 # Image plugin for X11 bitmaps.
 
+
 class XbmImageFile(ImageFile.ImageFile):
 
     format = "XBM"
@@ -52,38 +52,39 @@ class XbmImageFile(ImageFile.ImageFile):
 
         m = xbm_head.match(self.fp.read(512))
 
-        if m:
+        if not m:
+            msg = "not a XBM file"
+            raise SyntaxError(msg)
 
-            xsize = int(m.group("width"))
-            ysize = int(m.group("height"))
+        xsize = int(m.group("width"))
+        ysize = int(m.group("height"))
 
-            if m.group("hotspot"):
-                self.info["hotspot"] = (
-                    int(m.group("xhot")), int(m.group("yhot"))
-                    )
+        if m.group("hotspot"):
+            self.info["hotspot"] = (int(m.group("xhot")), int(m.group("yhot")))
 
-            self.mode = "1"
-            self._size = xsize, ysize
+        self.mode = "1"
+        self._size = xsize, ysize
 
-            self.tile = [("xbm", (0, 0)+self.size, m.end(), None)]
+        self.tile = [("xbm", (0, 0) + self.size, m.end(), None)]
 
 
 def _save(im, fp, filename):
 
     if im.mode != "1":
-        raise IOError("cannot write mode %s as XBM" % im.mode)
+        msg = f"cannot write mode {im.mode} as XBM"
+        raise OSError(msg)
 
-    fp.write(("#define im_width %d\n" % im.size[0]).encode('ascii'))
-    fp.write(("#define im_height %d\n" % im.size[1]).encode('ascii'))
+    fp.write(f"#define im_width {im.size[0]}\n".encode("ascii"))
+    fp.write(f"#define im_height {im.size[1]}\n".encode("ascii"))
 
     hotspot = im.encoderinfo.get("hotspot")
     if hotspot:
-        fp.write(("#define im_x_hot %d\n" % hotspot[0]).encode('ascii'))
-        fp.write(("#define im_y_hot %d\n" % hotspot[1]).encode('ascii'))
+        fp.write(f"#define im_x_hot {hotspot[0]}\n".encode("ascii"))
+        fp.write(f"#define im_y_hot {hotspot[1]}\n".encode("ascii"))
 
     fp.write(b"static char im_bits[] = {\n")
 
-    ImageFile._save(im, fp, [("xbm", (0, 0)+im.size, 0, None)])
+    ImageFile._save(im, fp, [("xbm", (0, 0) + im.size, 0, None)])
 
     fp.write(b"};\n")
 

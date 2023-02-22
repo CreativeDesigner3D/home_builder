@@ -77,6 +77,20 @@ try:
 except ImportError:
     simpleparse = 1
 
+class smartDecode:
+    @staticmethod
+    def __call__(s):
+        print('initial')
+        import chardet
+        def __call__(s):
+            if isinstance(s,str): return s
+            cdd = chardet.detect(s)
+            print('final')
+            return s.decode(cdd["encoding"])
+        smartDecode.__class__.__call__ = staticmethod(__call__)
+        return  __call__(s)
+smartDecode = smartDecode()
+
 NONAME = ""
 NAMEKEY = 0
 CONTENTSKEY = 1
@@ -146,6 +160,7 @@ def parsexml0(xmltext, startingat=0, toplevel=1,
     """simple recursive descent xml parser...
        return (dictionary, endcharacter)
        special case: comment returns (None, endcharacter)"""
+    xmltext = smartDecode(xmltext)
     #print "parsexml0", repr(xmltext[startingat: startingat+10])
     # DEFAULTS
     NameString = NONAME
@@ -368,11 +383,9 @@ def parsexml0(xmltext, startingat=0, toplevel=1,
     t = (NameString, AttDict, ContentList, ExtraStuff)
     return (t, cursor)
 
-import types
 def pprettyprint(parsedxml):
     """pretty printer mainly for testing"""
-    st = bytes
-    if type(parsedxml) is st:
+    if isinstance(parsedxml,(str,bytes)):
         return parsedxml
     (name, attdict, textlist, extra) = parsedxml
     if not attdict: attdict={}
@@ -396,12 +409,12 @@ def pprettyprint(parsedxml):
     # otherwise must be a simple tag
     return "<%s %s/>" % (name, attributes)
 
-dump = 0
-def testparse(s):
+def testparse(s,dump=0):
     from time import time
     from pprint import pprint
     now = time()
-    D = parsexmlSimple(s)
+    breakpoint()
+    D = parsexmlSimple(s,oneOutermostTag=1)
     print("DONE", time()-now)
     if dump&4:
         pprint(D)
@@ -411,26 +424,29 @@ def testparse(s):
         p = pprettyprint(D)
         print(p)
 
-def test():
+def test(dump=0):
     testparse("""<this type="xml">text &lt;&gt;<b>in</b> <funnytag foo="bar"/> xml</this>
                  <!-- comment -->
                  <![CDATA[
                  <this type="xml">text <b>in</b> xml</this> ]]>
                  <tag with="<brackets in values>">just testing brackets feature</tag>
-                 """)
+                 """,dump=dump)
 
-filenames = [ #"../../reportlab/demos/pythonpoint/pythonpoint.xml",
-              "samples/hamlet.xml"]
-
-#filenames = ["moa.xml"]
-
-dump=1
 if __name__=="__main__":
-    test()
+    test(dump=1)
+    import sys, os
     from time import time
+    import reportlab
     now = time()
-    for f in filenames:
-        t = open(f).read()
-        print("parsing", f)
-        testparse(t)
-    print("elapsed", time()-now)
+    seen = 0
+    for f in sys.argv[1:]:
+        if not os.path.isfile(f):
+            print("!!!!! no file at {f!r}")
+        else:
+            with open(f) as _f:
+                t = _f.read()
+            print(f"parsing {f!r} |t|={len(t)}")
+            testparse(t,dump=1)
+            seen += 1
+    if seen:
+        print(f"timed at {time()-now:.2f} secs.")

@@ -1,8 +1,8 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/pdfmetrics.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/pdfbase/pdfmetrics.py
 #$Header $
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""This provides a database of font metric information and
 efines Font, Encoding and TypeFace classes aimed at end users.
 
@@ -18,10 +18,10 @@ a registry of Font, TypeFace and Encoding objects.  Ideally these
 would be pre-loaded, but due to a nasty circularity problem we
 trap attempts to access them and do it on first access.
 """
-import string, os, sys
+import os, sys, encodings
 from reportlab.pdfbase import _fontdata
 from reportlab.lib.logger import warnOnce
-from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths, isSeq, isStr, isUnicode, isPy3
+from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths, isSeq, isStr
 from reportlab.rl_config import defaultEncoding, T1SearchPath
 from reportlab.lib.rl_accel import unicode2T1, instanceStringWidthT1
 from reportlab.pdfbase import rl_codecs
@@ -34,7 +34,7 @@ standardEncodings = _fontdata.standardEncodings
 _typefaces = {}
 _encodings = {}
 _fonts = {}
-
+_dynFaceNames = {}      #record dynamicFont face names
 
 class FontError(Exception):
     pass
@@ -80,7 +80,10 @@ def parseAFMFile(afmFileName):
             # width
             l, r = widthChunk.split()
             assert l == 'WX', 'bad line in font file %s' % line
-            width = int(r)
+            try:
+                width = int(r)
+            except ValueError:
+                width = float(r)
 
             # name
             l, r = nameChunk.split()
@@ -300,12 +303,13 @@ class Encoding:
         from reportlab.pdfbase import pdfdoc
 
         D = {}
-        baseEnc = getEncoding(self.baseEncodingName)
+        baseEncodingName = self.baseEncodingName
+        baseEnc = getEncoding(baseEncodingName)
         differences = self.getDifferences(baseEnc) #[None] * 256)
 
         # if no differences, we just need the base name
         if differences == []:
-            return pdfdoc.PDFName(self.baseEncodingName)
+            return pdfdoc.PDFName(baseEncodingName)
         else:
             #make up a dictionary describing the new encoding
             diffArray = []
@@ -318,7 +322,9 @@ class Encoding:
 
             #print 'diffArray = %s' % diffArray
             D["Differences"] = pdfdoc.PDFArray(diffArray)
-            D["BaseEncoding"] = pdfdoc.PDFName(self.baseEncodingName)
+            if baseEncodingName in ('MacRomanEncoding','MacExpertEncoding','WinAnsiEncoding'):
+                #https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/PDF32000_2008.pdf page 263
+                D["BaseEncoding"] = pdfdoc.PDFName(baseEncodingName)
             D["Type"] = pdfdoc.PDFName("Encoding")
             PD = pdfdoc.PDFDictionary(D)
             return PD
@@ -340,16 +346,14 @@ class Font:
     _multiByte = 0      # do not want our own stringwidth
     _dynamicFont = 0    # do not want dynamic subsetting
 
-    def __init__(self, name, faceName, encName):
+    def __init__(self, name, faceName, encName, substitutionFonts=None):
         self.fontName = name
         face = self.face = getTypeFace(faceName)
         self.encoding= getEncoding(encName)
         self.encName = encName
-        if face.builtIn and face.requiredEncoding is None:
-            _ = standardT1SubstitutionFonts
-        else:
-            _ = []
-        self.substitutionFonts = _
+        self.substitutionFonts = (standardT1SubstitutionFonts
+                                    if face.builtIn and face.requiredEncoding is None
+                                    else substitutionFonts or [])
         self._calcWidths()
         self._notdefChar = _notdefChar
         self._notdefFont = name=='ZapfDingbats' and self or _notdefFont
@@ -404,7 +408,10 @@ class Font:
         pdfFont.Name = internalName
         pdfFont.BaseFont = self.face.name
         pdfFont.__Comment__ = 'Font %s' % self.fontName
-        pdfFont.Encoding = self.encoding.makePDFObject()
+        e = self.encoding.makePDFObject()
+        if not isStr(e) or e in ('/MacRomanEncoding','/MacExpertEncoding','/WinAnsiEncoding'):
+            #https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/PDF32000_2008.pdf page 255
+            pdfFont.Encoding = e
 
         # is it a built-in one?  if not, need more stuff.
         if not self.face.name in standardFonts:
@@ -427,33 +434,18 @@ PFB_ASCII=chr(1)
 PFB_BINARY=chr(2)
 PFB_EOF=chr(3)
 
-if isPy3:
-    def _pfbCheck(p,d,m,fn):
-        if chr(d[p])!=PFB_MARKER or chr(d[p+1])!=m:
-            raise ValueError('Bad pfb file\'%s\' expected chr(%d)chr(%d) at char %d, got chr(%d)chr(%d)' % (fn,ord(PFB_MARKER),ord(m),p,d[p],d[p+1]))
-        if m==PFB_EOF: return
-        p = p + 2
-        l = (((((d[p+3])<<8)|(d[p+2])<<8)|(d[p+1]))<<8)|(d[p])
-        p = p + 4
-        if p+l>len(d):
-            raise ValueError('Bad pfb file\'%s\' needed %d+%d bytes have only %d!' % (fn,p,l,len(d)))
-        return p, p+l
-else:
-    def _pfbSegLen(p,d):
-        '''compute a pfb style length from the first 4 bytes of string d'''
-        return ((((ord(d[p+3])<<8)|ord(d[p+2])<<8)|ord(d[p+1]))<<8)|ord(d[p])
+def _pfbCheck(p,d,m,fn):
+    if chr(d[p])!=PFB_MARKER or chr(d[p+1])!=m:
+        raise ValueError('Bad pfb file\'%s\' expected chr(%d)chr(%d) at char %d, got chr(%d)chr(%d)' % (fn,ord(PFB_MARKER),ord(m),p,d[p],d[p+1]))
+    if m==PFB_EOF: return
+    p = p + 2
+    l = (((((d[p+3])<<8)|(d[p+2])<<8)|(d[p+1]))<<8)|(d[p])
+    p = p + 4
+    if p+l>len(d):
+        raise ValueError('Bad pfb file\'%s\' needed %d+%d bytes have only %d!' % (fn,p,l,len(d)))
+    return p, p+l
 
-    def _pfbCheck(p,d,m,fn):
-        if d[p]!=PFB_MARKER or d[p+1]!=m:
-            raise ValueError('Bad pfb file\'%s\' expected chr(%d)chr(%d) at char %d, got chr(%d)chr(%d)' % (fn,ord(PFB_MARKER),ord(m),p,ord(d[p]),ord(d[p+1])))
-        if m==PFB_EOF: return
-        p = p + 2
-        l = _pfbSegLen(p,d)
-        p = p + 4
-        if p+l>len(d):
-            raise ValueError('Bad pfb file\'%s\' needed %d+%d bytes have only %d!' % (fn,p,l,len(d)))
-        return p, p+l
-
+_postScriptNames2Unicode = None
 class EmbeddedType1Face(TypeFace):
     """A Type 1 font other than one of the basic 14.
 
@@ -523,11 +515,32 @@ class EmbeddedType1Face(TypeFace):
         # for font-specific encodings like Symbol, Dingbats, Carta we
         # need to make a new encoding as well....
         if topLevel.get('EncodingScheme', None) == 'FontSpecific':
+            global _postScriptNames2Unicode
+            if _postScriptNames2Unicode is None:
+                try:
+                    from reportlab.pdfbase._glyphlist import _glyphname2unicode
+                    _postScriptNames2Unicode = _glyphname2unicode
+                    del _glyphname2unicode
+                except:
+                    _postScriptNames2Unicode = {}
+                    raise ValueError(
+                            "cannot import module reportlab.pdfbase._glyphlist module\n"
+                            "you can obtain a version from here\n"
+                            "https://www.reportlab.com/ftp/_glyphlist.py\n"
+                            )
+
             names = [None] * 256
+            ex = {}
+            rex  = {}
             for (code, width, name) in glyphData:
-                if code >=0 and code <=255:
+                if 0<=code<=255:
                     names[code] = name
-            encName = self.name + 'Encoding'
+                    u = _postScriptNames2Unicode.get(name,None)
+                    if u is not None:
+                        rex[code] = u
+                        ex[u] = code
+            encName = encodings.normalize_encoding('rl-dynamic-%s-encoding' % self.name)
+            rl_codecs.RL_Codecs.add_dynamic_codec(encName,ex,rex)
             self.requiredEncoding = encName
             enc = Encoding(encName, names)
             registerEncoding(enc)
@@ -599,7 +612,20 @@ def registerFont(font):
     "Registers a font, including setting up info for accelerated stringWidth"
     #assert isinstance(font, Font), 'Not a Font: %s' % font
     fontName = font.fontName
-    _fonts[fontName] = font
+    if font._dynamicFont:
+        faceName = font.face.name
+        if fontName not in _fonts:
+            if faceName in _dynFaceNames:
+                ofont = _dynFaceNames[faceName]
+                if not ofont._dynamicFont:
+                    raise ValueError('Attempt to register fonts %r %r for face %r' % (ofont, font, faceName))
+                else:
+                    _fonts[fontName] = ofont
+            else:
+                _dynFaceNames[faceName] = _fonts[fontName] = font
+    else:
+        _fonts[fontName] = font
+
     if font._multiByte:
         # CID fonts don't need to have typeface registered.
         #need to set mappings so it can go in a paragraph even if within
@@ -783,12 +809,14 @@ def _reset(
             _typefaces = _typefaces.copy(),
             _encodings = _encodings.copy(),
             _fonts = _fonts.copy(),
+            _dynFaceNames = _dynFaceNames.copy(),
             )
         ):
     for k,v in initial_dicts.items():
         d=globals()[k]
         d.clear()
         d.update(v)
+    rl_codecs.RL_Codecs.reset_dynamic_codecs()
 
 from reportlab.rl_config import register_reset
 register_reset(_reset)

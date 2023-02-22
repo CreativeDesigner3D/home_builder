@@ -1,18 +1,18 @@
-#Copyright ReportLab Europe Ltd. 2000-2013
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""This modules defines a collection of markers used in charts.
 """
 
-from reportlab.graphics.shapes import Rect, Line, Circle, Polygon, Drawing, Group
+from reportlab.graphics.shapes import Rect, Circle, Polygon, Drawing, Group
 from reportlab.graphics.widgets.signsandsymbols import SmileyFace
 from reportlab.graphics.widgetbase import Widget
 from reportlab.lib.validators import isNumber, isColorOrNone, OneOf, Validator
 from reportlab.lib.attrmap import AttrMap, AttrMapValue
 from reportlab.lib.colors import black
-from reportlab.lib.utils import isFunction, isClass
-from reportlab.graphics.widgets.flags import Flag
+from reportlab.lib.utils import isClass
+from reportlab.graphics.widgets.flags import Flag, _Symbol
 from math import sin, cos, pi
 _toradians = pi/180.0
 
@@ -201,9 +201,7 @@ class Marker(Widget):
         return m
 
 def uSymbol2Symbol(uSymbol,x,y,color):
-    if isFunction(uSymbol):
-        symbol = uSymbol(x, y, 5, color)
-    elif isClass(uSymbol) and issubclass(uSymbol,Widget):
+    if isClass(uSymbol) and issubclass(uSymbol,Widget):
         size = 10.
         symbol = uSymbol()
         symbol.x = x - (size/2)
@@ -213,17 +211,19 @@ def uSymbol2Symbol(uSymbol,x,y,color):
             symbol.color = color
         except:
             pass
-    elif isinstance(uSymbol,Marker) or isinstance(uSymbol,Flag):
+    elif isinstance(uSymbol,Marker) or isinstance(uSymbol,_Symbol):
         symbol = uSymbol.clone()
         if isinstance(uSymbol,Marker): symbol.fillColor = symbol.fillColor or color
         symbol.x, symbol.y = x, y
+    elif callable(uSymbol):
+        symbol = uSymbol(x, y, 5, color)
     else:
         symbol = None
     return symbol
 
 class _isSymbol(Validator):
     def test(self,x):
-        return hasattr(x,'__call__') or isinstance(x,Marker) or isinstance(x,Flag) or (isinstance(x,type) and issubclass(x,Widget))
+        return hasattr(x,'__call__') or isinstance(x,Marker) or isinstance(x,_Symbol) or (isClass(x) and issubclass(x,Widget))
 
 isSymbol = _isSymbol()
 

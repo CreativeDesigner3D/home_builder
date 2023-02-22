@@ -37,7 +37,6 @@ WHO WISH TO REMAIN ANONYMOUS.
 
 ### NOTE: MAKE THE STRING FORMATS DYNAMIC IN PATTERNS TO SUPPORT ENCRYPTION XXXX
 
-import string
 from reportlab.pdfbase.pdfdoc import PDFString, PDFStream, PDFDictionary, PDFName, PDFObject
 from reportlab.lib.colors import obj_R_G_B
 

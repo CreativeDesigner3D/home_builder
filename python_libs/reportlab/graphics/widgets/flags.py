@@ -1,9 +1,9 @@
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/widgets/flags.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/widgets/flags.py
 # Flag Widgets - a collection of flags as widgets
 # author: John Precedo (johnp@reportlab.com)
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""This file is a collection of flag graphics as widgets.
 
 All flags are represented at the ratio of 1:2, even where the official ratio for the flag is something else
@@ -34,7 +34,6 @@ from reportlab.lib import colors
 from reportlab.lib.validators import *
 from reportlab.lib.attrmap import *
 from reportlab.graphics.shapes import Line, Rect, Polygon, Drawing, Group, String, Circle, Wedge
-from reportlab.graphics.widgetbase import Widget
 from reportlab.graphics import renderPDF
 from reportlab.graphics.widgets.signsandsymbols import _Symbol
 import copy

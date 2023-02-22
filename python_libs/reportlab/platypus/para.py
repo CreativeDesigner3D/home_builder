@@ -338,7 +338,7 @@ class paragraphEngine:
                     # advance to nextLine
                     #(i, endallmarks) = opcode
                     line.append(opcode)
-                    cursor = cursor+1 # consume this element
+                    cursor += 1 # consume this element
                     terminated = done = 1
                     #if debug:
                     #    print "nextLine encountered"
@@ -451,7 +451,7 @@ class paragraphEngine:
             else:
                 raise ValueError("op must be string, float, instance, or tuple "+repr(opcode))
             if not done:
-                cursor = cursor+1
+                cursor += 1
                 #first = 0
 ##            if debug:
 ##                if done:
@@ -493,11 +493,13 @@ class paragraphEngine:
         # count EXPANDABLE SPACES AFTER THE FIRST VISIBLE
         spacecount = 0
         visible = 0
+        first = 1
         for e in line:
             if isinstance(e,float) and e>TOOSMALLSPACE and visible:
-                spacecount = spacecount+1
+                spacecount += 1
             elif first and (isinstance(e,str) or hasattr(e,'width')):
                 visible = 1
+                first = 0
         #if debug: print "diff is", diff, "wordcount", wordcount #; die
         if spacecount<1:
             return line
@@ -518,7 +520,7 @@ class paragraphEngine:
             elif isinstance(e,float) and e>TOOSMALLSPACE and visible:
                 expanded = e+shift
                 result[-1] = expanded
-            cursor = cursor+1
+            cursor += 1
         return result
 
 ##                if not first:
@@ -538,7 +540,7 @@ class paragraphEngine:
 ##                            elif debug:
 ##                                print "adding shift before", beforething
 ##                       elif isinstance(beforething,float):
-##                            myshift = myshift + beforething
+##                            myshift += beforething
 ##                            del result[beforeplace]
 ##                        else:
 ##                            done = 1
@@ -546,7 +548,7 @@ class paragraphEngine:
 ##                            insertplace = beforeplace
 ##                    result.insert(insertplace, myshift)
 ##                first = 0
-##            cursor = cursor+1
+##            cursor += 1
 ##        return result
 
     def shrinkWrap(self, line):
@@ -560,7 +562,7 @@ class paragraphEngine:
                 # collect strings and floats
                 thestrings = [e]
                 thefloats = 0.0
-                index = index+1
+                index += 1
                 nexte = line[index]
                 while index<maxindex and isinstance(nexte,(float,str)):
                     # switch to expandable space if appropriate
@@ -569,10 +571,10 @@ class paragraphEngine:
                             thefloats = -thefloats
                         if nexte<0 and thefloats>0:
                             nexte = -nexte
-                        thefloats = thefloats + nexte
+                        thefloats += nexte
                     elif isinstance(nexte,str):
                         thestrings.append(nexte)
-                    index = index+1
+                    index += 1
                     if index<maxindex:
                         nexte = line[index]
                 # wrap up the result
@@ -580,10 +582,10 @@ class paragraphEngine:
                 result.append(s)
                 result.append(float(thefloats))
                 # back up for unhandled element
-                index = index-1
+                index -= 1
             else:
                 result.append(e)
-            index = index+1
+            index += 1
 
         return result
 
@@ -674,7 +676,7 @@ class paragraphEngine:
                         #if debug: print "INDENTING", thislineindent
                         #textobject.moveCursor(thislineindent, 0)
                         code.append('%s Td' % fp_str(thislineindent, 0))
-                        self.x = self.x + thislineindent
+                        self.x += thislineindent
                     for handler in self.lineOpHandlers:
                         #handler.end_at(x, y, self, canvas, textobject) # finish, eg, underlining this line
                         handler.start_at(self.x, self.y, self, canvas, textobject) # start underlining the next
@@ -695,7 +697,7 @@ class paragraphEngine:
                 if opcode>TOOSMALLSPACE:
                     #textobject.moveCursor(opcode, 0)
                     code.append('%s Td' % fp_str(opcode, 0))
-                    self.x = self.x + opcode
+                    self.x += opcode
             elif isinstance(opcode,tuple):
                 indicator = opcode[0]
                 if indicator=="nextLine":
@@ -740,15 +742,14 @@ class paragraphEngine:
                     size = abs(float(fontsize))
                     if isinstance(fontsize,str):
                         if fontsize[:1]=="+":
-                            fontSize = self.fontSize = self.fontSize + size
+                            self.fontSize += size
                         elif fontsize[:1]=="-":
-                            fontSize = self.fontSize = self.fontSize - size
+                            self.fontSize -= size
                         else:
-                            fontSize = self.fontSize = size
+                            self.fontSize = size
                     else:
-                        fontSize = self.fontSize = size
-                    #(i, fontsize) = opcode
-                    self.fontSize = fontSize
+                        self.fontSize = size
+                    fontSize = self.fontSize 
                     textobject.setFont(self.fontName, self.fontSize)
                 elif indicator=="leading":
                     # change font leading
@@ -1059,7 +1060,7 @@ class FastPara(Flowable):
                 nextlength = currentlength + thiswordsize
                 if not currentlength or nextlength<maxlength:
                     # add the word
-                    cursor = cursor+1
+                    cursor += 1
                     currentlength = nextlength
                     currentline.append(thisword)
                     #print "currentline", currentline
@@ -1136,7 +1137,7 @@ class FastPara(Flowable):
         nlines = len(lines)
         while count<nlines:
             (text, length, nwords) = lines[count]
-            count = count+1
+            count += 1
             thisindent = leftIndent
             if first:
                 thisindent = firstindent
@@ -1393,7 +1394,7 @@ class Para(Flowable):
         if style.firstLineIndent:
             count = 0
             for x in program:
-                count = count+1
+                count += 1
                 if isinstance(x,str) or hasattr(x,'width'):
                     break
             program.insert( count, ("indent", -style.firstLineIndent ) ) # defaults to end if no visibles
@@ -1410,7 +1411,7 @@ class Para(Flowable):
 ##            if isinstance(x,tuple):
 ##                i = x[0]
 ##                if i=="push":
-##                    stackcount = stackcount+1
+##                    stackcount += 1
 ##                    print " "*stackcount, "push", stackcount
 ##                if i=="pop":
 ##                    stackcount = stackcount-1
@@ -2011,17 +2012,17 @@ def handleSpecialCharacters(engine, text, program=None):
                     except ValueError:
                         n = -1
                     if n>=0:
-                        fragment = chr(n).encode('utf8')+fragment[semi+1:]
+                        fragment = chr(n)+fragment[semi+1:]
                     else:
                         fragment = "&"+fragment
                 elif name in standard:
                     s = standard[name]
-                    if isinstance(fragment,str):
+                    if isinstance(fragment,bytes):
                         s = s.decode('utf8')
                     fragment = s+fragment[semi+1:]
                 elif name in greeks:
                     s = greeks[name]
-                    if isinstance(fragment,str):
+                    if isinstance(fragment,bytes):
                         s = s.decode('utf8')
                     fragment = s+fragment[semi+1:]
                 else:
@@ -2130,11 +2131,11 @@ This is Text.
 
 <ul>
     <li> this is an element at 1
+more text and even more text &amp; on and on and so forth
+more text and even more text and on &amp; on and so forth
+more text and even more text and on and on &amp; so forth
 more text and even more text and on and on and so forth
-more text and even more text and on and on and so forth
-more text and even more text and on and on and so forth
-more text and even more text and on and on and so forth
-more text and even more text and on and on and so forth
+more text and even more text and on and on and so forth --&gt;
 more text <tt>monospaced</tt> and back to normal
 
     <ul>

@@ -1,17 +1,14 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/__init__.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/platypus/__init__.py
+__version__='3.5.20'
 __doc__='''Page Layout and Typography Using Scripts" - higher-level framework for flowing documents'''
 
-from reportlab.platypus.flowables import Flowable, Image, Macro, PageBreak, Preformatted, Spacer, XBox, \
-                        CondPageBreak, KeepTogether, TraceInfo, FailOnWrap, FailOnDraw, PTOContainer, \
-                        KeepInFrame, ParagraphAndImage, ImageAndFlowables, ListFlowable, ListItem, FrameBG, \
-                        PageBreakIfNotEmpty
-from reportlab.platypus.paragraph import Paragraph, cleanBlockQuotedText, ParaLines
-from reportlab.platypus.paraparser import ParaFrag
-from reportlab.platypus.tables import Table, TableStyle, CellStyle, LongTable
-from reportlab.platypus.frames import Frame
-from reportlab.platypus.doctemplate import BaseDocTemplate, NextPageTemplate, PageTemplate, ActionFlowable, \
-                        SimpleDocTemplate, FrameBreak, PageBegin, Indenter, NotAtTopPageBreak
-from reportlab.platypus.xpreformatted import XPreformatted
+from .flowables import *
+from .frames import *
+from .multicol import *
+from .paragraph import *
+from .paraparser import *
+from .tables import *
+from .doctemplate import *
+from .xpreformatted import *

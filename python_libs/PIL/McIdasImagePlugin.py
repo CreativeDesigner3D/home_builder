@@ -17,9 +17,8 @@
 #
 
 import struct
-from . import Image, ImageFile
 
-__version__ = "0.2"
+from . import Image, ImageFile
 
 
 def _accept(s):
@@ -28,6 +27,7 @@ def _accept(s):
 
 ##
 # Image plugin for McIdas area images.
+
 
 class McIdasImageFile(ImageFile.ImageFile):
 
@@ -39,7 +39,8 @@ class McIdasImageFile(ImageFile.ImageFile):
         # parse area file directory
         s = self.fp.read(256)
         if not _accept(s) or len(s) != 256:
-            raise SyntaxError("not an McIdas area file")
+            msg = "not an McIdas area file"
+            raise SyntaxError(msg)
 
         self.area_descriptor_raw = s
         self.area_descriptor = w = [0] + list(struct.unpack("!64i", s))
@@ -56,13 +57,14 @@ class McIdasImageFile(ImageFile.ImageFile):
             mode = "I"
             rawmode = "I;32B"
         else:
-            raise SyntaxError("unsupported McIdas format")
+            msg = "unsupported McIdas format"
+            raise SyntaxError(msg)
 
         self.mode = mode
         self._size = w[10], w[9]
 
         offset = w[34] + w[15]
-        stride = w[15] + w[10]*w[11]*w[14]
+        stride = w[15] + w[10] * w[11] * w[14]
 
         self.tile = [("raw", (0, 0) + self.size, offset, (rawmode, stride, 1))]
 

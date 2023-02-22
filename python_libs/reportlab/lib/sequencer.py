@@ -1,6 +1,6 @@
-#Copyright ReportLab Europe Ltd. 2000-2013
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""A Sequencer class counts things. It aids numbering and formatting lists."""
 __all__='''Sequencer getSequencer setSequencer'''.split()
 #
@@ -13,7 +13,6 @@ __all__='''Sequencer getSequencer setSequencer'''.split()
 
 _RN_TEMPLATES = [ 0, 0o1, 0o11, 0o111, 0o12, 0o2, 0o21, 0o211, 0o2111, 0o13 ]
 _RN_LETTERS = "IVXLCDM"
-from reportlab import isPy3
 
 def _format_I(value):
     if value < 0 or value > 3999:
@@ -88,14 +87,9 @@ class _Counter:
     def _this(self):
         return self._value
 
-    if isPy3:
-        def nextf(self):
-            """Returns next value formatted"""
-            return self._formatter(next(self))
-    else:
-        def nextf(self):
-            """Returns next value formatted"""
-            return self._formatter(self.__next__())
+    def nextf(self):
+        """Returns next value formatted"""
+        return self._formatter(next(self))
 
     def thisf(self):
         return self._formatter(self._this())
@@ -165,29 +159,21 @@ class Sequencer:
             counter = self._defaultCounter
         return self._getCounter(counter)._this()
 
-    if isPy3:
-        def __next__(self):
-            """Retrieves the numeric value for the given counter, then
-            increments it by one.  New counters start at one."""
-            return next(self._getCounter(self._defaultCounter))
+    def __next__(self):
+        """Retrieves the numeric value for the given counter, then
+        increments it by one.  New counters start at one."""
+        return next(self._getCounter(self._defaultCounter))
 
-        def next(self,counter=None):
-            if not counter:
+    def next(self,counter=None):
+        if not counter:
+            return next(self)
+        else:
+            dc = self._defaultCounter
+            try:
+                self._defaultCounter = counter
                 return next(self)
-            else:
-                dc = self._defaultCounter
-                try:
-                    self._defaultCounter = counter
-                    return next(self)
-                finally:
-                    self._defaultCounter = dc
-    else:
-        def next(self, counter=None):
-            """Retrieves the numeric value for the given counter, then
-            increments it by one.  New counters start at one."""
-            if not counter:
-                counter = self._defaultCounter
-            return self._getCounter(counter).next()
+            finally:
+                self._defaultCounter = dc
 
     def thisf(self, counter=None):
         if not counter:

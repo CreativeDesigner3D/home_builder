@@ -17,12 +17,9 @@
 #
 
 
-from . import Image, TiffImagePlugin
-
 import olefile
 
-__version__ = "0.1"
-
+from . import Image, TiffImagePlugin
 
 #
 # --------------------------------------------------------------------
@@ -34,6 +31,7 @@ def _accept(prefix):
 
 ##
 # Image plugin for Microsoft's Image Composer file format.
+
 
 class MicImageFile(TiffImagePlugin.TiffImageFile):
 
@@ -48,8 +46,9 @@ class MicImageFile(TiffImagePlugin.TiffImageFile):
 
         try:
             self.ole = olefile.OleFileIO(self.fp)
-        except IOError:
-            raise SyntaxError("not an MIC file; invalid OLE file")
+        except OSError as e:
+            msg = "not an MIC file; invalid OLE file"
+            raise SyntaxError(msg) from e
 
         # find ACI subfiles with Image members (maybe not the
         # best way to identify MIC files, but what the... ;-)
@@ -62,31 +61,26 @@ class MicImageFile(TiffImagePlugin.TiffImageFile):
         # if we didn't find any images, this is probably not
         # an MIC file.
         if not self.images:
-            raise SyntaxError("not an MIC file; no image entries")
+            msg = "not an MIC file; no image entries"
+            raise SyntaxError(msg)
 
-        self.__fp = self.fp
         self.frame = None
+        self._n_frames = len(self.images)
+        self.is_animated = self._n_frames > 1
 
         if len(self.images) > 1:
-            self.category = Image.CONTAINER
+            self._category = Image.CONTAINER
 
         self.seek(0)
-
-    @property
-    def n_frames(self):
-        return len(self.images)
-
-    @property
-    def is_animated(self):
-        return len(self.images) > 1
 
     def seek(self, frame):
         if not self._seek_check(frame):
             return
         try:
             filename = self.images[frame]
-        except IndexError:
-            raise EOFError("no such frame")
+        except IndexError as e:
+            msg = "no such frame"
+            raise EOFError(msg) from e
 
         self.fp = self.ole.openstream(filename)
 
@@ -96,15 +90,6 @@ class MicImageFile(TiffImagePlugin.TiffImageFile):
 
     def tell(self):
         return self.frame
-
-    def _close__fp(self):
-        try:
-            if self.__fp != self.fp:
-                self.__fp.close()
-        except AttributeError:
-            pass
-        finally:
-            self.__fp = None
 
 
 #

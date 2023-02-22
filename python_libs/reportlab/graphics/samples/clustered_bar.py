@@ -2,7 +2,7 @@
 from reportlab.graphics.charts.legends import Legend
 from reportlab.graphics.samples.excelcolors import *
 from reportlab.graphics.charts.barcharts import HorizontalBarChart
-from reportlab.graphics.shapes import Drawing, _DrawingEditorMixin, String
+from reportlab.graphics.shapes import Drawing, _DrawingEditorMixin
 from reportlab.graphics.charts.textlabels import Label
 
 class ClusteredBar(_DrawingEditorMixin,Drawing):

@@ -1,9 +1,9 @@
-    #Copyright ReportLab Europe Ltd. 2000-2004
+    #Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/spider.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/charts/spider.py
 # spider chart, also known as radar chart
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""Spider Chart
 
 Normal use shows variation of 5-10 parameters against some 'norm' or target.
@@ -11,23 +11,18 @@ When there is more than one series, place the series with the largest
 numbers first, as it will be overdrawn by each successive one.
 """
 
-import copy
 from math import sin, cos, pi
 
 from reportlab.lib import colors
-from reportlab.lib.validators import isColor, isNumber, isListOfNumbersOrNone,\
-                                    isListOfNumbers, isColorOrNone, isString,\
-                                    isListOfStringsOrNone, OneOf, SequenceOf,\
-                                    isBoolean, isListOfColors, isNumberOrNone,\
-                                    isNoneOrListOfNoneOrStrings, isTextAnchor,\
-                                    isNoneOrListOfNoneOrNumbers, isBoxAnchor,\
+from reportlab.lib.validators import isNumber, isListOfNumbersOrNone,\
+                                    isColorOrNone, isListOfStringsOrNone, OneOf,\
+                                    isBoolean, isNumberOrNone,\
                                     isStringOrNone, isStringOrNone, EitherOr,\
                                     isCallable
 from reportlab.lib.attrmap import *
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.graphics.shapes import Group, Drawing, Line, Rect, Polygon, PolyLine, Ellipse, \
-    Wedge, String, STATE_DEFAULTS
-from reportlab.graphics.widgetbase import Widget, TypedPropertyCollection, PropHolder
+from reportlab.graphics.shapes import Group, Drawing, Line, Rect, Polygon, PolyLine, \
+    STATE_DEFAULTS
+from reportlab.graphics.widgetbase import TypedPropertyCollection, PropHolder
 from reportlab.graphics.charts.areas import PlotArea
 from reportlab.graphics.charts.legends import _objStr
 from reportlab.graphics.charts.piecharts import WedgeLabel

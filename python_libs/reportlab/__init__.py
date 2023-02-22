@@ -1,29 +1,29 @@
-#Copyright ReportLab Europe Ltd. 2000-2015
+#Copyright ReportLab Europe Ltd. 2000-2021
 #see license.txt for license details
 __doc__="""The Reportlab PDF generation library."""
-Version = "3.2.0"
+Version = "3.6.12"
 __version__=Version
+__date__='20220803'
 
-import sys, os, imp
+import sys, os
 
-if sys.version_info[0:2]!=(2, 7) and sys.version_info<(3, 3):
-    raise ImportError("""reportlab requires Python 2.7+ or 3.3+; 3.0-3.2 are not supported.""")
+__min_python_version__ = (3,7)
+if sys.version_info< __min_python_version__:
+    raise ImportError("""reportlab requires %s.%s+; other versions are unsupported.
+If you want to try with other python versions edit line 10 of reportlab/__init__
+to remove this error.""" % (__min_python_version__))
 
 #define these early in reportlab's life
-isPy3 = sys.version_info[0]==3
-if isPy3:
-    def cmp(a,b):
-        return -1 if a<b else (1 if a>b else 0)
+def cmp(a,b):
+    return -1 if a<b else (1 if a>b else 0)
 
-    import builtins
-    builtins.cmp = cmp
-    builtins.xrange = range
-    del cmp, builtins
-else:
-    from future_builtins import ascii
-    import __builtin__
-    __builtin__.ascii = ascii
-    del ascii, __builtin__
+def _fake_import(fn,name):
+    from importlib import machinery
+    m = machinery.SourceFileLoader(name,fn)
+    try:
+        sys.modules[name] = m.load_module(name)
+    except FileNotFoundError:
+        raise ImportError('file %s not found' % ascii(fn))
 
 #try to use dynamic modifications from
 #reportlab.local_rl_mods.py
@@ -33,15 +33,10 @@ try:
 except ImportError:
     pass
 
-def _fake_import(fn,name):
-    if os.path.isfile(fn):
-        with open(fn,'rb') as f:
-            imp.load_source(name,fn,f)
-
 try:
     import reportlab_mods   #application specific modifications can be anywhere on python path
 except ImportError:
     try:
         _fake_import(os.path.expanduser(os.path.join('~','.reportlab_mods')),'reportlab_mods')
-    except (ImportError,KeyError):
+    except (ImportError,KeyError,PermissionError):
         pass

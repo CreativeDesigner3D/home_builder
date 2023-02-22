@@ -167,6 +167,7 @@ setmap = {
     'START_B' : (startb, setb, seta),
     'START_C' : (startc, setc, None),
 }
+cStarts = ('START_B','TO_A','TO_B')
 tos = list(setmap.keys())
 
 class Code128(MultiWidthBarcode):
@@ -246,29 +247,68 @@ class Code128(MultiWidthBarcode):
         self.validated = vval
         return vval
 
-    def _trailingDigitsToC(self, l):
-        # Optimization: trailing digits -> set C double-digits
-        c = 1
-        savings = -1 # the TO_C costs one character
-        rl = ['STOP']
-        while c < len(l):
-            i = (-c - 1)
-            if l[i] == '\xf1':
-                c += 1
-                rl.insert(0, '\xf1')
-                continue
-            elif len(l[i]) == 1 and l[i] in digits \
-             and len(l[i-1]) == 1 and l[i-1] in digits:
-                c += 2
-                savings += 1
-                rl.insert(0, l[i-1] + l[i])
-                continue
+
+    def _try_TO_C(self, l):
+        '''Improved version of old _trailingDigitsToC(self, l) inspired by'''
+        i = 0
+        nl = []
+        while i < len(l):
+            startpos = i
+            rl = []
+            savings = -1 # the TO_C costs one character
+            while i < len(l):
+                if l[i] in cStarts:
+                    j = i
+                    break
+                elif l[i] == '\xf1':
+                    rl.append(l[i])
+                    i += 1
+                    continue
+                elif l[i] in digits \
+                    and l[i+1] in digits:
+                    rl.append(l[i] + l[i+1])
+                    i += 2
+                    savings += 1
+                    continue
+                else:
+                    if l[i] in digits and l[i+1]=='STOP':
+                        rrl = []
+                        rsavings = -1   #we need a TO_C
+                        k = i
+                        while k>startpos:
+                            if l[k]=='\xf1':
+                                rrl.append(l[i])
+                                k -= 1
+                            elif l[k] in digits and l[k-1] in digits:
+                                rrl.append(l[k-1]+l[k])
+                                rsavings += 1
+                                k -= 2
+                            else:
+                                break
+                        rrl.reverse()
+                        if rsavings>savings+int(savings>=0 and (startpos and nl[-1] in cStarts))-1:
+                            nl += l[startpos]
+                            startpos += 1
+                            rl = rrl
+                            del rrl
+                            i += 1
+                    break
+            ta = not (l[i]=='STOP' or j==i)
+            xs = savings>=0 and (startpos and nl[-1] in cStarts)
+            if savings+int(xs) > int(ta):
+                if xs:
+                    toc = nl[-1][:-1]+'C'
+                    del nl[-1]
+                else:
+                    toc = 'TO_C'
+                nl += [toc]+rl
+                if ta:
+                    nl.append('TO'+l[j][-2:])
+                nl.append(l[i])
             else:
-                break
-        if savings > 0:
-            return l[:-c] + ['TO_C'] + rl
-        else:
-            return l
+                nl += l[startpos:i+1]
+            i += 1
+        return nl
 
     def encode(self):
         # First, encode using only B
@@ -281,7 +321,7 @@ class Code128(MultiWidthBarcode):
                 l.append(c)
         l.append('STOP')
 
-        l = self._trailingDigitsToC(l)
+        l = self._try_TO_C(l)
 
         # Finally, replace START_X,TO_Y with START_Y
         if l[1] in tos:
@@ -319,3 +359,102 @@ class Code128(MultiWidthBarcode):
 
     def _humanText(self):
         return self.value
+
+class Code128Auto(Code128):
+    '''contributed by https://bitbucket.org/kylemacfarlane/
+    see https://bitbucket.org/rptlab/reportlab/issues/69/implementations-of-code-128-auto-and-data
+    '''
+    def encode(self):
+        s = self.validated
+
+        current_set = None
+        l = []
+        value = list(s)
+        while value:
+            c = value.pop(0)
+            if c in digits and value and value[0] in digits:
+                c += value.pop(0)
+
+            if c in setc:
+                set_ = 'C'
+            elif c in setb:
+                set_ = 'B'
+            else:
+                set_ = 'A'
+
+            if current_set != set_:
+                if current_set:
+                    l.append('TO_' + set_)
+                else:
+                    l.append('START_' + set_)
+                current_set = set_
+
+            l.append(c)
+        l.append('STOP')
+
+        start, set, shset = setmap[l[0]]
+        e = [start]
+
+        l = l[1:-1]
+        while l:
+            c = l[0]
+            if c == 'SHIFT':
+                e = e + [set[c], shset[l[1]]]
+                l = l[2:]
+            elif c in tos:
+                e.append(set[c])
+                set, shset = setmap[c]
+                l = l[1:]
+            else:
+                e.append(set[c])
+                l = l[1:]
+
+        c = e[0]
+        for i in range(1, len(e)):
+            c = c + i * e[i]
+        self.encoded = e + [c % 103, stop]
+        return self.encoded
+
+if __name__=='__main__':
+    def main():
+        from reportlab.graphics.barcode.code128 import Code128
+        from reportlab.platypus import Spacer, SimpleDocTemplate
+        from reportlab.lib.units import inch
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus.paragraph import Paragraph
+        from reportlab.platypus.flowables import KeepTogether
+        styles = getSampleStyleSheet()
+        styleN = styles['Normal']
+        styleH = styles['Heading1']
+        story = []
+        storyAdd = story.append
+        for s in (
+            'BBBB123456BBB',
+            'BBBB12345BBB',
+            'BBBB1234BBB',
+            'BBBB123BBB',
+            'BBBB12BBB',
+            'BBBB1BBB',
+            'BBBB123456aa',
+            'BBBB1234aa',
+            'BBBB123aa',
+            'BBBB12aa',
+            'BBBB1aa',
+            'BBBB123456',
+            'BBBB12345',
+            'BBBB1234',
+            'BBBB123',
+            'BBBB12',
+            'BBBB1',
+            '\xf11234B',
+            'Ba\xf11234B',
+            'Ba12',
+            'Ba123B',
+            'Ba1234B',
+            'BBBB1234567',
+            'BBBB1234567aa',
+            ):
+            storyAdd(KeepTogether([Paragraph('Code 128 %r' % s, styleN),Code128(s)]))
+            storyAdd(Spacer(inch,inch))
+        SimpleDocTemplate('code128-out.pdf').build(story)
+    main()

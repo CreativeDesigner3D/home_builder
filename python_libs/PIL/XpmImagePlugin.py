@@ -16,13 +16,12 @@
 
 
 import re
-from . import Image, ImageFile, ImagePalette
-from ._binary import i8, o8
 
-__version__ = "0.2"
+from . import Image, ImageFile, ImagePalette
+from ._binary import o8
 
 # XPM header
-xpm_head = re.compile(b"\"([0-9]*) ([0-9]*) ([0-9]*) ([0-9]*)")
+xpm_head = re.compile(b'"([0-9]*) ([0-9]*) ([0-9]*) ([0-9]*)')
 
 
 def _accept(prefix):
@@ -32,6 +31,7 @@ def _accept(prefix):
 ##
 # Image plugin for X11 pixel maps.
 
+
 class XpmImageFile(ImageFile.ImageFile):
 
     format = "XPM"
@@ -40,13 +40,15 @@ class XpmImageFile(ImageFile.ImageFile):
     def _open(self):
 
         if not _accept(self.fp.read(9)):
-            raise SyntaxError("not an XPM file")
+            msg = "not an XPM file"
+            raise SyntaxError(msg)
 
         # skip forward to next string
         while True:
             s = self.fp.readline()
             if not s:
-                raise SyntaxError("broken XPM file")
+                msg = "broken XPM file"
+                raise SyntaxError(msg)
             m = xpm_head.match(s)
             if m:
                 break
@@ -57,22 +59,23 @@ class XpmImageFile(ImageFile.ImageFile):
         bpp = int(m.group(4))
 
         if pal > 256 or bpp != 1:
-            raise ValueError("cannot read this XPM file")
+            msg = "cannot read this XPM file"
+            raise ValueError(msg)
 
         #
         # load palette description
 
         palette = [b"\0\0\0"] * 256
 
-        for i in range(pal):
+        for _ in range(pal):
 
             s = self.fp.readline()
-            if s[-2:] == b'\r\n':
+            if s[-2:] == b"\r\n":
                 s = s[:-2]
-            elif s[-1:] in b'\r\n':
+            elif s[-1:] in b"\r\n":
                 s = s[:-1]
 
-            c = i8(s[1])
+            c = s[1]
             s = s[2:-2].split()
 
             for i in range(0, len(s), 2):
@@ -80,29 +83,31 @@ class XpmImageFile(ImageFile.ImageFile):
                 if s[i] == b"c":
 
                     # process colour key
-                    rgb = s[i+1]
+                    rgb = s[i + 1]
                     if rgb == b"None":
                         self.info["transparency"] = c
-                    elif rgb[0:1] == b"#":
+                    elif rgb[:1] == b"#":
                         # FIXME: handle colour names (see ImagePalette.py)
                         rgb = int(rgb[1:], 16)
-                        palette[c] = (o8((rgb >> 16) & 255) +
-                                      o8((rgb >> 8) & 255) +
-                                      o8(rgb & 255))
+                        palette[c] = (
+                            o8((rgb >> 16) & 255) + o8((rgb >> 8) & 255) + o8(rgb & 255)
+                        )
                     else:
                         # unknown colour
-                        raise ValueError("cannot read this XPM file")
+                        msg = "cannot read this XPM file"
+                        raise ValueError(msg)
                     break
 
             else:
 
                 # missing colour key
-                raise ValueError("cannot read this XPM file")
+                msg = "cannot read this XPM file"
+                raise ValueError(msg)
 
         self.mode = "P"
         self.palette = ImagePalette.raw("RGB", b"".join(palette))
 
-        self.tile = [("raw", (0, 0)+self.size, self.fp.tell(), ("P", 0, 1))]
+        self.tile = [("raw", (0, 0) + self.size, self.fp.tell(), ("P", 0, 1))]
 
     def load_read(self, bytes):
 
@@ -114,9 +119,10 @@ class XpmImageFile(ImageFile.ImageFile):
         s = [None] * ysize
 
         for i in range(ysize):
-            s[i] = self.fp.readline()[1:xsize+1].ljust(xsize)
+            s[i] = self.fp.readline()[1 : xsize + 1].ljust(xsize)
 
         return b"".join(s)
+
 
 #
 # Registry

@@ -1,4 +1,4 @@
-from reportlab.lib.colors import blue, _PCMYK_black
+from reportlab.lib.colors import _PCMYK_black
 from reportlab.graphics.charts.textlabels import Label
 from reportlab.graphics.shapes import Circle, Drawing, Group, Line, Rect, String
 from reportlab.graphics.widgetbase import Widget

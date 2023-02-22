@@ -7,18 +7,19 @@ objects download the svglib module here:
   http://python.net/~gherman/#svglib
 """
 
-import math, types, sys, os, codecs
-from operator import getitem
+import math, sys, os, codecs, base64
+from io import BytesIO, StringIO
 
 from reportlab.pdfbase.pdfmetrics import stringWidth # for font info
 from reportlab.lib.rl_accel import fp_str
-from reportlab.lib.colors import black
 from reportlab.lib.utils import asNative
-from reportlab.graphics.renderbase import StateTracker, getStateDelta, Renderer, renderScaledDrawing
+from reportlab.graphics.renderbase import getStateDelta, Renderer, renderScaledDrawing
 from reportlab.graphics.shapes import STATE_DEFAULTS, Path, UserNode
 from reportlab.graphics.shapes import * # (only for test0)
 from reportlab import rl_config
-from reportlab.lib.utils import getBytesIO, RLString, isPy3, isUnicode, isBytes
+from reportlab.lib.utils import RLString, isUnicode, isBytes
+from reportlab.pdfgen.canvas import FILL_EVEN_ODD, FILL_NON_ZERO
+from .renderPM import _getImage
 
 from xml.dom import getDOMImplementation
 
@@ -28,14 +29,16 @@ sin = math.sin
 cos = math.cos
 pi = math.pi
 
-AREA_STYLES = 'stroke-width stroke-linecap stroke stroke-opacity fill fill-opacity stroke-dasharray id'.split()
-LINE_STYLES = 'stroke-width stroke-linecap stroke stroke-opacity stroke-dasharray id'.split()
+AREA_STYLES = 'stroke-width stroke-linecap stroke stroke-opacity fill fill-opacity stroke-dasharray stroke-dashoffset fill-rule id'.split()
+LINE_STYLES = 'stroke-width stroke-linecap stroke stroke-opacity stroke-dasharray stroke-dashoffset id'.split()
 TEXT_STYLES = 'font-family font-weight font-style font-variant font-size id'.split()
+EXTRA_STROKE_STYLES = 'stroke-width stroke-linecap stroke stroke-opacity stroke-dasharray stroke-dashoffset'.split()
+EXTRA_FILL_STYLES = 'fill fill-opacity'.split()
 
 ### top-level user function ###
 def drawToString(d, showBoundary=rl_config.showBoundary,**kwds):
     "Returns a SVG as a string in memory, without touching the disk"
-    s = getBytesIO()
+    s = StringIO()
     drawToFile(d, s, showBoundary=showBoundary,**kwds)
     return s.getvalue()
 
@@ -132,6 +135,18 @@ class EncodedWriter(list):
         del self[:]
         return r
 
+_fillRuleMap = {
+        FILL_NON_ZERO: 'nonzero',
+        'non-zero': 'nonzero',
+        'nonzero': 'nonzero',
+        FILL_EVEN_ODD: 'evenodd',
+        'even-odd': 'evenodd',
+        'evenodd': 'evenodd',
+        }
+
+def py_fp_str(*args):
+    return ' '.join((('%f' % a).rstrip('0').rstrip('.') for a in args))
+
 ### classes ###
 class SVGCanvas:
     def __init__(self, size=(300,300), encoding='utf-8', verbose=0, bom=False, **kwds):
@@ -150,6 +165,7 @@ class SVGCanvas:
         self.fontHacks = kwds.pop('fontHacks',{})
         self.extraXmlDecl = kwds.pop('extraXmlDecl','')
         scaleGroupId = kwds.pop('scaleGroupId','')
+        self._fillMode = FILL_EVEN_ODD
 
         self.width, self.height = self.size = size
         # self.height = size[1]
@@ -158,7 +174,12 @@ class SVGCanvas:
         self.path = ''
         self._strokeColor = self._fillColor = self._lineWidth = \
             self._font = self._fontSize = self._lineCap = \
-            self._lineJoin = self._color = None
+            self._lineJoin = None
+        if kwds.pop('use_fp_str',False):
+            self.fp_str = fp_str
+        else:
+            self.fp_str = py_fp_str
+        self.cfp_str = lambda *args: self.fp_str(*args).replace(' ',',')
 
         implementation = getDOMImplementation('minidom')
         #Based on official example here http://www.w3.org/TR/SVG10/linking.html want:
@@ -189,6 +210,7 @@ class SVGCanvas:
                     xmlns="http://www.w3.org/2000/svg",
                     version="1.0",
                     )
+        svgAttrs['fill-rule'] = _fillRuleMap[self._fillMode]
         svgAttrs["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
         svgAttrs.update(kwds.pop('svgAttrs',{}))
         for k,v in svgAttrs.items():
@@ -242,16 +264,13 @@ class SVGCanvas:
         if hasattr(fn,'write'):
             f = fn
         else:
-            if isPy3:
-                f = open(fn, 'w',encoding=self.encoding)
-            else:
-                f = open(fn, 'w')
+            f = open(fn, 'w',encoding=self.encoding)
 
         svg = writer.getvalue()
         exd = self.extraXmlDecl
         if exd:
             svg = svg.replace('?>','?>'+exd)
-        f.write(svg if isPy3 else svg.encode(self.encoding))
+        f.write(svg)
         if f is not fn:
             f.close()
 
@@ -280,13 +299,8 @@ class SVGCanvas:
         return '; '.join(items) + ';'
 
     def _escape(self, s):
-        """
-        return a copy of string s with special characters in postscript strings
-        escaped with backslashes.
-        Have not handled characters that are converted normally in python strings
-        i.e. \\n -> newline
-        """
-        return s.replace(chr(0x5C), r'\\' ).replace('(', '\(' ).replace(')', '\)')
+        '''I don't think this was ever needed; seems to have been copied from renderPS'''
+        return s
 
     def _genArcCode(self, x1, y1, x2, y2, startAng, extent):
         """Calculate the path for an arc inscribed in rectangle defined
@@ -310,9 +324,13 @@ class SVGCanvas:
 
         return codeline % data
 
-    def _fillAndStroke(self, code, clip=0, link_info=None,styles=AREA_STYLES):
+    def _fillAndStroke(self, code, clip=0, link_info=None,styles=AREA_STYLES,fillMode=None):
+        xtra = {}
+        if fillMode:
+            xtra['fill-rule'] = _fillRuleMap[fillMode]
         path = transformNode(self.doc, "path",
-            d=self.path, style=self._formatStyle(styles))
+            d=self.path, style=self._formatStyle(styles),
+            )
         if link_info :
             path = self._add_link(path, link_info)
         self.currGroup.appendChild(path)
@@ -339,11 +357,12 @@ class SVGCanvas:
             self.style['stroke-dasharray'] = ', '.join(map(str, ([array, phase])))
         elif isinstance(array,(tuple,list)) and len(array) > 0:
             assert phase >= 0, "phase is a length in user space"
-            self.style['stroke-dasharray'] = ', '.join(map(str, (array+[phase])))
+            self.style['stroke-dasharray'] = ', '.join(map(str, array))
+            if phase>0:
+                self.style['stroke-dashoffset'] = str(phase)
 
     def setStrokeColor(self, color):
         self._strokeColor = color
-        self.setColor(color)
         if color == None:
             self.style['stroke'] = 'none'
         else:
@@ -355,13 +374,8 @@ class SVGCanvas:
             elif 'stroke-opacity' in self.style:
                 del self.style['stroke-opacity']
 
-    def setColor(self, color):
-        if self._color != color:
-            self._color = color
-
     def setFillColor(self, color):
         self._fillColor = color
-        self.setColor(color)
         if color == None:
             self.style['fill'] = 'none'
         else:
@@ -372,6 +386,10 @@ class SVGCanvas:
                 self.style['fill-opacity'] = '%s' % alpha
             elif 'fill-opacity' in self.style:
                 del self.style['fill-opacity']
+
+    def setFillMode(self, v):
+        self._fillMode = v
+        self.style['fill-rule'] = _fillRuleMap[v]
 
     def setLineWidth(self, width):
         if width != self._lineWidth:
@@ -429,7 +447,6 @@ class SVGCanvas:
         These should have x1<x2, y1<y2, rx>0, and ry>0.
         """
 
-        kwds = {}
         rect = transformNode(self.doc, "rect",
             x=x1, y=y1, width=x2-x1, height=y2-y1, rx=rx, ry=ry,
             style=self._formatStyle(AREA_STYLES), **_svgAttrs)
@@ -439,17 +456,38 @@ class SVGCanvas:
 
         self.currGroup.appendChild(rect)
 
-    def drawString(self, s, x, y, angle=0, link_info=None,**_svgAttrs):
+    def drawString(self, s, x, y, angle=0, link_info=None, text_anchor='left', textRenderMode=0, **_svgAttrs):
+        if textRenderMode==3: return    #invisible
         s = asNative(s)
         if self.verbose: print("+++ SVGCanvas.drawString")
+        needFill = textRenderMode==0 or textRenderMode==2 or textRenderMode==4 or textRenderMode==6
+        needStroke = textRenderMode==1 or textRenderMode==2 or textRenderMode==5 or textRenderMode==6
 
-        if self._fillColor != None:
-            self.setColor(self._fillColor)
+        if (self._fillColor!=None and needFill) or (self._strokeColor!=None and needStroke):
+            if not text_anchor in ['start', 'inherited', 'left']:
+                textLen = stringWidth(s,self._font,self._fontSize)
+                if text_anchor=='end':
+                    x -= textLen
+                elif text_anchor=='middle':
+                    x -= textLen/2.
+                elif text_anchor=='numeric':
+                    x -= numericXShift(text_anchor,s,textLen,self._font,self._fontSize)
+                else:
+                    raise ValueError('bad value for text_anchor ' + str(text_anchor))
             s = self._escape(s)
             st = self._formatStyle(TEXT_STYLES)
             if angle != 0:
-               st = st + " rotate(%f %f %f);" % (angle, x, y)
-            st = st + " fill: %s;" % self.style['fill']
+               st = st + " rotate(%s);" % self.fp_str(angle, x, y)
+            if needFill:
+                st += self._formatStyle(EXTRA_FILL_STYLES)
+            else:
+                st += " fill:none;"
+            if needStroke:
+                st += self._formatStyle(EXTRA_STROKE_STYLES)
+            else:
+                st += " stroke:none;"
+            #if textRenderMode>=4:
+            #   _gstate_clipPathSetOrAddself, -1, 1, 0  /*we are adding*/
             text = transformNode(self.doc, "text",
                 x=x, y=y, style=st,
                 transform="translate(0,%d) scale(1,-1)" % (2*y),
@@ -463,24 +501,17 @@ class SVGCanvas:
     
             self.currGroup.appendChild(text)
 
-    def drawCentredString(self, s, x, y, angle=0, text_anchor='middle', link_info=None):
+    def drawCentredString(self, s, x, y, angle=0, text_anchor='middle',
+            link_info=None, textRenderMode=0, **_svgAttrs):
         if self.verbose: print("+++ SVGCanvas.drawCentredString")
+        self.drawString(s,x,y,angle=angle, link_info=link_info, text_anchor=text_anchor,
+                textRenderMode=textRenderMode, **_svgAttrs)
 
-        if self._fillColor != None:
-            if not text_anchor in ['start', 'inherited']:
-                textLen = stringWidth(s,self._font,self._fontSize)
-                if text_anchor=='end':
-                    x -= textLen
-                elif text_anchor=='middle':
-                    x -= textLen/2.
-                elif text_anchor=='numeric':
-                    x -= numericXShift(text_anchor,s,textLen,self._font,self._fontSize)
-                else:
-                    raise ValueError('bad value for text_anchor ' + str(text_anchor))
-        self.drawString(x,y,text,angle=angle, link_info=link_info)
-
-    def drawRightString(self, text, x, y, angle=0, link_info=None):
-        self.drawCentredString(text,x,y,angle=angle,text_anchor='end', link_info=link_info)
+    def drawRightString(self, text, x, y, angle=0,text_anchor='end',
+            link_info=None, textRenderMode=0, **_svgAttrs):
+        if self.verbose: print("+++ SVGCanvas.drawRightString")
+        self.drawString(text,x,y,angle=angle, link_info=link_info, text_anchor=text_anchor,
+                textRenderMode=textRenderMode, **_svgAttrs)
 
     def comment(self, data):
         "Add a comment."
@@ -488,8 +519,17 @@ class SVGCanvas:
         comment = self.doc.createComment(data)
         # self.currGroup.appendChild(comment)
 
-    def drawImage(self, image, x1, y1, x2=None, y2=None):
-        pass
+    def drawImage(self, image, x, y, width, height, embed=True):
+        buf = BytesIO()
+        image.save(buf,'png')
+        buf = asNative(base64.b64encode(buf.getvalue()))
+        self.currGroup.appendChild(
+                transformNode(self.doc,'image',
+                    x=x,y=y,width=width,height=height,
+                    href="data:image/png;base64,"+buf,
+                    transform="matrix(%s)" % self.cfp_str(1,0,0,-1,0,height+2*y),
+                    )
+                )
 
     def line(self, x1, y1, x2, y2):
         if self._strokeColor != None:
@@ -499,7 +539,7 @@ class SVGCanvas:
                     style=self._formatStyle(LINE_STYLES))
                 self.currGroup.appendChild(line)
             path = transformNode(self.doc, "path",
-                d="M %f,%f L %f,%f Z" % (x1,y1,x2,y2),
+                d="M %s L %s Z" % (self.cfp_str(x1,y1),self.cfp_str(x2,y2)),
                 style=self._formatStyle(LINE_STYLES))
             self.currGroup.appendChild(path)
 
@@ -508,7 +548,6 @@ class SVGCanvas:
 
         These should have x1<x2 and y1<y2.
         """
-
         ellipse = transformNode(self.doc, "ellipse",
             cx=(x1+x2)/2.0, cy=(y1+y2)/2.0, rx=(x2-x1)/2.0, ry=(y2-y1)/2.0,
             style=self._formatStyle(AREA_STYLES))
@@ -535,10 +574,8 @@ class SVGCanvas:
         codeline = '%s m %s curveto'
         data = (fp_str(x1, y1), fp_str(x2, y2, x3, y3, x4, y4))
         if self._fillColor != None:
-            self.setColor(self._fillColor)
             self.code.append((codeline % data) + ' eofill')
         if self._strokeColor != None:
-            self.setColor(self._strokeColor)
             self.code.append((codeline % data)
                             + ((closed and ' closepath') or '')
                             + ' stroke')
@@ -558,33 +595,30 @@ class SVGCanvas:
         ax = rx * cos((startAng+extent)*pi/180) + cx
         ay = ry * sin((startAng+extent)*pi/180) + cy
 
-        str = ''
+        cfp_str = self.cfp_str
+        s = [].append
         if fromcenter:
-            str = str + "M %f, %f L %f, %f " % (cx, cy, ax, ay)
+            s("M %s L %s" % (cfp_str(cx, cy), cfp_str(ax, ay)))
 
         if fromcenter:
-            str = str + "A %f, %f %d %d %d %f, %f " % \
-              (rx, ry, 0, extent>=180, 0, mx, my)
+            s("A %s %d %d %d %s" % \
+              (cfp_str(rx, ry), 0, extent>=180, 0, cfp_str(mx, my)))
         else:
-            str = str + "M %f, %f A %f, %f %d %d %d %f, %f Z " % \
-              (mx, my, rx, ry, 0, extent>=180, 0, mx, my)
+            s("M %s A %s %d %d %d %s Z" % \
+              (cfp_str(mx, my), cfp_str(rx, ry), 0, extent>=180, 0, cfp_str(mx, my)))
 
         if fromcenter:
-            str = str + "L %f, %f Z " % (cx, cy)
+            s("L %s Z" % cfp_str(cx, cy))
 
         path = transformNode(self.doc, "path",
-            d=str, style=self._formatStyle())
+            d=' '.join(s.__self__), style=self._formatStyle())
         self.currGroup.appendChild(path)
 
     def polygon(self, points, closed=0, link_info=None):
         assert len(points) >= 2, 'Polygon must have 2 or more points'
 
-        if self._strokeColor != None:
-            self.setColor(self._strokeColor)
-            pairs = []
-            for i in range(len(points)):
-                pairs.append("%f %f" % (points[i]))
-            pts = ', '.join(pairs)
+        if self._strokeColor!=None or self._fillColor!=None:
+            pts = ', '.join([fp_str(*p) for p in points])
             polyline = transformNode(self.doc, "polygon",
                 points=pts, style=self._formatStyle(AREA_STYLES))
 
@@ -600,7 +634,6 @@ class SVGCanvas:
         return
 
         if self._strokeColor != None:
-            self._setColor(self._strokeColor)
             codeline = '%s m %s l stroke'
             for line in lineList:
                 self.code.append(codeline % (fp_str(line[0]), fp_str(line[1])))
@@ -609,19 +642,16 @@ class SVGCanvas:
         assert len(points) >= 1, 'Polyline must have 1 or more points'
 
         if self._strokeColor != None:
-            self.setColor(self._strokeColor)
-            pairs = []
-            for i in range(len(points)):
-                pairs.append("%f %f" % (points[i]))
-            pts = ', '.join(pairs)
+            pts = ', '.join([fp_str(*p) for p in points])
             polyline = transformNode(self.doc, "polyline",
                 points=pts, style=self._formatStyle(AREA_STYLES,fill=None))
             self.currGroup.appendChild(polyline)
 
     ### groups ###
-    def startGroup(self):
+    def startGroup(self,attrDict=dict(transform="")):
         if self.verbose: print("+++ begin SVGCanvas.startGroup")
-        currGroup, group = self.currGroup, transformNode(self.doc, "g", transform="")
+        currGroup = self.currGroup
+        group = transformNode(self.doc, "g", **attrDict)
         currGroup.appendChild(group)
         self.currGroup = group
         if self.verbose: print("+++ end SVGCanvas.startGroup")
@@ -635,37 +665,31 @@ class SVGCanvas:
     def transform(self, a, b, c, d, e, f):
         if self.verbose: print("!!! begin SVGCanvas.transform", a, b, c, d, e, f)
         tr = self.currGroup.getAttribute("transform")
-        t = 'matrix(%f, %f, %f, %f, %f, %f)' % (a,b,c,d,e,f)
         if (a, b, c, d, e, f) != (1, 0, 0, 1, 0, 0):
+            t = 'matrix(%s)' % self.cfp_str(a,b,c,d,e,f)
             self.currGroup.setAttribute("transform", "%s %s" % (tr, t))
 
     def translate(self, x, y):
-        # probably never used
-        print("!!! begin SVGCanvas.translate")
-        return
+        if (x,y) != (0,0):
+            self.currGroup.setAttribute("transform", "%s %s"
+                % (self.currGroup.getAttribute("transform"),
+                    'translate(%s)' % self.cfp_str(x,y)))
 
-        tr = self.currGroup.getAttribute("transform")
-        t = 'translate(%f, %f)' % (x, y)
-        self.currGroup.setAttribute("transform", "%s %s" % (tr, t))
-
-    def scale(self, x, y):
-        # probably never used
-        print("!!! begin SVGCanvas.scale")
-        return
-
-        tr = self.groups[-1].getAttribute("transform")
-        t = 'scale(%f, %f)' % (x, y)
-        self.currGroup.setAttribute("transform", "%s %s" % (tr, t))
+    def scale(self, sx, sy):
+        if (sx,sy) != (1,1):
+            self.currGroup.setAttribute("transform", "%s %s" 
+                    % (self.groups[-1].getAttribute("transform"),
+                        'scale(%s)' % self.cfp_str(sx, sy)))
 
     ### paths ###
     def moveTo(self, x, y):
-        self.path = self.path + 'M %f %f ' % (x, y)
+        self.path = self.path + 'M %s ' % self.fp_str(x, y)
 
     def lineTo(self, x, y):
-        self.path = self.path + 'L %f %f ' % (x, y)
+        self.path = self.path + 'L %s ' % self.fp_str(x, y)
 
     def curveTo(self, x1, y1, x2, y2, x3, y3):
-        self.path = self.path + 'C %f %f %f %f %f %f ' % (x1, y1, x2, y2, x3, y3)
+        self.path = self.path + 'C %s ' % self.fp_str(x1, y1, x2, y2, x3, y3)
 
     def closePath(self):
         self.path = self.path + 'Z '
@@ -681,7 +705,6 @@ class _SVGRenderer(Renderer):
     """
 
     def __init__(self):
-        self._tracker = StateTracker()
         self.verbose = 0
 
     def drawNode(self, node):
@@ -691,7 +714,6 @@ class _SVGRenderer(Renderer):
         if self.verbose: print("### begin _SVGRenderer.drawNode(%r)" % node)
 
         self._canvas.comment('begin node %r'%node)
-        color = self._canvas._color
         style = self._canvas.style.copy()
         if not (isinstance(node, Path) and node.isClipPath):
             pass # self._canvas.saveState()
@@ -708,7 +730,6 @@ class _SVGRenderer(Renderer):
         if not (isinstance(node, Path) and node.isClipPath):
             pass #self._canvas.restoreState()
         self._canvas.comment('end node %r'%node)
-        self._canvas._color = color
 
         #restore things we might have lost (without actually doing anything).
         for k, v in rDeltas.items():
@@ -787,21 +808,11 @@ class _SVGRenderer(Renderer):
                     link_info=link_info, **svgAttrs)
 
     def drawString(self, stringObj):
-        if self._canvas._fillColor:
-            S = self._tracker.getState()
-            text_anchor, x, y, text = S['textAnchor'], stringObj.x, stringObj.y, stringObj.text
-            if not text_anchor in ('start', 'inherited'):
-                font, fontSize = S['fontName'], S['fontSize']
-                textLen = stringWidth(text, font,fontSize)
-                if text_anchor=='end':
-                    x -= textLen
-                elif text_anchor=='middle':
-                    x -= textLen/2
-                elif text_anchor=='numeric':
-                    x -= numericXShift(text_anchor,text,textLen,font,fontSize)
-                else:
-                    raise ValueError('bad value for text_anchor ' + str(text_anchor))
-            self._canvas.drawString(text,x,y,link_info=self._get_link_info_dict(stringObj),**getattr(stringObj,'_svgAttrs',{}))
+        S = self._tracker.getState()
+        text_anchor, x, y, text = S['textAnchor'], stringObj.x, stringObj.y, stringObj.text
+        self._canvas.drawString(text,x,y,link_info=self._get_link_info_dict(stringObj),
+                text_anchor=text_anchor, textRenderMode=getattr(stringObj,'textRenderMode',0),
+                    **getattr(stringObj,'_svgAttrs',{}))
 
     def drawLine(self, line):
         if self._canvas._strokeColor:
@@ -842,19 +853,50 @@ class _SVGRenderer(Renderer):
     def drawPolygon(self, p):
         self._canvas.polygon(_pointsFromList(p.points), closed=1, link_info=self._get_link_info_dict(p))
 
-    def drawPath(self, path):
+    def drawPath(self, path, fillMode=FILL_EVEN_ODD):
         # print "### drawPath", path.points
         from reportlab.graphics.shapes import _renderPath
         c = self._canvas
         drawFuncs = (c.moveTo, c.lineTo, c.curveTo, c.closePath)
-        isClosed = _renderPath(path, drawFuncs)
-        if isClosed:
-            #Only try and add links to closed paths...
-            link_info = self._get_link_info_dict(path)
-        else :
-            c._fillColor = None
-            link_info = None
-        c._fillAndStroke([], clip=path.isClipPath, link_info=link_info)
+        if fillMode is None:
+            fillMode = getattr(path,'fillMode',FILL_EVEN_ODD)
+        link_info = self._get_link_info_dict(path)
+        autoclose = getattr(path,'autoclose','')
+        def rP(**kwds):
+            return _renderPath(path, drawFuncs, **kwds)
+        if autoclose=='svg':
+            rP()
+            c._fillAndStroke([], clip=path.isClipPath, link_info=link_info, fillMode=fillMode)
+        elif autoclose=='pdf':
+            rP(forceClose=True)
+            c._fillAndStroke([], clip=path.isClipPath, link_info=link_info, fillMode=fillMode)
+        else:
+            isClosed = rP()
+            if not isClosed:
+                ofc = c._fillColor
+                c.setFillColor(None)
+                try:
+                    link_info = None
+                    c._fillAndStroke([], clip=path.isClipPath, link_info=link_info, fillMode=fillMode)
+                finally:
+                    c.setFillColor(ofc)
+            else:
+                c._fillAndStroke([], clip=path.isClipPath, link_info=link_info, fillMode=fillMode)
+
+    def drawImage(self, image):
+        path = image.path
+        if isinstance(path,str):
+            if not (path and os.path.isfile(path)): return
+            im = _getImage().open(path)
+        elif hasattr(path,'convert'):
+            im = path
+        else:
+            return
+        srcW, srcH = im.size
+        dstW, dstH = image.width, image.height
+        if dstW is None: dstW = srcW
+        if dstH is None: dstH = srcH
+        self._canvas.drawImage(im, image.x, image.y, dstW, dstH, embed=True)
 
     def applyStateChanges(self, delta, newState):
         """This takes a set of states, and outputs the operators
@@ -888,6 +930,8 @@ class _SVGRenderer(Renderer):
                 fontname = delta.get('fontName', self._canvas._font)
                 fontsize = delta.get('fontSize', self._canvas._fontSize)
                 self._canvas.setFont(fontname, fontsize)
+            elif key == 'fillMode':
+                self._canvas.setFillMode(value)
 
 def test(outDir='out-svg'):
     # print all drawings and their doc strings from the test
@@ -899,13 +943,11 @@ def test(outDir='out-svg'):
     drawings = []
 
     for funcname in dir(testshapes):
-        #if funcname[0:11] == 'getDrawing2':
-        #    print 'hacked to only show drawing 2'
         if funcname[0:10] == 'getDrawing':
-            drawing = eval('testshapes.' + funcname + '()')
-            docstring = eval('testshapes.' + funcname + '.__doc__')
+            func = getattr(testshapes,funcname)
+            drawing = func()
+            docstring = getattr(func,'__doc__','')
             drawings.append((drawing, docstring))
-
 
     i = 0
     for (d, docstring) in drawings:

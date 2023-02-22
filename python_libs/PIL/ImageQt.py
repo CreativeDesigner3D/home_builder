@@ -16,34 +16,40 @@
 # See the README file for information on usage and redistribution.
 #
 
-from . import Image
-from ._util import isPath, py3
-from io import BytesIO
 import sys
+from io import BytesIO
+
+from . import Image
+from ._deprecate import deprecate
+from ._util import is_path
 
 qt_versions = [
-    ['5', 'PyQt5'],
-    ['side2', 'PySide2'],
-    ['4', 'PyQt4'],
-    ['side', 'PySide']
+    ["6", "PyQt6"],
+    ["side6", "PySide6"],
+    ["5", "PyQt5"],
+    ["side2", "PySide2"],
 ]
+
 # If a version has already been imported, attempt it first
-qt_versions.sort(key=lambda qt_version: qt_version[1] in sys.modules,
-                 reverse=True)
+qt_versions.sort(key=lambda qt_version: qt_version[1] in sys.modules, reverse=True)
 for qt_version, qt_module in qt_versions:
     try:
-        if qt_module == 'PyQt5':
-            from PyQt5.QtGui import QImage, qRgba, QPixmap
+        if qt_module == "PyQt6":
+            from PyQt6.QtCore import QBuffer, QIODevice
+            from PyQt6.QtGui import QImage, QPixmap, qRgba
+        elif qt_module == "PySide6":
+            from PySide6.QtCore import QBuffer, QIODevice
+            from PySide6.QtGui import QImage, QPixmap, qRgba
+        elif qt_module == "PyQt5":
             from PyQt5.QtCore import QBuffer, QIODevice
-        elif qt_module == 'PySide2':
-            from PySide2.QtGui import QImage, qRgba, QPixmap
+            from PyQt5.QtGui import QImage, QPixmap, qRgba
+
+            deprecate("Support for PyQt5", 10, "PyQt6 or PySide6")
+        elif qt_module == "PySide2":
             from PySide2.QtCore import QBuffer, QIODevice
-        elif qt_module == 'PyQt4':
-            from PyQt4.QtGui import QImage, qRgba, QPixmap
-            from PyQt4.QtCore import QBuffer, QIODevice
-        elif qt_module == 'PySide':
-            from PySide.QtGui import QImage, qRgba, QPixmap
-            from PySide.QtCore import QBuffer, QIODevice
+            from PySide2.QtGui import QImage, QPixmap, qRgba
+
+            deprecate("Support for PySide2", 10, "PyQt6 or PySide6")
     except (ImportError, RuntimeError):
         continue
     qt_is_installed = True
@@ -57,29 +63,31 @@ def rgb(r, g, b, a=255):
     """(Internal) Turns an RGB color into a Qt compatible color integer."""
     # use qRgb to pack the colors, and then turn the resulting long
     # into a negative integer with the same bitpattern.
-    return (qRgba(r, g, b, a) & 0xffffffff)
+    return qRgba(r, g, b, a) & 0xFFFFFFFF
 
 
 def fromqimage(im):
     """
-    :param im: A PIL Image object, or a file name
-    (given either as Python string or a PyQt string object)
+    :param im: QImage or PIL ImageQt object
     """
     buffer = QBuffer()
-    buffer.open(QIODevice.ReadWrite)
-    # preserve alha channel with png
+    if qt_version == "6":
+        try:
+            qt_openmode = QIODevice.OpenModeFlag
+        except AttributeError:
+            qt_openmode = QIODevice.OpenMode
+    else:
+        qt_openmode = QIODevice
+    buffer.open(qt_openmode.ReadWrite)
+    # preserve alpha channel with png
     # otherwise ppm is more friendly with Image.open
     if im.hasAlphaChannel():
-        im.save(buffer, 'png')
+        im.save(buffer, "png")
     else:
-        im.save(buffer, 'ppm')
+        im.save(buffer, "ppm")
 
     b = BytesIO()
-    try:
-        b.write(buffer.data())
-    except TypeError:
-        # workaround for Python 2
-        b.write(str(buffer.data()))
+    b.write(buffer.data())
     buffer.close()
     b.seek(0)
 
@@ -105,11 +113,7 @@ def align8to32(bytes, width, mode):
     converts each scanline of data from 8 bit to 32 bit aligned
     """
 
-    bits_per_pixel = {
-        '1': 1,
-        'L': 8,
-        'P': 8,
-    }[mode]
+    bits_per_pixel = {"1": 1, "L": 8, "P": 8, "I;16": 16}[mode]
 
     # calculate bytes per line and the extra padding if needed
     bits_per_line = bits_per_pixel * width
@@ -124,62 +128,70 @@ def align8to32(bytes, width, mode):
 
     new_data = []
     for i in range(len(bytes) // bytes_per_line):
-        new_data.append(bytes[i*bytes_per_line:(i+1)*bytes_per_line]
-                        + b'\x00' * extra_padding)
+        new_data.append(
+            bytes[i * bytes_per_line : (i + 1) * bytes_per_line]
+            + b"\x00" * extra_padding
+        )
 
-    return b''.join(new_data)
+    return b"".join(new_data)
 
 
 def _toqclass_helper(im):
     data = None
     colortable = None
+    exclusive_fp = False
 
     # handle filename, if given instead of image name
     if hasattr(im, "toUtf8"):
         # FIXME - is this really the best way to do this?
-        if py3:
-            im = str(im.toUtf8(), "utf-8")
-        else:
-            im = unicode(im.toUtf8(), "utf-8")  # noqa: F821
-    if isPath(im):
+        im = str(im.toUtf8(), "utf-8")
+    if is_path(im):
         im = Image.open(im)
+        exclusive_fp = True
 
+    qt_format = QImage.Format if qt_version == "6" else QImage
     if im.mode == "1":
-        format = QImage.Format_Mono
+        format = qt_format.Format_Mono
     elif im.mode == "L":
-        format = QImage.Format_Indexed8
+        format = qt_format.Format_Indexed8
         colortable = []
         for i in range(256):
             colortable.append(rgb(i, i, i))
     elif im.mode == "P":
-        format = QImage.Format_Indexed8
+        format = qt_format.Format_Indexed8
         colortable = []
         palette = im.getpalette()
         for i in range(0, len(palette), 3):
-            colortable.append(rgb(*palette[i:i+3]))
+            colortable.append(rgb(*palette[i : i + 3]))
     elif im.mode == "RGB":
-        data = im.tobytes("raw", "BGRX")
-        format = QImage.Format_RGB32
-    elif im.mode == "RGBA":
-        try:
-            data = im.tobytes("raw", "BGRA")
-        except SystemError:
-            # workaround for earlier versions
-            r, g, b, a = im.split()
-            im = Image.merge("RGBA", (b, g, r, a))
-        format = QImage.Format_ARGB32
-    else:
-        raise ValueError("unsupported image mode %r" % im.mode)
+        # Populate the 4th channel with 255
+        im = im.convert("RGBA")
 
-    __data = data or align8to32(im.tobytes(), im.size[0], im.mode)
-    return {
-        'data': __data, 'im': im, 'format': format, 'colortable': colortable
-    }
+        data = im.tobytes("raw", "BGRA")
+        format = qt_format.Format_RGB32
+    elif im.mode == "RGBA":
+        data = im.tobytes("raw", "BGRA")
+        format = qt_format.Format_ARGB32
+    elif im.mode == "I;16" and hasattr(qt_format, "Format_Grayscale16"):  # Qt 5.13+
+        im = im.point(lambda i: i * 256)
+
+        format = qt_format.Format_Grayscale16
+    else:
+        if exclusive_fp:
+            im.close()
+        msg = f"unsupported image mode {repr(im.mode)}"
+        raise ValueError(msg)
+
+    size = im.size
+    __data = data or align8to32(im.tobytes(), size[0], im.mode)
+    if exclusive_fp:
+        im.close()
+    return {"data": __data, "size": size, "format": format, "colortable": colortable}
 
 
 if qt_is_installed:
-    class ImageQt(QImage):
 
+    class ImageQt(QImage):
         def __init__(self, im):
             """
             An PIL image wrapper for Qt.  This is a subclass of PyQt's QImage
@@ -193,12 +205,15 @@ if qt_is_installed:
             # All QImage constructors that take data operate on an existing
             # buffer, so this buffer has to hang on for the life of the image.
             # Fixes https://github.com/python-pillow/Pillow/issues/1370
-            self.__data = im_data['data']
-            QImage.__init__(self,
-                            self.__data, im_data['im'].size[0],
-                            im_data['im'].size[1], im_data['format'])
-            if im_data['colortable']:
-                self.setColorTable(im_data['colortable'])
+            self.__data = im_data["data"]
+            super().__init__(
+                self.__data,
+                im_data["size"][0],
+                im_data["size"][1],
+                im_data["format"],
+            )
+            if im_data["colortable"]:
+                self.setColorTable(im_data["colortable"])
 
 
 def toqimage(im):
@@ -208,11 +223,7 @@ def toqimage(im):
 def toqpixmap(im):
     # # This doesn't work. For now using a dumb approach.
     # im_data = _toqclass_helper(im)
-    # result = QPixmap(im_data['im'].size[0], im_data['im'].size[1])
-    # result.loadFromData(im_data['data'])
-    # Fix some strange bug that causes
-    if im.mode == 'RGB':
-        im = im.convert('RGBA')
-
+    # result = QPixmap(im_data["size"][0], im_data["size"][1])
+    # result.loadFromData(im_data["data"])
     qimage = toqimage(im)
     return QPixmap.fromImage(qimage)

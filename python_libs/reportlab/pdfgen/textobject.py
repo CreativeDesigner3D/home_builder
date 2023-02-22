@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfgen/textobject.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/pdfgen/textobject.py
+__version__='3.3.0'
 __doc__="""
 PDFTextObject is an efficient way to add text to a Canvas. Do not
 instantiate directly, obtain one from the Canvas instead.
@@ -9,19 +9,21 @@ instantiate directly, obtain one from the Canvas instead.
 Progress Reports:
 8.83, 2000-01-13, gmcm: created from pdfgen.py
 """
-import string
-from types import *
-from reportlab.lib.colors import Color, CMYKColor, CMYKColorSep, toColor, black, white, _CMYK_black, _CMYK_white
+from reportlab.lib.colors import Color, CMYKColor, CMYKColorSep, toColor
 from reportlab.lib.utils import isBytes, isStr, asUnicode
 from reportlab.lib.rl_accel import fp_str
 from reportlab.pdfbase import pdfmetrics
 from reportlab.rl_config import rtlSupport
 
 log2vis = None
+def fribidiText(text,direction):
+    return text
 if rtlSupport:
     try:
         from pyfribidi2 import log2vis, ON as DIR_ON, LTR as DIR_LTR, RTL as DIR_RTL
         directionsMap = dict(LTR=DIR_LTR,RTL=DIR_RTL)
+        def fribidiText(text,direction):
+            return log2vis(text, directionsMap.get(direction,DIR_ON),clean=True) if direction in ('LTR','RTL') else text
     except:
         import warnings
         warnings.warn('pyfribidi is not installed - RTL not supported')
@@ -375,7 +377,7 @@ class PDFTextObject(_PDFColorSetter):
         "Generates PDF text output operator(s)"
         if log2vis and self.direction in ('LTR','RTL'):
             # Use pyfribidi to write the text in the correct visual order.
-            text = log2vis(text, directionsMap.get(self.direction.upper(),DIR_ON),clean=True)
+            text = log2vis(text, directionsMap.get(self.direction,DIR_ON),clean=True)
         canv = self._canvas
         font = pdfmetrics.getFont(self._fontname)
         R = []

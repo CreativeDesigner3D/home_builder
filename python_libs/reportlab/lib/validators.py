@@ -1,12 +1,16 @@
-#Copyright ReportLab Europe Ltd. 2000-2004
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/validators.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/validators.py
+__version__='3.5.33'
 __doc__="""Standard verifying functions used by attrmap."""
 
-import sys, codecs
-from reportlab.lib.utils import isSeq, isBytes, isStr, isPy3
+import codecs, re
+from reportlab.lib.utils import isSeq, isBytes, isStr
 from reportlab.lib import colors
+try:
+    _re_Pattern = re.Pattern
+except AttributeError:
+    _re_Pattern = re._pattern_type
 
 class Percentage(float):
     pass
@@ -82,12 +86,8 @@ class _isInt(Validator):
         if not isinstance(x,int) and not isStr(x): return False
         return self.normalizeTest(x)
 
-    if not isPy3:
-        def normalize(self,x):
-            return int(x)
-    else:
-        def normalize(self,x):
-            return int(x.decode('utf8') if isBytes(x) else x)
+    def normalize(self,x):
+        return int(x.decode('utf8') if isBytes(x) else x)
 
 class _isNumberOrNone(_isNumber):
     def test(self,x):
@@ -208,9 +208,22 @@ class OneOf(Validator):
             self._enum = tuple(enum)+args
         else:
             self._enum = (enum,)+args
+        self._patterns = tuple((_ for _ in self._enum if isinstance(_,_re_Pattern)))
+        if self._patterns:
+            self._enum =  tuple((_ for _ in self._enum if not isinstance(_,_re_Pattern)))
+            self.test = self._test_patterns
 
     def test(self, x):
         return x in self._enum
+
+    def _test_patterns(self, x):
+        v = x in self._enum
+        #print(f'{x=} {self._enum=!r} {self._patterns=!r} {v=}')
+        if v: return True
+        for p in self._patterns:
+            v = p.match(x)
+            if v: return True
+        return False
 
 class SequenceOf(Validator):
     def __init__(self,elemTest,name=None,emptyOK=1, NoneOK=0, lo=0,hi=0x7fffffff):
@@ -242,14 +255,22 @@ class EitherOr(Validator):
             if t(x): return True
         return False
 
-class NoneOr(Validator):
-    def __init__(self,elemTest,name=None):
-        self._elemTest = elemTest
-        if name: self._str = name
-
+class NoneOr(EitherOr):
     def test(self, x):
-        if x is None: return True
-        return self._elemTest(x)
+        return x is None or super().test(x)
+
+class NotSetOr(EitherOr):
+    _not_set = object()
+    def test(self, x):
+        return x is NotSetOr._not_set or super().test(x)
+
+    @staticmethod
+    def conditionalValue(v,a):
+        return a if v is NotSetOr._not_set else v
+
+class _isNotSet(Validator):
+    def test(self,x):
+        return x is NotSetOr._not_set
 
 class Auto(Validator):
     def __init__(self,**kw):
@@ -258,15 +279,21 @@ class Auto(Validator):
     def test(self,x):
         return x is self.__class__ or isinstance(x,self.__class__)
 
-class AutoOr(NoneOr):
+class AutoOr(EitherOr):
     def test(self,x):
-        return isAuto(x) or self._elemTest(x)
+        return isAuto(x) or super().test(x)
 
 class isInstanceOf(Validator):
     def __init__(self,klass=None):
         self._klass = klass
     def test(self,x):
         return isinstance(x,self._klass)
+
+class isSubclassOf(Validator):
+    def __init__(self,klass=None):
+        self._klass = klass
+    def test(self,x):
+        return issubclass(x,self._klass)
 
 class matchesPattern(Validator):
     """Matches value, or its string representation, against regex"""
@@ -315,6 +342,7 @@ class NumericAlign(str):
         self._dpLen = dpLen
         return self
 
+
 isAuto = Auto()
 isBoolean = _isBoolean()
 isString = _isString()
@@ -325,6 +353,8 @@ isNoneOrInt = NoneOr(isInt,'isNoneOrInt')
 isNumberOrNone = _isNumberOrNone()
 isTextAnchor = OneOf('start','middle','end','boxauto')
 isListOfNumbers = SequenceOf(isNumber,'isListOfNumbers')
+isListOfNoneOrNumber = SequenceOf(isNumberOrNone,'isListOfNoneOrNumber')
+isListOfListOfNoneOrNumber = SequenceOf(isListOfNoneOrNumber,'isListOfListOfNoneOrNumber')
 isListOfNumbersOrNone = _isListOfNumbersOrNone()
 isListOfShapes = _isListOfShapes()
 isListOfStrings = SequenceOf(isString,'isListOfStrings')
@@ -349,3 +379,4 @@ isStringOrCallable=EitherOr((isString,isCallable),'isStringOrCallable')
 isStringOrCallableOrNone=NoneOr(isStringOrCallable,'isStringOrCallableNone')
 isStringOrNone=NoneOr(isString,'isStringOrNone')
 isNormalDate=_isNormalDate()
+isNotSet=_isNotSet()

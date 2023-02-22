@@ -1,20 +1,21 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/renderPS.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/renderPS.py
+__version__='3.3.0'
 __doc__="""Render drawing objects in Postscript"""
 
-from reportlab.pdfbase.pdfmetrics import getFont, stringWidth, unicode2T1 # for font info
-from reportlab.lib.utils import getBytesIO, getStringIO, asBytes, char2int, rawBytes, asNative, isUnicode
-from reportlab.lib.rl_accel import fp_str
-from reportlab.lib.colors import black
-from reportlab.graphics.renderbase import Renderer, StateTracker, getStateDelta, renderScaledDrawing
-from reportlab.graphics.shapes import STATE_DEFAULTS
 import math
-from operator import getitem
+from io import BytesIO, StringIO
+from reportlab.pdfbase.pdfmetrics import getFont, stringWidth, unicode2T1 # for font info
+from reportlab.lib.utils import asBytes, char2int, rawBytes, asNative, isUnicode
+from reportlab.lib.rl_accel import fp_str
+from reportlab.graphics.renderbase import Renderer, getStateDelta, renderScaledDrawing
+from reportlab.graphics.shapes import STATE_DEFAULTS
 from reportlab import rl_config
+from reportlab.pdfgen.canvas import FILL_EVEN_ODD
+
 _ESCAPEDICT={}
-for c in xrange(256):
+for c in range(256):
     if c<32 or c>=127:
         _ESCAPEDICT[c]= '\\%03o' % c
     elif c in (ord('\\'),ord('('),ord(')')):
@@ -107,16 +108,17 @@ class PSCanvas:
         self.setLineJoin(0)
         self.setLineWidth(1)
         self.PostScriptLevel=PostScriptLevel
+        self._fillMode = FILL_EVEN_ODD
 
     def comment(self,msg):
         if self.comments: self.code_append('%'+msg)
 
-    def drawImage(self, image, x1,y1, x2=None,y2=None): # Postscript Level2 version
+    def drawImage(self, image, x1,y1, width=None,height=None): # Postscript Level2 version
         # select between postscript level 1 or level 2
         if self.PostScriptLevel==1:
-            self._drawImageLevel1(image, x1,y1, x2=None,y2=None)
+            self._drawImageLevel1(image, x1,y1, width, height)
         elif self.PostScriptLevel==2:
-            self._drawImageLevel2(image, x1,y1, x2=None,y2=None)
+            self._drawImageLevel2(image, x1, y1, width, height)
         else :
             raise ValueError('Unsupported Postscript Level %s' % self.PostScriptLevel)
 
@@ -210,6 +212,9 @@ class PSCanvas:
         self._fillColor = color
         self.setColor(color)
 
+    def setFillMode(self, v):
+        self._fillMode = v
+
     def setLineWidth(self, width):
         if width != self._lineWidth:
             self._lineWidth = width
@@ -237,7 +242,35 @@ class PSCanvas:
         except:
             raise ValueError("cannot escape %s" % ascii(s))
 
-    def _issueT1String(self,fontObj,x,y,s):
+    def _textOut(self, x, y, s, textRenderMode=0):
+        if textRenderMode==3: return
+        xy = fp_str(x,y)
+        s = self._escape(s)
+
+        if textRenderMode==0: #the standard case
+            self.setColor(self._fillColor)
+            self.code_append('%s m (%s) show ' % (xy,s))
+            return
+
+        fill = textRenderMode==0 or textRenderMode==2 or textRenderMode==4 or textRenderMode==6
+        stroke = textRenderMode==1 or textRenderMode==2 or textRenderMode==5 or textRenderMode==6
+        addToClip = textRenderMode>=4
+        if fill and stroke:
+            if self._fillColor is None:
+                op = ''
+            else:
+                op = 'fill '
+                self.setColor(self._fillColor)
+            self.code_append('%s m (%s) true charpath gsave %s' % (xy,s,op))
+            self.code_append('grestore ')
+            if self._strokeColor is not None:
+                self.setColor(self._strokeColor)
+                self.code_append('stroke ')
+        else: #can only be stroke alone
+            self.setColor(self._strokeColor)
+            self.code_append('%s m (%s) true charpath stroke ' % (xy,s))
+
+    def _issueT1String(self,fontObj,x,y,s, textRenderMode=0):
         fc = fontObj
         code_append = self.code_append
         fontSize = self._fontSize
@@ -257,45 +290,47 @@ class PSCanvas:
                 if psName not in fontsUsed:
                     fontsUsed.append(psName)
                 fc = f
-            code_append('%s m (%s) show ' % (fp_str(x,y),escape(t)))
+            self._textOut(x,y,t,textRenderMode)
             x += f.stringWidth(t.decode(f.encName),fontSize)
         if fontObj!=fc:
             self._font = None
             self.setFont(fontObj.face.name,fontSize)
 
-    def drawString(self, x, y, s, angle=0):
-        if self._fillColor != None:
+    def drawString(self, x, y, s, angle=0, text_anchor='left', textRenderMode=0):
+        needFill = textRenderMode in (0,2,4,6) 
+        needStroke = textRenderMode in (1,2,5,6) 
+        if needFill or needStroke:
+            if text_anchor!='left':
+                textLen = stringWidth(s, self._font,self._fontSize)
+                if text_anchor=='end':
+                    x -= textLen
+                elif text_anchor=='middle':
+                    x -= textLen/2.
+                elif text_anchor=='numeric':
+                    x -= numericXShift(text_anchor,s,textLen,self._font,self._fontSize)
             fontObj = getFont(self._font)
             if not self.code[self._fontCodeLoc]:
                 psName = asNative(fontObj.face.name)
                 self.code[self._fontCodeLoc]='(%s) findfont %s scalefont setfont' % (psName,fp_str(self._fontSize))
                 if psName not in self._fontsUsed:
                     self._fontsUsed.append(psName)
-            self.setColor(self._fillColor)
             if angle!=0:
                 self.code_append('gsave %s translate %s rotate' % (fp_str(x,y),fp_str(angle)))
                 x = y = 0
+            oldColor = self._color
             if fontObj._dynamicFont:
-                s = self._escape(s)
-                self.code_append('%s m (%s) show ' % (fp_str(x,y),s))
+                self._textOut(x, y, s, textRenderMode=textRenderMode)
             else:
-                self._issueT1String(fontObj,x,y,s)
+                self._issueT1String(fontObj,x,y,s, textRenderMode=textRenderMode)
+            self.setColor(oldColor)
             if angle!=0:
                 self.code_append('grestore')
 
-    def drawCentredString(self, x, y, text, text_anchor='middle'):
-        if self._fillColor is not None:
-            textLen = stringWidth(text, self._font,self._fontSize)
-            if text_anchor=='end':
-                x -= textLen
-            elif text_anchor=='middle':
-                x -= textLen/2.
-            elif text_anchor=='numeric':
-                x -= numericXShift(text_anchor,text,textLen,self._font,self._fontSize)
-            self.drawString(x,y,text)
+    def drawCentredString(self, x, y, text, text_anchor='middle', textRenderMode=0):
+            self.drawString(x,y,text, text_anchor=text_anchor, textRenderMode=textRenderMode)
 
-    def drawRightString(self, text, x, y):
-        self.drawCentredString(text,x,y,text_anchor='end')
+    def drawRightString(self, text, x, y, text_anchor='end', textRenderMode=0):
+        self.drawString(text,x,y,text_anchor=text_anchor, textRenderMode=textRenderMode)
 
     def drawCurve(self, x1, y1, x2, y2, x3, y3, x4, y4, closed=0):
         codeline = '%s m %s curveto'
@@ -497,15 +532,17 @@ class PSCanvas:
             a("closepath")
         self._fillAndStroke(figureCode)
 
-    def _fillAndStroke(self,code,clip=0,fill=1,stroke=1):
+    def _fillAndStroke(self,code,clip=0,fill=1,stroke=1,fillMode=None):
         fill = self._fillColor and fill
         stroke = self._strokeColor and stroke
         if fill or stroke or clip:
             self.code.extend(code)
             if fill:
+                if fillMode is None:
+                    fillMode = self._fillMode
                 if stroke or clip: self.code_append("gsave")
                 self.setColor(self._fillColor)
-                self.code_append("eofill")
+                self.code_append("eofill" if fillMode==FILL_EVEN_ODD else "fill")
                 if stroke or clip: self.code_append("grestore")
             if stroke:
                 if clip: self.code_append("gsave")
@@ -529,25 +566,17 @@ class PSCanvas:
         '''if this is used we're probably in the wrong world'''
         self.width, self.height = w, h
 
-    ############################################################################################
-    # drawImage(self. image, x1, y1, x2=None, y2=None) is now defined by either _drawImageLevel1
-    #    ._drawImageLevel2, the choice is made in .__init__ depending on option
-    def _drawImageLevel1(self, image, x1, y1, x2=None,y2=None):
+    def _drawImageLevel1(self, image, x1, y1, width=None, height=None):
         # Postscript Level1 version available for fallback mode when Level2 doesn't work
-        """drawImage(self,image,x1,y1,x2=None,y2=None) : If x2 and y2 are ommitted, they are
-        calculated from image size. (x1,y1) is upper left of image, (x2,y2) is lower right of
-        image in piddle coordinates."""
         # For now let's start with 24 bit RGB images (following piddlePDF again)
         component_depth = 8
         myimage = image.convert('RGB')
         imgwidth, imgheight = myimage.size
-        if not x2:
-            x2 = imgwidth + x1
-        if not y2:
-            y2 = y1 + imgheight
-        drawwidth = x2 - x1
-        drawheight = y2 - y1
-        #print 'Image size (%d, %d); Draw size (%d, %d)' % (imgwidth, imgheight, drawwidth, drawheight)
+        if not width:
+            width = imgwidth
+        if not height:
+            height = imgheight
+        #print 'Image size (%d, %d); Draw size (%d, %d)' % (imgwidth, imgheight, width, height)
         # now I need to tell postscript how big image is
 
         # "image operators assume that they receive sample data from
@@ -567,8 +596,8 @@ class PSCanvas:
 
         self.code.extend([
             'gsave',
-            '%s %s translate' % (x1,-y1 - drawheight), # need to start are lower left of image
-            '%s %s scale' % (drawwidth,drawheight),
+            '%s %s translate' % (x1,y1), # need to start are lower left of image
+            '%s %s scale' % (width,height),
             '/scanline %d 3 mul string def' % imgwidth  # scanline by multiples of image width
             ])
 
@@ -589,7 +618,7 @@ class PSCanvas:
         hex_encoded = self._AsciiHexEncode(rawimage)
 
         # write in blocks of 78 chars per line
-        outstream = getStringIO(hex_encoded)
+        outstream = StringIO(hex_encoded)
 
         dataline = outstream.read(78)
         while dataline != "":
@@ -601,12 +630,12 @@ class PSCanvas:
     # end of drawImage
     def _AsciiHexEncode(self, input):  # also based on piddlePDF
         "Helper function used by images"
-        output = getStringIO()
+        output = StringIO()
         for char in asBytes(input):
             output.write('%02x' % char2int(char))
         return output.getvalue()
 
-    def _drawImageLevel2(self, image, x1,y1, x2=None,y2=None): # Postscript Level2 version
+    def _drawImageLevel2(self, image, x1,y1, width=None,height=None): # Postscript Level2 version
         '''At present we're handling only PIL'''
         ### what sort of image are we to draw
         if image.mode=='L' :
@@ -623,16 +652,14 @@ class PSCanvas:
             imBitsPerComponent = 8
 
         imwidth, imheight = myimage.size
-        if not x2:
-            x2 = imwidth + x1
-        if not y2:
-            y2 = y1 + imheight
-        drawwidth = x2 - x1
-        drawheight = y2 - y1
+        if not width:
+            width = imwidth
+        if not height:
+            height = imheight
         self.code.extend([
             'gsave',
-            '%s %s translate' % (x1,-y1 - drawheight), # need to start are lower left of image
-            '%s %s scale' % (drawwidth,drawheight)])
+            '%s %s translate' % (x1,y1), # need to start are lower left of image
+            '%s %s scale' % (width,height)])
 
         if imNumComponents == 3 :
             self.code_append('/DeviceRGB setcolorspace')
@@ -659,7 +686,7 @@ class PSCanvas:
         hex_encoded = self._AsciiHexEncode(rawimage)
 
         # write in blocks of 78 chars per line
-        outstream = getStringIO(hex_encoded)
+        outstream = StringIO(hex_encoded)
 
         dataline = outstream.read(78)
         while dataline != "":
@@ -699,9 +726,6 @@ class _PSRenderer(Renderer):
     """This draws onto a EPS document.  It needs to be a class
     rather than a function, as some EPS-specific state tracking is
     needed outside of the state info in the SVG model."""
-
-    def __init__(self):
-        self._tracker = StateTracker()
 
     def drawNode(self, node):
         """This is the recursive method called for each node
@@ -792,7 +816,8 @@ class _PSRenderer(Renderer):
         self._canvas.polygon(_pointsFromList(p.points), closed=1)
 
     def drawString(self, stringObj):
-        if self._canvas._fillColor:
+        textRenderMode = getattr(stringObj,'textRenderMode',0)
+        if self._canvas._fillColor or textRenderMode:
             S = self._tracker.getState()
             text_anchor, x, y, text = S['textAnchor'], stringObj.x,stringObj.y,stringObj.text
             if not text_anchor in ['start','inherited']:
@@ -806,16 +831,39 @@ class _PSRenderer(Renderer):
                     x -= numericXShift(text_anchor,text,textLen,font,fontSize,encoding='winansi')
                 else:
                     raise ValueError('bad value for text_anchor '+str(text_anchor))
-            self._canvas.drawString(x,y,text)
+            self._canvas.drawString(x,y,text, textRenderMode=textRenderMode)
 
-    def drawPath(self, path):
+    def drawPath(self, path, fillMode=None):
         from reportlab.graphics.shapes import _renderPath
         c = self._canvas
         drawFuncs = (c.moveTo, c.lineTo, c.curveTo, c.closePath)
-        isClosed = _renderPath(path, drawFuncs)
-        if not isClosed:
-            c._fillColor = None
-        c._fillAndStroke([], clip=path.isClipPath)
+        autoclose = getattr(path,'autoclose','')
+        def rP(**kwds):
+            return _renderPath(path, drawFuncs, **kwds)
+        if fillMode is None:
+            fillMode = getattr(path,'fillMode',c._fillMode)
+        fill = c._fillColor is not None
+        stroke = c._strokeColor is not None
+        clip = path.isClipPath
+        fas = lambda **kwds: c._fillAndStroke([], fillMode=fillMode, **kwds)
+        pathFill = lambda : c._fillAndStroke([], stroke=0, fillMode=fillMode)
+        pathStroke = lambda : c._fillAndStroke([], fill=0)
+        if autoclose=='svg':
+            rP()
+            fas(stroke=stroke,fill=fill,clip=clip)
+        elif autoclose=='pdf':
+            if fill:
+                rP(forceClose=True)
+                fas(stroke=stroke,fill=fill,clip=clip)
+            elif stroke or clip:
+                rP()
+                fas(stroke=stroke,fill=0,clip=clip)
+        else:
+            if fill and rP(countOnly=True):
+                rP()
+            elif stroke or clip:
+                rP()
+                fas(stroke=stroke,fill=0,clip=clip)
 
     def applyStateChanges(self, delta, newState):
         """This takes a set of states, and outputs the operators
@@ -867,13 +915,7 @@ class _PSRenderer(Renderer):
     def drawImage(self, image):
         from reportlab.lib.utils import ImageReader
         im = ImageReader(image.path)
-        x0 = image.x
-        y0 = image.y
-        x1 = image.width
-        if x1 is not None: x1 += x0
-        y1 = image.height
-        if y1 is not None: y1 += y0
-        self._canvas.drawImage(im._image,x0,y0,x1,y1)
+        self._canvas.drawImage(im._image,image.x,image.y,image.width,image.height)
 
 def drawToFile(d,fn, showBoundary=rl_config.showBoundary,**kwd):
     d = renderScaledDrawing(d)
@@ -883,13 +925,13 @@ def drawToFile(d,fn, showBoundary=rl_config.showBoundary,**kwd):
 
 def drawToString(d, showBoundary=rl_config.showBoundary):
     "Returns a PS as a string in memory, without touching the disk"
-    s = getBytesIO()
+    s = BytesIO()
     drawToFile(d, s, showBoundary=showBoundary)
     return s.getvalue()
 
 #########################################################
 #
-#   test code.  First, defin a bunch of drawings.
+#   test code.  First, define a bunch of drawings.
 #   Routine to draw them comes at the end.
 #
 #########################################################
@@ -908,8 +950,9 @@ def test(outDir='epsout',shout=False):
 
         for funcname in dir(testshapes):
             if funcname[0:10] == 'getDrawing':
-                drawing = eval('testshapes.' + funcname + '()')  #execute it
-                docstring = eval('testshapes.' + funcname + '.__doc__')
+                func = getattr(testshapes,funcname)
+                drawing = func()
+                docstring = getattr(func,'__doc__','')
                 drawings.append((drawing, docstring))
 
         i = 0

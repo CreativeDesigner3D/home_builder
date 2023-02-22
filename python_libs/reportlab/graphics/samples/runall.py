@@ -3,7 +3,6 @@
 import sys
 import glob
 import inspect
-import types
 
 def moduleClasses(mod):
     def P(obj, m=mod.__name__, CT=type):

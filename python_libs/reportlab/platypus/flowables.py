@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/flowables.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/platypus/flowables.py
+__version__='3.3.0'
 __doc__="""
 A flowable is a "floating element" in a document whose exact position is determined by the
 other elements that precede it, such as a paragraph, a diagram interspersed between paragraphs,
@@ -26,23 +26,23 @@ higher level components).
 """
 import os
 from copy import deepcopy, copy
-from reportlab.lib.colors import red, gray, lightgrey
+from reportlab.lib.colors import gray, lightgrey
 from reportlab.lib.rl_accel import fp_str
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.styles import _baseFontName
-from reportlab.lib.utils import strTypes
+from reportlab.lib.utils import strTypes, rl_safe_exec
+from reportlab.lib.abag import ABag
 from reportlab.pdfbase import pdfutils
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.rl_config import _FUZZ, overlapAttachedSpace, ignoreContainerActions, listWrapOnFakeWidth
-import collections
 
-__all__=('TraceInfo','Flowable','XBox','Preformatted','Image','Spacer','PageBreak','SlowPageBreak',
-        'CondPageBreak','KeepTogether','Macro','CallerMacro','ParagraphAndImage',
-        'FailOnWrap','HRFlowable','PTOContainer','KeepInFrame','UseUpSpace',
-        'ListFlowable','ListItem','DDIndenter','LIIndenter',
-        'DocAssign', 'DocExec', 'DocAssert', 'DocPara', 'DocIf', 'DocWhile',
-        'PageBreakIfNotEmpty',
-        )
+__all__ = '''AnchorFlowable BalancedColumns BulletDrawer CallerMacro CondPageBreak DDIndenter DocAssert
+        DocAssign DocExec DocIf DocPara DocWhile FailOnDraw FailOnWrap Flowable FrameBG FrameSplitter
+        HRFlowable Image ImageAndFlowables KeepInFrame KeepTogether LIIndenter ListFlowable ListItem
+        Macro NullDraw PTOContainer PageBreak PageBreakIfNotEmpty ParagraphAndImage Preformatted
+        SetPageTopFlowables SetTopFlowables SlowPageBreak Spacer TopPadder TraceInfo UseUpSpace XBox
+        splitLine splitLines'''.split()
+
 class TraceInfo:
     "Holder for info about where an object originated"
     def __init__(self):
@@ -60,11 +60,11 @@ class TraceInfo:
 #############################################################
 class Flowable:
     """Abstract base class for things to be drawn.  Key concepts:
-    
+
     1. It knows its size
     2. It draws in its own coordinate system (this requires the
        base API to provide a translate() function.
-    
+
     """
     _fixedWidth = 0         #assume wrap results depend on arguments?
     _fixedHeight = 0
@@ -189,8 +189,12 @@ class Flowable:
             r = r[:maxLen]
         return "<%s at %s%s>%s" % (self.__class__.__name__, hex(id(self)), self._frameName(), r)
 
+    @property
+    def _doctemplate(self):
+        return getattr(getattr(self,'canv',None),'_doctemplate',None)
+
     def _doctemplateAttr(self,a):
-        return getattr(getattr(getattr(self,'canv',None),'_doctemplate',None),a,None)
+        return getattr(self._doctemplate,a,None)
 
     def _frameName(self):
         f = getattr(self,'_frame',None)
@@ -266,7 +270,7 @@ def splitLines(lines, maximum_length, split_characters, new_line_characters):
 
 def splitLine(line_to_split, lines_splitted, maximum_length, \
 split_characters, new_line_characters):
-    # Used to implement the characters added 
+    # Used to implement the characters added
     #at the beginning of each new line created
     first_line = True
 
@@ -278,7 +282,7 @@ split_characters, new_line_characters):
 
         # Check if the line length still exceeds the maximum length
         if len(line_to_split) <= maximum_length:
-            # Return the remaining of the line                
+            # Return the remaining of the line
             split_index = len(line_to_split)
         else:
             # Iterate for each character of the line
@@ -287,7 +291,7 @@ split_characters, new_line_characters):
                 # of allowed characters to split on
                 if line_to_split[line_index] in split_characters:
                     split_index = line_index + 1
-        
+
         # If the end of the line was reached
         # with no character to split on
         if split_index==0:
@@ -300,7 +304,7 @@ split_characters, new_line_characters):
         else:
             lines_splitted.append(new_line_characters + \
             line_to_split[0:split_index])
-        
+
         # Remaining text to split
         line_to_split = line_to_split[split_index:]
 
@@ -308,7 +312,7 @@ class Preformatted(Flowable):
     """This is like the HTML <PRE> tag.
     It attempts to display text exactly as you typed it in a fixed width "typewriter" font.
     By default the line breaks are exactly where you put them, and it will not be wrapped.
-    You can optionally define a maximum line length and the code will be wrapped; and 
+    You can optionally define a maximum line length and the code will be wrapped; and
     extra characters to be inserted at the beginning of each wrapped line (e.g. '> ').
     """
     def __init__(self, text, style, bulletText = None, dedent=0, maxLineLength=None, splitChars=None, newLineChars=""):
@@ -321,9 +325,9 @@ class Preformatted(Flowable):
         self.lines = _dedenter(text,dedent)
         if text and maxLineLength:
             self.lines = splitLines(
-                                self.lines, 
-                                maxLineLength, 
-                                splitChars, 
+                                self.lines,
+                                maxLineLength,
+                                splitChars,
                                 newLineChars
                         )
 
@@ -395,16 +399,24 @@ class Image(Flowable):
     _fixedWidth = 1
     _fixedHeight = 1
     def __init__(self, filename, width=None, height=None, kind='direct',
-                 mask="auto", lazy=1, hAlign='CENTER'):
+                 mask="auto", lazy=1, hAlign='CENTER', useDPI=False):
         """If size to draw at not specified, get it from the image."""
         self.hAlign = hAlign
         self._mask = mask
         fp = hasattr(filename,'read')
+        self._drawing = None
         if fp:
             self._file = filename
             self.filename = repr(filename)
+        elif hasattr(filename,'_renderPy'):
+            self._drawing = filename
+            self.filename=repr(filename)
+            self._file = None
+            self._img = None
+            fp = True
         else:
             self._file = self.filename = filename
+        self._dpi = useDPI
         if not fp and os.path.splitext(filename)[1] in ['.jpg', '.JPG', '.jpeg', '.JPEG']:
             # if it is a JPEG, will be inlined within the file -
             # but we still need to know its size now
@@ -421,12 +433,20 @@ class Image(Flowable):
                 f.close()
             self.imageWidth = info[0]
             self.imageHeight = info[1]
+            if useDPI:
+                self._dpi = info[3]
             self._img = None
             self._setup(width,height,kind,0)
         elif fp:
             self._setup(width,height,kind,0)
         else:
             self._setup(width,height,kind,lazy)
+
+    def _dpiAdjust(self):
+        dpi = self._dpi
+        if dpi:
+            if dpi[0]!=72: self.imageWidth *= 72.0 / dpi[0]
+            if dpi[1]!=72: self.imageHeight *= 72.0 / dpi[1]
 
     def _setup(self,width,height,kind,lazy):
         self._lazy = lazy
@@ -440,7 +460,14 @@ class Image(Flowable):
         height = self._height
         kind = self._kind
         img = self._img
-        if img: self.imageWidth, self.imageHeight = img.getSize()
+        if img:
+            self.imageWidth, self.imageHeight = img.getSize()
+            if self._dpi and hasattr(img,'_image'):
+                self._dpi = img._image.info.get('dpi',(72,72))
+        elif self._drawing:
+            self.imageWidth, self.imageHeight = self._drawing.width,self._drawing.height
+            self._dpi = False
+        self._dpiAdjust()
         if self._lazy>=2: del self._img
         if kind in ['direct','absolute']:
             self.drawWidth = width or self.imageWidth
@@ -484,18 +511,31 @@ class Image(Flowable):
         return self.drawWidth, self.drawHeight
 
     def draw(self):
-        lazy = self._lazy
-        if lazy>=2: self._lazy = 1
-        self.canv.drawImage(    self._img or self.filename,
-                                getattr(self,'_offs_x',0),
-                                getattr(self,'_offs_y',0),
-                                self.drawWidth,
-                                self.drawHeight,
-                                mask=self._mask,
-                                )
-        if lazy>=2:
-            self._img = self._file = None
-            self._lazy = lazy
+        dx = getattr(self,'_offs_x',0)
+        dy = getattr(self,'_offs_y',0)
+        d = self._drawing
+        if d:
+            sx = self.drawWidth / float(self.imageWidth)
+            sy = self.drawHeight / float(self.imageHeight)
+            otrans = d.transform
+            try:
+                d.scale(sx,sy)
+                d.drawOn(self.canv,dx,dy)
+            finally:
+                d.transform = otrans
+        else:
+            lazy = self._lazy
+            if lazy>=2: self._lazy = 1
+            self.canv.drawImage(    self._img or self.filename,
+                                    dx,
+                                    dy,
+                                    self.drawWidth,
+                                    self.drawHeight,
+                                    mask=self._mask,
+                                    )
+            if lazy>=2:
+                self._img = self._file = None
+                self._lazy = lazy
 
     def identity(self,maxLen=None):
         r = Flowable.identity(self,maxLen)
@@ -535,10 +575,14 @@ class UseUpSpace(NullDraw):
         return (availWidth,availHeight-1e-8)  #step back a point
 
 class PageBreak(UseUpSpace):
+    locChanger=1
     """Move on to the next page in the document.
        This works by consuming all remaining space in the frame!"""
     def __init__(self,nextTemplate=None):
         self.nextTemplate = nextTemplate
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__,repr(self.nextTemplate) if self.nextTemplate else '')
 
 class SlowPageBreak(PageBreak):
     pass
@@ -547,6 +591,7 @@ class PageBreakIfNotEmpty(PageBreak):
     pass
 
 class CondPageBreak(Spacer):
+    locChanger=1
     """use up a frame if not enough vertical space effectively CondFrameBreak"""
     def __init__(self, height):
         self.height = height
@@ -594,7 +639,7 @@ def _listWrapOn(F,availWidth,canv,mergeSpace=1,obj=None,dims=None,fakeWidth=None
             if dims is not None: dims.append((w,h))
             if cframe:
                 _addGeneratedContent(F,cframe)
-            if w<=_FUZZ or h<=_FUZZ: continue
+            if (w<=_FUZZ and False) or h<=_FUZZ: continue
             W = max(W,min(w,availWidth) if fakeWidth else w)
             H += h
             if not atTop:
@@ -626,24 +671,33 @@ def _flowableSublist(V):
     return V
 
 class _ContainerSpace:  #Abstract some common container like behaviour
-    def getSpaceBefore(self):
-        for c in self._content:
+    def getSpaceBefore(self,content=None):
+        for c in (self._content if content is None else content):
             if not hasattr(c,'frameAction'):
                 return c.getSpaceBefore()
         return 0
 
     def getSpaceAfter(self,content=None):
-        #this needs 2.4
-        #for c in reversed(content or self._content):
-        reverseContent = (content or self._content)[:]
-        reverseContent.reverse()
-        for c in reverseContent:
+        for c in reversed(self._content if content is None else content):
             if not hasattr(c,'frameAction'):
                 return c.getSpaceAfter()
         return 0
 
 class KeepTogether(_ContainerSpace,Flowable):
+    splitAtTop = False
+
     def __init__(self,flowables,maxHeight=None):
+        if not hasattr(KeepTogether,'NullActionFlowable'):
+            #cache these on the class
+            from reportlab.platypus.doctemplate import NullActionFlowable
+            from reportlab.platypus.doctemplate import FrameBreak
+            from reportlab.lib.utils import annotateException
+            KeepTogether.NullActionFlowable = NullActionFlowable
+            KeepTogether.FrameBreak = FrameBreak
+            KeepTogether.annotateException = annotateException
+
+        if not flowables:
+            flowables = [self.NullActionFlowable()]
         self._content = _flowableSublist(flowables)
         self._maxHeight = maxHeight
 
@@ -656,7 +710,10 @@ class KeepTogether(_ContainerSpace,Flowable):
 
     def wrap(self, aW, aH):
         dims = []
-        W,H = _listWrapOn(self._content,aW,self.canv,dims=dims)
+        try:
+            W,H = _listWrapOn(self._content,aW,self.canv,dims=dims)
+        except:
+            self.annotateException('\nraised by class %s(%s)@0x%8.8x wrap\n' % (self.__class__.__name__,self.__class__.__module__,id(self)))
         self._H = H
         self._H0 = dims and dims[0][1] or 0
         self._wrapInfo = aW,aH
@@ -665,18 +722,26 @@ class KeepTogether(_ContainerSpace,Flowable):
     def split(self, aW, aH):
         if getattr(self,'_wrapInfo',None)!=(aW,aH): self.wrap(aW,aH)
         S = self._content[:]
-        atTop = getattr(self,'_frame',None)
-        if atTop: atTop = getattr(atTop,'_atTop',None)
+        cf = atTop = getattr(self,'_frame',None)
+        if cf:
+            atTop = getattr(cf,'_atTop',None)
+            cAW = cf._width
+            cAH = cf._height
         C0 = self._H>aH and (not self._maxHeight or aH>self._maxHeight)
         C1 = (self._H0>aH) or C0 and atTop
         if C0 or C1:
-            if C0:
-                from reportlab.platypus.doctemplate import FrameBreak
-                A = FrameBreak
-            else:
-                from reportlab.platypus.doctemplate import NullActionFlowable
-                A = NullActionFlowable
-            S.insert(0,A())
+            fb = False
+            panf = self._doctemplateAttr('_peekNextFrame')
+            if cf and panf:
+                nf = panf()
+                nAW = nf._width
+                nAH = nf._height
+            if C0 and not (self.splitAtTop and atTop):
+                fb = not (atTop and cf and nf and cAW>=nAW and cAH>=nAH)
+            elif nf and nAW>=cf._width and nAH>=self._H:
+                fb = True
+
+            S.insert(0,(self.FrameBreak if fb else self.NullActionFlowable)())
         return S
 
     def identity(self, maxLen=None):
@@ -685,6 +750,13 @@ class KeepTogether(_ContainerSpace,Flowable):
             return msg[0:maxLen]
         else:
             return msg
+
+class KeepTogetherSplitAtTop(KeepTogether):
+    '''
+    Same as KeepTogether, but it will split content immediately if it cannot
+    fit at the top of a frame.
+    '''
+    splitAtTop = True
 
 class Macro(Flowable):
     """This is not actually drawn (i.e. it has zero height)
@@ -697,7 +769,7 @@ class Macro(Flowable):
     def wrap(self, availWidth, availHeight):
         return (0,0)
     def draw(self):
-        exec(self.command, globals(), {'canvas':self.canv})
+        rl_safe_exec(self.command, g=None, l={'canvas':self.canv})
 
 def _nullCallable(*args,**kwds):
     pass
@@ -773,14 +845,14 @@ class ParagraphAndImage(Flowable):
     def draw(self):
         canv = self.canv
         if self._side=='left':
-            self.I.drawOn(canv,0,self.height-self.hI)
+            self.I.drawOn(canv,0,self.height-self.hI-self.ypad)
             self.P._offsets = self._offsets
             try:
                 self.P.drawOn(canv,0,0)
             finally:
                 del self.P._offsets
         else:
-            self.I.drawOn(canv,self.width-self.wI-self.xpad,self.height-self.hI)
+            self.I.drawOn(canv,self.width-self.wI-self.xpad,self.height-self.hI-self.ypad)
             self.P.drawOn(canv,0,0)
 
 class FailOnWrap(NullDraw):
@@ -820,7 +892,7 @@ class HRFlowable(Flowable):
 
     def wrap(self, availWidth, availHeight):
         w = self.width
-        if type(w) is type(''):
+        if isinstance(w,strTypes):
             w = w.strip()
             if w.endswith('%'): w = availWidth*float(w[:-1])*0.01
             else: w = float(w)
@@ -866,35 +938,35 @@ class _Container(_ContainerSpace):  #Abstract some common container like behavio
         frame = getattr(self,'_frame',None)
         for c in content:
             if not ignoreContainerActions and isinstance(c,ActionFlowable):
-                c.apply(self.canv._doctemplate)
+                c.apply(canv._doctemplate)
                 continue
             if isinstance(c,Indenter):
                 x += c.left*scale
                 aW -= (c.left+c.right)*scale
                 continue
             w, h = c.wrapOn(canv,aW,0xfffffff)
-            if (w<_FUZZ or h<_FUZZ) and not getattr(c,'_ZEROSIZE',None): continue
+            if h<_FUZZ and not getattr(c,'_ZEROSIZE',None): continue
             if yt!=y:
                 s = c.getSpaceBefore()
                 if not getattr(c,'_SPACETRANSFER',False):
                     h += max(s-pS,0)
             y -= h
-            fbg = getattr(frame,'_frameBGs',None)
             s = c.getSpaceAfter()
             if getattr(c,'_SPACETRANSFER',False):
                 s = pS
             pS = s
-            if fbg:
-                fbgl, fbgr, fbgc = fbg[-1]
+            fbg = getattr(frame,'_frameBGs',None)
+            if fbg and fbg[-1].active:
+                bg = fbg[-1]
+                fbgl = bg.left
+                fbgr = bg.right
+                bgm = bg.start
                 fbw = scale*(frame._width-fbgl-fbgr)
+                fbx = x0+scale*(fbgl-frame._leftPadding)
                 fbh = y + h + pS
                 fby = max(y0,y-pS)
                 fbh = max(0,fbh-fby)
-                if abs(fbw)>_FUZZ and abs(fbh)>_FUZZ:
-                    canv.saveState()
-                    canv.setFillColor(fbgc)
-                    canv.rect(x0+scale*(fbgl-frame._leftPadding)-0.1,fby-0.1,fbw+0.2,fbh+0.2,stroke=0,fill=1)
-                    canv.restoreState()
+                bg.render(canv,frame,fbx,fby,fbw,fbh)
             c._frame = frame
             c.drawOn(canv,x,y,_sW=aW-w)
             if c is not content[-1] and not getattr(c,'_SPACETRANSFER',None):
@@ -937,7 +1009,7 @@ class PTOContainer(_Container,Flowable):
         n = len(C)
         I2W = {}
         dLeft = dRight = 0
-        for x in xrange(n):
+        for x in range(n):
             c = C[x]
             I = c._ptoinfo
             if I not in I2W.keys():
@@ -1152,7 +1224,69 @@ class KeepInFrame(_Container,Flowable):
         _Container.drawOn(self, canv, x, y, _sW=_sW, scale=scale)
         if ss: canv.restoreState()
 
-class ImageAndFlowables(_Container,Flowable):
+
+class _FindSplitterMixin:
+    def _findSplit(self,canv,availWidth,availHeight,mergeSpace=1,obj=None,content=None,paraFix=True):
+        '''return max width, required height for a list of flowables F'''
+        W = 0
+        H = 0
+        pS = sB = 0
+        atTop = 1
+        F = self._getContent(content)
+        for i,f in enumerate(F):
+            if hasattr(f,'frameAction'):
+                from reportlab.platypus.doctemplate import Indenter
+                if isinstance(f,Indenter):
+                    availWidth -= f.left+f.right
+                continue
+            w,h = f.wrapOn(canv,availWidth,0xfffffff)
+            if w<=_FUZZ or h<=_FUZZ: continue
+            W = max(W,w)
+            if not atTop:
+                s = f.getSpaceBefore()
+                if mergeSpace: s = max(s-pS,0)
+                H += s
+            else:
+                if obj is not None: obj._spaceBefore = f.getSpaceBefore()
+                atTop = 0
+            if H>=availHeight or w>availWidth:
+                return W, availHeight, F[:i],F[i:]
+            H += h
+            if H>availHeight:
+                aH = availHeight-(H-h)
+                if paraFix:
+                    from reportlab.platypus.paragraph import Paragraph
+                    if isinstance(f,(Paragraph,Preformatted)):
+                        leading = f.style.leading
+                        nH = leading*int(aH/float(leading))+_FUZZ
+                        if nH<aH: nH += leading
+                        availHeight += nH-aH
+                        aH = nH
+                try:
+                    S = cdeepcopy(f).splitOn(canv,availWidth,aH)
+                except:
+                    S  = None   #sometimes the deepcopy cannot be done
+                if not S:
+                    return W, availHeight, F[:i],F[i:]
+                else:
+                    return W,availHeight,F[:i]+S[:1],S[1:]+F[i+1:]
+            pS = f.getSpaceAfter()
+            H += pS
+
+        if obj is not None: obj._spaceAfter = pS
+        return W, H-pS, F, []
+
+    def _getContent(self,content=None):
+        F = []
+        C = content if content is not None else self._content
+        for f in C:
+            if isinstance(f,ListFlowable):
+                F.extend(self._getContent(f._content))
+            else:
+                F.append(f)
+        return F
+
+class ImageAndFlowables(_Container,_FindSplitterMixin,Flowable):
     '''combine a list of flowables and an Image'''
     def __init__(self,I,F,imageLeftPadding=0,imageRightPadding=3,imageTopPadding=0,imageBottomPadding=3,
                     imageSide='right', imageHref=None):
@@ -1272,45 +1406,380 @@ class ImageAndFlowables(_Container,Flowable):
             aW, aH = self._wrapArgs
             _Container.drawOn(self, canv, x, y-self._aH,content=self._C1, aW=aW)
 
-    def _findSplit(self,canv,availWidth,availHeight,mergeSpace=1,obj=None):
-        '''return max width, required height for a list of flowables F'''
-        W = 0
-        H = 0
-        pS = sB = 0
-        atTop = 1
-        F = self._content
-        for i,f in enumerate(F):
-            w,h = f.wrapOn(canv,availWidth,0xfffffff)
-            if w<=_FUZZ or h<=_FUZZ: continue
-            W = max(W,w)
-            if not atTop:
-                s = f.getSpaceBefore()
-                if mergeSpace: s = max(s-pS,0)
-                H += s
-            else:
-                if obj is not None: obj._spaceBefore = f.getSpaceBefore()
-                atTop = 0
-            if H>=availHeight or w>availWidth:
-                return W, availHeight, F[:i],F[i:]
-            H += h
-            if H>availHeight:
-                from reportlab.platypus.paragraph import Paragraph
-                aH = availHeight-(H-h)
-                if isinstance(f,(Paragraph,Preformatted)):
-                    leading = f.style.leading
-                    nH = leading*int(aH/float(leading))+_FUZZ
-                    if nH<aH: nH += leading
-                    availHeight += nH-aH
-                    aH = nH
-                S = cdeepcopy(f).splitOn(canv,availWidth,aH)
-                if not S:
-                    return W, availHeight, F[:i],F[i:]
+class _AbsRect(NullDraw):
+    _ZEROSIZE=1
+    _SPACETRANSFER = True
+    def __init__(self,x,y,width,height,strokeWidth=0,strokeColor=None,fillColor=None,strokeDashArray=None):
+        self._x = x
+        self._y = y
+        self._width = width
+        self._height = height
+        self._strokeColor = strokeColor
+        self._fillColor = fillColor
+        self._strokeWidth = strokeWidth
+        self._strokeDashArray = strokeDashArray
+
+    def wrap(self, availWidth, availHeight):
+        return 0,0
+
+    def drawOn(self, canv, x, y, _sW=0):
+        if self._width>_FUZZ and self._height>_FUZZ:
+            st = self._strokeColor and self._strokeWidth is not None and self._strokeWidth>=0
+            if st or self._fillColor:
+                canv.saveState()
+                if st:
+                    canv.setStrokeColor(self._strokeColor)
+                    canv.setLineWidth(self._strokeWidth)
+                if self._fillColor:
+                    canv.setFillColor(self._fillColor)
+                canv.rect(self._x,self._y,self._width,self._height,stroke=1 if st else 0, fill=1 if self._fillColor else 0)
+                canv.restoreState()
+
+class _ExtendBG(NullDraw):
+    _ZEROSIZE=1
+    _SPACETRANSFER = True
+    def __init__(self,y,height,bg,frame):
+        self._y = y
+        self._height = height
+        self._bg = bg
+
+    def wrap(self, availWidth, availHeight):
+        return 0,0
+
+    def frameAction(self, frame):
+        bg = self._bg
+        fby = self._y
+        fbh = self._height
+        fbgl = bg.left
+        fbw = frame._width - fbgl - bg.right
+        fbx = frame._x1 - fbgl
+        canv = self.canv
+        pn = canv.getPageNumber()
+        bg.render(canv,frame,fbx,fby,fbw,fbh)
+
+class _AbsLine(NullDraw):
+    _ZEROSIZE=1
+    _SPACETRANSFER = True
+    def __init__(self,x,y,x1,y1,strokeWidth=0,strokeColor=None,strokeDashArray=None):
+        self._x = x
+        self._y = y
+        self._x1 = x1
+        self._y1 = y1
+        self._strokeColor = strokeColor
+        self._strokeWidth = strokeWidth
+        self._strokeDashArray = strokeDashArray
+
+    def wrap(self, availWidth, availHeight):
+        return 0,0
+
+    def drawOn(self, canv, x, y, _sW=0):
+        if self._strokeColor and self._strokeWidth is not None and self._strokeWidth>=0:
+            canv.saveState()
+            canv.setStrokeColor(self._strokeColor)
+            canv.setLineWidth(self._strokeWidth)
+            canv.line(self._x,self._y,self._x1,self._y1)
+            canv.restoreState()
+
+class BalancedColumns(_FindSplitterMixin,NullDraw):
+    '''combine a list of flowables and an Image'''
+    def __init__(self, F, nCols=2, needed=72, spaceBefore=0, spaceAfter=0, showBoundary=None,
+            leftPadding=None, innerPadding=None, rightPadding=None, topPadding=None, bottomPadding=None,
+            name='', endSlack=0.1,
+            boxStrokeColor=None,
+            boxStrokeWidth=0,
+            boxFillColor=None,
+            boxMargin=None,
+            vLinesStrokeColor=None,
+            vLinesStrokeWidth=None,
+            ):
+        self.name = name or 'BalancedColumns-%d' % id(self)
+        if nCols <2:
+            raise ValueError('nCols should be at least 2 not %r in %s' % (nCols,self.identitity()))
+        self._content = _flowableSublist(F)
+        self._nCols = nCols
+        self.spaceAfter = spaceAfter
+        self._leftPadding = leftPadding
+        self._innerPadding = innerPadding
+        self._rightPadding = rightPadding
+        self._topPadding = topPadding
+        self._bottomPadding = bottomPadding
+        self.spaceBefore = spaceBefore
+        self._needed = needed - _FUZZ
+        self.showBoundary = showBoundary
+        self.endSlack = endSlack    #what we might allow as a lastcolumn overrun
+        self._boxStrokeColor = boxStrokeColor
+        self._boxStrokeWidth = boxStrokeWidth
+        self._boxFillColor = boxFillColor
+        self._boxMargin = boxMargin
+        self._vLinesStrokeColor = vLinesStrokeColor
+        self._vLinesStrokeWidth = vLinesStrokeWidth
+
+    def identity(self, maxLen=None):
+        return "<%s nCols=%r at %s%s%s>" % (self.__class__.__name__, self._nCols, hex(id(self)), self._frameName(),
+                getattr(self,'name','') and (' name="%s"'% getattr(self,'name','')) or '',
+                )
+
+    def getSpaceAfter(self):
+        return self.spaceAfter
+
+    def getSpaceBefore(self):
+        return self.spaceBefore
+
+    def _generated_content(self,aW,aH):
+        G = []
+        frame = self._frame
+        from reportlab.platypus.doctemplate import LayoutError, ActionFlowable, Indenter
+        from reportlab.platypus.frames import Frame
+        from reportlab.platypus.doctemplate import FrameBreak
+        lpad = frame._leftPadding if self._leftPadding is None else self._leftPadding
+        rpad = frame._rightPadding if self._rightPadding is None else self._rightPadding
+        tpad = frame._topPadding if self._topPadding is None else self._topPadding
+        bpad = frame._bottomPadding if self._bottomPadding is None else self._bottomPadding
+        leftExtraIndent = frame._leftExtraIndent
+        rightExtraIndent = frame._rightExtraIndent
+        gap = max(lpad,rpad) if self._innerPadding is None else self._innerPadding
+        hgap = gap*0.5
+        canv = self.canv
+        nCols = self._nCols
+        cw = (aW - gap*(nCols-1) - lpad - rpad)/float(nCols)
+        aH0 = aH
+        aH -= tpad + bpad
+        W,H0,_C0,C2 = self._findSplit(canv,cw,nCols*aH,paraFix=False)
+        if not _C0:
+            raise ValueError(
+                    "%s cannot make initial split aW=%r aH=%r ie cw=%r ah=%r\ncontent=%s" % (
+                        self.identity(),aW,aH,cw,nCols*aH,
+                        [f.__class__.__name__ for f in self._content],
+                        ))
+        _fres = {}
+        def splitFunc(ah,endSlack=0):
+            if ah not in _fres:
+                c = []
+                w = 0
+                h = 0
+                cn = None
+                icheck = nCols-2 if endSlack else -1
+                for i in range(nCols):
+                    wi, hi, c0, c1 = self._findSplit(canv,cw,ah,content=cn,paraFix=False)
+                    w = max(w,wi)
+                    h = max(h,hi)
+                    c.append(c0)
+                    if i==icheck:
+                        wc, hc, cc0, cc1 = self._findSplit(canv,cw,2*ah,content=c1,paraFix=False)
+                        if hc<=(1+endSlack)*ah:
+                            c.append(c1)
+                            h = ah-1e-6
+                            cn = []
+                            break
+                    cn = c1
+                _fres[ah] = ah+100000*int(cn!=[]),cn==[],(w,h,c,cn)
+            return _fres[ah][2]
+
+        endSlack = 0
+        if C2:
+            H = aH
+        else:
+            #we are short so use H0 to figure out what to use
+            import math
+
+            def func(ah):
+                splitFunc(ah)
+                return _fres[ah][0]
+
+            def gss(f, a, b, tol=1, gr=(math.sqrt(5) + 1) / 2):
+                c = b - (b - a) / gr
+                d = a + (b - a) / gr
+                while abs(a - b) > tol:
+                    if f(c) < f(d):
+                        b = d
+                    else:
+                        a = c
+
+                    # we recompute both c and d here to avoid loss of precision which may lead to incorrect results or infinite loop
+                    c = b - (b - a) / gr
+                    d = a + (b - a) / gr
+
+                F = [(x,tf,v) for x,tf,v in _fres.values() if tf]
+                if F:
+                    F.sort()
+                    return F[0][2]
+                return None
+
+            H = min(int(H0/float(nCols)+self.spaceAfter*0.4),aH)
+            splitFunc(H)
+            if not _fres[H][1]:
+                H = gss(func,H,aH)
+                if H:
+                    W, H0, _C0, C2 = H
+                    H = H0
+                    endSlack = False
                 else:
-                    return W,availHeight,F[:i]+S[:1],S[1:]+F[i+1:]
-            pS = f.getSpaceAfter()
-            H += pS
-        if obj is not None: obj._spaceAfter = pS
-        return W, H-pS, F, []
+                    H = aH
+                    endSlack = self.endSlack
+            else:
+                H1 = H0/float(nCols)
+                splitFunc(H1)
+                if not _fres[H1][1]:
+                    H = gss(func,H,aH)
+                    if H:
+                        W, H0, _C0, C2 = H
+                        H = H0
+                        endSlack = False
+                    else:
+                        H = aH
+                        endSlack = self.endSlack
+            assert not C2, "unexpected non-empty C2"
+        W1, H1, C, C1 = splitFunc(H, endSlack)
+        _fres.clear()
+        if C[0]==[] and C[1]==[] and C1:
+            #no split situation
+            C, C1 = [C1,C[1]], C[0]
+
+        x1 = frame._x1
+        y1 = frame._y1
+        fw = frame._width
+        ftop = y1+bpad+tpad+aH
+        fh = H1 + bpad + tpad
+        y2 = ftop - fh
+        dx = aW / float(nCols)
+        if leftExtraIndent or rightExtraIndent:
+            indenter0 = Indenter(-leftExtraIndent,-rightExtraIndent)
+            indenter1 = Indenter(leftExtraIndent,rightExtraIndent)
+        else:
+            indenter0 = indenter1 = None
+
+        showBoundary=self.showBoundary if self.showBoundary is not None else frame.showBoundary
+        obx = x1+leftExtraIndent+frame._leftPadding
+        F = [Frame(obx+i*dx,y2,dx,fh,
+                leftPadding=lpad if not i else hgap, bottomPadding=bpad,
+                rightPadding=rpad if i==nCols-1 else hgap, topPadding=tpad,
+                id='%s-%d' %(self.name,i),
+                showBoundary=showBoundary,
+                overlapAttachedSpace=frame._oASpace,
+                _debug=frame._debug) for i in range(nCols)]
+
+
+        #we are going to modify the current template
+        T=self._doctemplateAttr('pageTemplate')
+        if T is None:
+            raise LayoutError('%s used in non-doctemplate environment' % self.identity())
+
+        BGs = getattr(frame,'_frameBGs',None)
+        xbg = bg = BGs[-1] if BGs else None
+
+        class TAction(ActionFlowable):
+            '''a special Action flowable that sets stuff on the doc template T'''
+            def __init__(self, bgs=[],F=[],f=None):
+                Flowable.__init__(self)
+                self.bgs = bgs
+                self.F = F
+                self.f = f
+
+            def apply(self,doc,T=T):
+                T.frames = self.F
+                frame._frameBGs = self.bgs
+                doc.handle_currentFrame(self.f.id)
+                frame._frameBGs = self.bgs
+
+        if bg:
+            #G.append(Spacer(1e-5,1e-5))
+            #G[-1].__id__ = 'spacer0'
+            xbg = _ExtendBG(y2,fh,bg,frame)
+            G.append(xbg)
+
+        oldFrames = T.frames
+        G.append(TAction([],F,F[0]))
+        if indenter0: G.append(indenter0)
+        doBox = (self._boxStrokeColor and self._boxStrokeWidth and self._boxStrokeWidth>=0) or self._boxFillColor
+        doVLines = self._vLinesStrokeColor and self._vLinesStrokeWidth and self._vLinesStrokeWidth>=0
+        if doBox or doVLines:
+            obm = self._boxMargin
+            if not obm: obm = (0,0,0,0)
+            if len(obm)==1:
+                obmt = obml = obmr = obmb = obm[0]
+            elif len(obm)==2:
+                obmt = obmb = obm[0]
+                obml = obmr = obm[1]
+            elif len(obm)==3:
+                obmt = obm[0]
+                obml = obmr = obm[1]
+                obmb = obm[2]
+            elif len(obm)==4:
+                obmt = obm[0]
+                obmr = obm[1]
+                obmb = obm[2]
+                obml = obm[3]
+            else:
+                raise ValueError('Invalid value %s for boxMargin' % repr(obm))
+            obx1 = obx - obml
+            obx2 = F[-1]._x1+F[-1]._width + obmr
+            oby2 = y2-obmb
+            obh = fh+obmt+obmb
+            oby1 = oby2+obh
+            if doBox:
+                box = _AbsRect(obx1,oby2, obx2-obx1, obh,
+                        fillColor=self._boxFillColor,
+                        strokeColor=self._boxStrokeColor,
+                        strokeWidth=self._boxStrokeWidth,
+                        )
+            if doVLines:
+                vLines = []
+                for i in range(1,nCols):
+                    vlx = 0.5*(F[i]._x1 + F[i-1]._x1+F[i-1]._width)
+                    vLines.append(_AbsLine(vlx,oby2,vlx,oby1,strokeWidth=self._vLinesStrokeWidth,strokeColor=self._vLinesStrokeColor))
+        else:
+            oby1 = ftop
+            oby2 = y2
+
+        if doBox: G.append(box)
+        if doVLines: G.extend(vLines)
+        sa = self.getSpaceAfter()
+        for i in range(nCols):
+            Ci = C[i]
+            if Ci:
+                Ci = KeepInFrame(W1,H1,Ci,mode='shrink')
+                sa = max(sa,Ci.getSpaceAfter())
+                G.append(Ci)
+            if i!=nCols-1:
+                G.append(FrameBreak)
+        G.append(TAction(BGs,oldFrames,frame))
+        if xbg:
+            if C1: sa = 0
+            xbg._y = min(y2,oby2) - sa
+            xbg._height = max(ftop,oby1) - xbg._y
+        if indenter1: G.append(indenter1)
+        if C1:
+            G.append(
+                BalancedColumns(C1, nCols=nCols,
+                    needed=self._needed, spaceBefore=self.spaceBefore, spaceAfter=self.spaceAfter,
+                    showBoundary=self.showBoundary,
+                    leftPadding=self._leftPadding,
+                    innerPadding=self._innerPadding,
+                    rightPadding=self._rightPadding,
+                    topPadding=self._topPadding,
+                    bottomPadding=self._bottomPadding,
+                    name=self.name+'-1', endSlack=self.endSlack,
+                    boxStrokeColor=self._boxStrokeColor,
+                    boxStrokeWidth=self._boxStrokeWidth,
+                    boxFillColor=self._boxFillColor,
+                    boxMargin=self._boxMargin,
+                    vLinesStrokeColor=self._vLinesStrokeColor,
+                    vLinesStrokeWidth=self._vLinesStrokeWidth,
+                    )
+                )
+        return fh, G
+
+    def wrap(self,aW,aH):
+        #here's where we mess with everything
+        if aH<self.spaceBefore+self._needed-_FUZZ:
+            #we are going straight to the nextTemplate with no attempt to modify the frames
+            G = [PageBreak(), self]
+            H1 = 0
+        else:
+            H1, G = self._generated_content(aW,aH)
+
+        self._frame.add_generated_content(*G)
+        return 0,min(H1,aH)
 
 class AnchorFlowable(Spacer):
     '''create a bookmark in the pdf'''
@@ -1329,12 +1798,54 @@ class AnchorFlowable(Spacer):
     def draw(self):
         self.canv.bookmarkHorizontal(self._name,0,0)
 
+class _FBGBag(ABag):
+    def matches(self,frame,canv):
+        fid = id(frame)
+        return ((isinstance(self.fid,list) and fid in self.fid or fid==self.fid)
+                    and id(canv)==self.cid and self.pn==canv.getPageNumber())
+
+    def getDims(self,canv):
+        self._inst = canv._code[self.codePos].split()
+        return map(float,self._inst[1:5])
+
+    def setDims(self,canv,x,y,w,h):
+        self._inst[1:5] = [fp_str(x,y,w,h)]
+        canv._code[self.codePos] = ' '.join(self._inst)
+
+    def render(self,canv,frame,fbx,fby,fbw,fbh):
+        if abs(fbw)>_FUZZ and abs(fbh)>_FUZZ:
+            pn = canv.getPageNumber()
+            if self.fid==id(frame) and self.cid==id(canv) and self.pn==pn:
+                ox,oy,ow,oh = self.getDims(canv)
+                self.setDims(canv,ox,fby,ow,oh+oy-fby)
+            else:
+                canv.saveState()
+                fbgc = self.fillColor
+                if fbgc:
+                    canv.setFillColor(fbgc)
+                sw = self.strokeWidth
+                sc = None if sw is None or sw<0 else self.strokeColor
+                if sc:
+                    canv.setStrokeColor(sc)
+                    canv.setLineWidth(sw)
+                    da = self.strokeDashArray
+                    if da:
+                        canv.setDash(da)
+                self.fid = id(frame)
+                self.cid = id(canv)
+                self.pn = pn
+                self.codePos = len(canv._code)
+                canv.rect(fbx,fby,fbw,fbh,stroke=1 if sc else 0,fill=1 if fbgc else 0)
+                canv.restoreState()
+
 class FrameBG(AnchorFlowable):
     """Start or stop coloring the frame background
     left & right are distances from the edge of the frame to start stop colouring.
+    if start in ('frame','frame-permanent') then the background is filled from here to the bottom of the frame and immediately discarded
+    for the frame case.
     """
     _ZEROSIZE=1
-    def __init__(self, color=None, left=0, right=0, start=True):
+    def __init__(self, color=None, left=0, right=0, start=True, strokeWidth=None, strokeColor=None, strokeDashArray=None):
         Spacer.__init__(self,0,0)
         self.start = start
         if start:
@@ -1342,6 +1853,9 @@ class FrameBG(AnchorFlowable):
             self.left = _evalMeasurement(left)
             self.right = _evalMeasurement(right)
             self.color = color
+            self.strokeWidth = strokeWidth
+            self.strokeColor = strokeColor
+            self.strokeDashArray = strokeDashArray
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__,', '.join(['%s=%r' % (i,getattr(self,i,None)) for i in 'start color left right'.split()]))
@@ -1350,8 +1864,23 @@ class FrameBG(AnchorFlowable):
         frame = getattr(self,'_frame',None)
         if frame is None: return
         if self.start:
-            w = getattr(frame,'_lineWidth',0)
-            frame._frameBGs.append((self.left,self.right,self.color))
+            sc = self.strokeColor
+            sw = self.strokeWidth
+            sw = -1 if sw is None else sw
+            frame._frameBGs.append(
+                        _FBGBag(left=self.left,
+                                right=self.right,
+                                fillColor=self.color,
+                                start=self.start if self.start in ('frame','frame-permanent') else None,
+                                strokeColor=self.strokeColor,
+                                strokeWidth=self.strokeWidth,
+                                strokeDashArray=self.strokeDashArray,
+                                fid = 0,
+                                cid = 0,
+                                pn = -1,
+                                codePos = None,
+                                active=True,
+                                ))
         elif frame._frameBGs:
             frame._frameBGs.pop()
 
@@ -1359,14 +1888,15 @@ class FrameSplitter(NullDraw):
     '''When encountered this flowable should either switch directly to nextTemplate
     if remaining space in the current frame is less than gap+required or it should
     temporarily modify the current template to have the frames from nextTemplate
-    that are listed in nextFrames and switch to the first of those frames. 
+    that are listed in nextFrames and switch to the first of those frames.
     '''
     _ZEROSIZE=1
-    def __init__(self,nextTemplate,nextFrames=[],gap=10,required=72):
-        self.nextTemplate=nextTemplate
-        self.nextFrames=nextFrames or []
-        self.gap=gap
-        self.required=required
+    def __init__(self, nextTemplate, nextFrames=[], gap=10, required=72, adjustHeight=True):
+        self.nextTemplate = nextTemplate
+        self.nextFrames = nextFrames or []
+        self.gap = gap
+        self.required = required
+        self.adjustHeight = adjustHeight
 
     def wrap(self,aW,aH):
         frame = self._frame
@@ -1398,7 +1928,7 @@ class FrameSplitter(NullDraw):
             h=aH-self.gap
             for i,f in enumerate(F):
                 f=copy(f)
-                f.height=h
+                if self.adjustHeight: f.height=h
                 f._reset()
                 F[i]=f
             T.frames=F
@@ -1412,9 +1942,13 @@ _bulletNames = dict(
                 bulletchar=u'\u2022',   #usually a small circle
                 circle=u'\u25cf',   #circle as high as the font
                 square=u'\u25a0',
-                disc=u'\u25cf',
+                disc=u'\u25cb',
                 diamond=u'\u25c6',
+                diamondwx=u'\u2756',
                 rarrowhead=u'\u27a4',
+                sparkle=u'\u2747',
+                squarelrs=u'\u274f',
+                blackstar=u'\u2605',
                 )
 
 def _bulletFormat(value,type='1',format=None):
@@ -1424,9 +1958,9 @@ def _bulletFormat(value,type='1',format=None):
         s = _type2formatter[type](int(value))
 
     if format:
-        if isinstance(format,str):
+        if isinstance(format,strTypes):
             s = format % s
-        elif isinstance(format, collections.Callable):
+        elif callable(format):
             s = format(s)
         else:
             raise ValueError('unexpected BulletDrawer format %r' % format)
@@ -1522,7 +2056,7 @@ class DDIndenter(Flowable):
                 return self.__dict__[a]
             except KeyError:
                 if a not in ('spaceBefore','spaceAfter'):
-                    raise
+                    raise AttributeError('%r has no attribute %s' % (self,a))
         return getattr(self._flowable,a)
 
     def __setattr__(self,a,v):
@@ -1621,9 +2155,10 @@ class _LIParams:
         self.first= first
 
 class ListFlowable(_Container,Flowable):
+    _numberStyles = '1aAiI'
     def __init__(self,
                     flowables,  #the initial flowables
-                    start=1,
+                    start=None,
                     style=None,
                     #leftIndent=18,
                     #rightIndent=0,
@@ -1648,23 +2183,43 @@ class ListFlowable(_Container,Flowable):
 
         for k,v in ListStyle.defaults.items():
             setattr(self,'_'+k,kwds.get(k,getattr(style,k,v)))
-        if start is None:
-            start = getattr(self,'_start',None)
-            if start is None:
-                if getattr(self,'_bulletType','1')=='bullet':
-                    start = 'bulletchar'
-                else:
-                    start = '1'
-        self._start = start
 
         for k in ('spaceBefore','spaceAfter'):
             v = kwds.get(k,getattr(style,k,None))
             if v is not None:
                 setattr(self,k,v)
 
-        self._content = self._getContent()
-        del self._flowables
+        auto = False
+        if start is None:
+            start = getattr(self,'_start',None)
+            if start is None:
+                if self._bulletType=='bullet':
+                    start = 'bulletchar'
+                    auto = True
+                else:
+                    start = self._bulletType
+                    auto = True
+        if self._bulletType!='bullet':
+            if auto:
+                for v in start:
+                    if v not in self._numberStyles:
+                        raise ValueError('invalid start=%r or bullettype=%r' % (start,self._bulletType))
+            else:
+                for v in self._bulletType:
+                    if v not in self._numberStyles:
+                        raise ValueError('invalid bullettype=%r' % self._bulletType)
+        self._start = start
+        self._auto = auto or isinstance(start,(list,tuple))
+
+        self._list_content = None
         self._dims = None
+
+    @property
+    def _content(self):
+        if self._list_content is None:
+            self._list_content = self._getContent()
+            del self._flowables
+        return self._list_content
 
     def wrap(self,aW,aH):
         if self._dims!=aW:
@@ -1741,10 +2296,20 @@ class ListFlowable(_Container,Flowable):
                     )
 
     def _getContent(self):
-        value = self._start
         bt = self._bulletType
+        value = self._start
+        if isinstance(value,(list,tuple)):
+            values = value
+            value = values[0]
+        else:
+            values = [value]
+        autov = values[0]
         inc = int(bt in '1aAiI')
-        if inc: value = int(value)
+        if inc:
+            try:
+                value = int(value)
+            except:
+                value = 1
 
         bd = self._bulletDedent
         if bd=='auto':
@@ -1787,6 +2352,19 @@ class ListFlowable(_Container,Flowable):
         aS = S.append
         i=0
         for d,f in self._flowablesIter():
+            if isinstance(f,ListFlowable):
+                fstart = f._start
+                if isinstance(fstart,(list,tuple)):
+                    fstart = fstart[0]
+                if fstart in values:
+                    #my kind of ListFlowable
+                    if f._auto:
+                        autov = values.index(autov)+1
+                        f._start = values[autov:]+values[:autov]
+                        autov = f._start[0]
+                        if inc: f._bulletType = autov
+                    else:
+                        autov = fstart
             fparams = {}
             if not i:
                 i += 1
@@ -1979,4 +2557,32 @@ class DocWhile(DocIf):
     def wrap(self,aW,aH):
         if bool(self.funcWrap(aW,aH)):
             self.add_content(*(list(self.block)+[self]))
+        return 0,0
+
+class SetTopFlowables(NullDraw):
+    _ZEROZSIZE = 1
+    def __init__(self,F,show=False):
+        self._F = F
+        self._show = show
+
+    def wrap(self,aW,aH):
+        doc = getattr(getattr(self,'canv',None),'_doctemplate',None)
+        if doc:
+            doc._topFlowables = self._F
+            if self._show and self._F:
+                doc.frame._generated_content = self._F
+        return 0,0
+
+class SetPageTopFlowables(NullDraw):
+    _ZEROZSIZE = 1
+    def __init__(self,F,show=False):
+        self._F = F
+        self._show = show
+
+    def wrap(self,aW,aH):
+        doc = getattr(getattr(self,'canv',None),'_doctemplate',None)
+        if doc:
+            doc._pageTopFlowables = self._F
+            if self._show and self._F:
+                doc.frame._generated_content = self._F
         return 0,0

@@ -1,7 +1,7 @@
 #!/bin/env python
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""Generate ReportLab logo in a variety of sizes and formats.
 
 
@@ -12,11 +12,11 @@ This module includes some reusable routines for ReportLab's
 from reportlab.lib.units import inch,cm
 from reportlab.lib.validators import *
 from reportlab.lib.attrmap import *
+from reportlab.lib.formatters import DecimalFormatter
 from reportlab.graphics.shapes import definePath, Group, Drawing, Rect, PolyLine, String
 from reportlab.graphics.widgetbase import Widget
 from reportlab.lib.colors import Color, black, white, ReportLabBlue
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from math import sin, pi
 
 class RL_CorpLogo(Widget):
     '''Dinu's fat letter logo as hacked into decent paths by Robin'''
@@ -35,9 +35,12 @@ class RL_CorpLogo(Widget):
         height = AttrMapValue(isNumber, desc="height in points of the logo (default 86)"),
         skewX = AttrMapValue(isNumber, desc="x-skew of the logo (default 10)"),
         skewY = AttrMapValue(isNumber, desc="y-skew of the logo (default 0)"),
-        showPage = AttrMapValue(isBoolean, desc="If true show the page lines"),
+        showPage = AttrMapValue(EitherOr((isBoolean,SequenceOf(isBoolean,lo=2,hi=2))), desc="If true or (true(top),true(bottom)) show the page lines"),
         xFlip = AttrMapValue(isBoolean, desc="If true do x reversal"),
         yFlip = AttrMapValue(isBoolean, desc="If true do y reversal"),
+        oColors = AttrMapValue(NoneOr(EitherOr((isColor,SequenceOf(isColorOrNone,lo=2,hi=2)))),desc="None or fill/stroke colors for the o in ReportLab"),
+        pageColors = AttrMapValue(NoneOr(EitherOr((isColor,SequenceOf(isColorOrNone,lo=2,hi=2)))),desc="None or fill/stroke colors for the page outline"),
+        prec = AttrMapValue(NoneOr(isInt),desc="None or precision negative means strip excess"),
         )
 
     def __init__(self):
@@ -54,6 +57,9 @@ class RL_CorpLogo(Widget):
         self.skewX = 10
         self._dy = 35.5
         self.showPage = 1
+        self.oColors = None             #ie use the default
+        self.pageColors = None          #ie use the default
+        self.prec = None
 
     def demo(self):
         D = Drawing(self.width, self.height)
@@ -72,21 +78,46 @@ class RL_CorpLogo(Widget):
             ('moveTo' ,110.00787,0 ), ('lineTo' ,104.45523,0 ), ('curveTo' ,104.5012,0.44754 ,104.53803,0.87433 ,104.56573,1.2804 ), ('curveTo' ,104.59313,1.68651 ,104.62083,2.01385 ,104.64853,2.26246 ), ('curveTo' ,103.69087,0.57182 ,102.40644,-0.27348 ,100.79492,-0.27348 ), ('curveTo' ,99.39527,-0.27348 ,98.28557,0.35637 ,97.46611,1.61605 ), ('curveTo' ,96.65578,2.86746 ,96.25062,4.59952 ,96.25062,6.81227 ), ('curveTo' ,96.25062,8.95041 ,96.66963,10.63276 ,97.50765,11.8593 ), ('curveTo' ,98.34538,13.10242 ,99.4872,13.72396 ,100.93312,13.72396 ), ('curveTo' ,102.41557,13.72396 ,103.61249,12.92008 ,104.52418,11.31231 ), ('curveTo' ,104.50591,11.47806 ,104.49206,11.62309 ,104.48293,11.74741 ), ('curveTo' ,104.4735,11.87173 ,104.46437,11.9753 ,104.45523,12.05819 ), ('lineTo' ,104.39983,12.84135 ), ('lineTo' ,104.35858,13.43804 ), ('lineTo' ,110.00787,13.43804 ), 'closePath', ('moveTo' ,104.39983,6.88685 ), ('curveTo' ,104.39983,7.38409 ,104.37921,7.80676 ,104.33766,8.15481 ), ('curveTo' ,104.29641,8.5029 ,104.22952,8.78672 ,104.13758,9.00636 ), ('curveTo' ,104.04535,9.22598 ,103.92572,9.38341 ,103.77839,9.47874 ), ('curveTo' ,103.63106,9.57403 ,103.45161,9.62168 ,103.23974,9.62168 ), ('curveTo' ,102.30036,9.62168 ,101.83096,8.49875 ,101.83096,6.25285 ), ('curveTo' ,101.83096,4.64508 ,102.24967,3.8412 ,103.0877,3.8412 ), ('curveTo' ,103.96255,3.8412 ,104.39983,4.85641 ,104.39983,6.88685 ), 'closePath',
             ('moveTo' ,118.22604,0 ), ('lineTo' ,112.5629,0 ), ('lineTo' ,112.5629,20.99616 ), ('lineTo' ,118.10169,20.99616 ), ('lineTo' ,118.10169,13.63694 ), ('curveTo' ,118.10169,13.01538 ,118.07399,12.30268 ,118.01889,11.49877 ), ('curveTo' ,118.52542,12.31096 ,119.03636,12.88693 ,119.55202,13.22671 ), ('curveTo' ,120.08625,13.55821 ,120.75838,13.72396 ,121.5687,13.72396 ), ('curveTo' ,123.07885,13.72396 ,124.24837,13.09827 ,125.07697,11.84686 ), ('curveTo' ,125.90586,10.60373 ,126.32015,8.85099 ,126.32015,6.5885 ), ('curveTo' ,126.32015,4.42546 ,125.89201,2.74314 ,125.03571,1.54147 ), ('curveTo' ,124.18826,0.3315 ,123.01432,-0.27348 ,121.51331,-0.27348 ), ('curveTo' ,120.78608,-0.27348 ,120.16905,-0.12432 ,119.66252,0.17403 ), ('curveTo' ,119.41383,0.3315 ,119.15835,0.54283 ,118.8961,0.80803 ), ('curveTo' ,118.63356,1.07322 ,118.36866,1.40472 ,118.10169,1.80252 ), ('curveTo' ,118.11112,1.64505 ,118.12025,1.51039 ,118.12939,1.3985 ), ('curveTo' ,118.13852,1.28662 ,118.14766,1.19339 ,118.15709,1.11881 ), 'closePath', ('moveTo' ,120.58806,6.70038 ), ('curveTo' ,120.58806,8.62306 ,120.11837,9.5844 ,119.17898,9.5844 ), ('curveTo' ,118.35039,9.5844 ,117.93609,8.67693 ,117.93609,6.86198 ), ('curveTo' ,117.93609,4.96417 ,118.36424,4.01526 ,119.22053,4.01526 ), ('curveTo' ,120.13222,4.01526 ,120.58806,4.91027 ,120.58806,6.70038 ), 'closePath',
             ]
-        PP = self.showPage and [
-                        ('moveTo',38.30626,-7.28346),('lineTo',38.30626,-25.55261),('lineTo',85.15777,-25.55261),('lineTo',85.15777,-1.39019),('lineTo',90.46172,-1.39019),('lineTo',90.46172,-31.15121),('lineTo',32.70766,-31.15121),('lineTo',32.70766,-7.28346), 'closePath',
-                        ('moveTo' ,32.70766,14.52164 ), ('lineTo' ,32.70766,47.81862 ), ('lineTo' ,80.14849,47.81862 ), ('lineTo' ,90.46172,37.21073 ), ('lineTo' ,90.46172,20.12025 ), ('lineTo' ,85.15777,20.12025 ), ('lineTo' ,85.15777,30.72814 ), ('lineTo' ,73.66589,30.72814 ), ('lineTo' ,73.66589,42.22002 ), ('lineTo' ,38.30626,42.22002 ), ('lineTo' ,38.30626,14.52164 ), 'closePath', ('moveTo' ,79.2645,36.32674 ), ('lineTo' ,85.15777,36.32674 ), ('lineTo' ,79.2645,42.22002 ), 'closePath',
-                        ] or []
+
+
+        showPage = self.showPage
+        PP = []
+        if showPage:
+            if not isSeq(showPage):
+                showPage = (showPage,showPage)
+            if showPage[0]: #top
+                PP.extend([('moveTo' ,32.70766,14.52164 ), ('lineTo' ,32.70766,47.81862 ), ('lineTo' ,80.14849,47.81862 ), ('lineTo' ,90.46172,37.21073 ), ('lineTo' ,90.46172,20.12025 ), ('lineTo' ,85.15777,20.12025 ), ('lineTo' ,85.15777,30.72814 ), ('lineTo' ,73.66589,30.72814 ), ('lineTo' ,73.66589,42.22002 ), ('lineTo' ,38.30626,42.22002 ), ('lineTo' ,38.30626,14.52164 ), 'closePath', ('moveTo' ,79.2645,36.32674 ), ('lineTo' ,85.15777,36.32674 ), ('lineTo' ,79.2645,42.22002 ), 'closePath'])
+            if showPage[1]: #bottom
+                PP.extend([('moveTo',38.30626,-7.28346),('lineTo',38.30626,-25.55261),('lineTo',85.15777,-25.55261),('lineTo',85.15777,-1.39019),('lineTo',90.46172,-1.39019),('lineTo',90.46172,-31.15121),('lineTo',32.70766,-31.15121),('lineTo',32.70766,-7.28346), 'closePath'])
+
         if _ocolors:
+            OP = self.applyPrec(OP,self.prec)
             g.add(definePath(OP,strokeColor=_ocolors[0],strokeWidth=strokeWidth,fillColor=_ocolors[1], dx=dx, dy=dy))
-            print('_ocolors',_ocolors)
         else:
             P += OP
         if self.showPage and _pagecolors:
+            PP = self.applyPrec(PP,self.prec)
             g.add(definePath(PP,strokeColor=_pagecolors[0],strokeWidth=strokeWidth,fillColor=_pagecolors[1], dx=dx, dy=dy))
-            print('_pagecolors',_pagecolors)
         else:
             P += PP
+        P = self.applyPrec(P,self.prec)
         g.add(definePath(P,strokeColor=strokeColor,strokeWidth=strokeWidth,fillColor=fillColor, dx=dx, dy=dy))
+
+    @staticmethod
+    def applyPrec(P,prec):
+        if prec is None: return P
+        R = [].append
+        f = DecimalFormatter(places=prec)
+        for p in P:
+            if isSeq(p):
+                n = [].append
+                for e in p:
+                    if isinstance(e,float):
+                        e = float(f(e))
+                    n(e)
+                p = n.__self__
+            R(p)
+        return R.__self__
 
     def draw(self):
         fillColor = self.fillColor
@@ -102,7 +133,7 @@ class RL_CorpLogo(Widget):
                 shadow = Color(bg.red*shadow,bg.green*shadow,bg.blue*shadow)
             self._paintLogo(g,dy=-2.5, dx=2,fillColor=shadow)
         self._paintLogo(g,fillColor=fillColor,strokeColor=strokeColor,
-                _ocolors=getattr(self,'_ocolors',None),_pagecolors=getattr(self,'_pagecolors',None))
+                _ocolors=self.oColors or None,_pagecolors=self.pageColors or None)
         g.skew(kx=self.skewX, ky=self.skewY)
         g.shift(self._dx,self._dy)
         G = Group()
@@ -404,7 +435,7 @@ class RL_BusinessCard(Widget):
         return g
 
 
-def test():
+def test(formats=['pdf','eps','jpg','gif','svg']):
     """This function produces a pdf with examples. """
 
     #white on blue
@@ -414,7 +445,7 @@ def test():
     D = Drawing(rl.width,rl.height)
     D.add(rl)
     D.__dict__['verbose'] = 1
-    D.save(fnRoot='corplogo_whiteonblue',formats=['pdf','eps','jpg','gif'])
+    D.save(fnRoot='corplogo_whiteonblue',formats=formats)
 
 
     #blue on white
@@ -424,7 +455,7 @@ def test():
     D = Drawing(rl.width,rl.height)
     D.add(rl)
     D.__dict__['verbose'] = 1
-    D.save(fnRoot='corplogo_blueonwhite',formats=['pdf','eps','jpg','gif'])
+    D.save(fnRoot='corplogo_blueonwhite',formats=formats)
 
     #gray on white
     rl = RL_CorpLogoReversed()
@@ -434,7 +465,7 @@ def test():
     D = Drawing(rl.width,rl.height)
     D.add(rl)
     D.__dict__['verbose'] = 1
-    D.save(fnRoot='corplogo_grayonwhite',formats=['pdf','eps','jpg','gif'])
+    D.save(fnRoot='corplogo_grayonwhite',formats=formats)
 
 
     rl = RL_BusinessCard()
@@ -444,7 +475,7 @@ def test():
     D = Drawing(rl.width+50,rl.height+50)
     D.add(rl)
     D.__dict__['verbose'] = 1
-    D.save(fnRoot='RL_BusinessCard',formats=['pdf'])
+    D.save(fnRoot='RL_BusinessCard',formats=formats)
 
 if __name__=='__main__':
     test()

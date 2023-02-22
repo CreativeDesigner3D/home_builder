@@ -21,15 +21,17 @@ testing = getattr(reportlab,'_rl_testing',False)
 del reportlab
 
 for fn in __all__:
+    D={}
     try:
-        exec('from reportlab.lib._rl_accel import %s as f' % fn)
-        _c_funcs[fn] = f
+        exec('from reportlab.lib._rl_accel import %s as f' % fn,D)
+        _c_funcs[fn] = D['f']
         if testing: _py_funcs[fn] = None
     except ImportError:
         _py_funcs[fn] = None
+    del D
 
 if _py_funcs:
-    from reportlab.lib.utils import isBytes, isUnicode, isSeq, isPy3, rawBytes, asNative, asUnicode, asBytes
+    from reportlab.lib.utils import isUnicode, isSeq, rawBytes, asNative, asBytes
     from math import log
     from struct import unpack
 
@@ -94,16 +96,10 @@ if 'unicode2T1' in _py_funcs:
     _py_funcs['unicode2T1'] = unicode2T1
 
 if 'instanceStringWidthT1' in _py_funcs:
-    if isPy3:
-        def instanceStringWidthT1(self, text, size, encoding='utf8'):
-            """This is the "purist" approach to width"""
-            if not isUnicode(text): text = text.decode(encoding)
-            return sum([sum(map(f.widths.__getitem__,t)) for f, t in unicode2T1(text,[self]+self.substitutionFonts)])*0.001*size
-    else:
-        def instanceStringWidthT1(self, text, size, encoding='utf8'):
-            """This is the "purist" approach to width"""
-            if not isUnicode(text): text = text.decode(encoding)
-            return sum([sum(map(f.widths.__getitem__,list(map(ord,t)))) for f, t in unicode2T1(text,[self]+self.substitutionFonts)])*0.001*size
+    def instanceStringWidthT1(self, text, size, encoding='utf8'):
+        """This is the "purist" approach to width"""
+        if not isUnicode(text): text = text.decode(encoding)
+        return sum((sum(map(f.widths.__getitem__,t)) for f, t in unicode2T1(text,[self]+self.substitutionFonts)))*0.001*size
     _py_funcs['instanceStringWidthT1'] = instanceStringWidthT1
 
 if 'instanceStringWidthTTF' in _py_funcs:
@@ -113,7 +109,7 @@ if 'instanceStringWidthTTF' in _py_funcs:
             text = text.decode(encoding or 'utf-8')
         g = self.face.charWidths.get
         dw = self.face.defaultWidth
-        return 0.001*size*sum([g(ord(u),dw) for u in text])
+        return 0.001*size*sum((g(ord(u),dw) for u in text))
     _py_funcs['instanceStringWidthTTF'] = instanceStringWidthTTF
 
 if 'hex32' in _py_funcs:
@@ -162,7 +158,7 @@ if 'asciiBase85Encode' in _py_funcs:
         This is a compact encoding used for binary data within
         a PDF file.  Four bytes of binary data become five bytes of
         ASCII.  This is the default method used for encoding images."""
-        doOrd =  not isPy3 or isUnicode(input)
+        doOrd =  isUnicode(input)
         # special rules apply if not a multiple of four bytes.
         whole_word_count, remainder_size = divmod(len(input), 4)
         cut = 4 * whole_word_count
@@ -320,7 +316,7 @@ if 'sameFrag' in _py_funcs:
         'returns 1 if two ParaFrags map out the same'
         if (hasattr(f,'cbDefn') or hasattr(g,'cbDefn')
                 or hasattr(f,'lineBreak') or hasattr(g,'lineBreak')): return 0
-        for a in ('fontName', 'fontSize', 'textColor', 'rise', 'underline', 'strike', 'link', "backColor"):
+        for a in ('fontName', 'fontSize', 'textColor', 'rise', 'us_lines', 'link', "backColor", "nobr"):
             if getattr(f,a,None)!=getattr(g,a,None): return 0
         return 1
     _py_funcs['sameFrag'] = sameFrag
@@ -334,19 +330,19 @@ for fn in __all__:
 del fn, f, G
 
 if __name__=='__main__':
-    import sys, os
+    import sys, subprocess
     for modname in 'reportlab.lib.rl_accel','reportlab.lib._rl_accel':
         for cmd  in (
             #"unicode2T1('abcde fghi . jkl ; mno',fonts)",
             #"unicode2T1(u'abcde fghi . jkl ; mno',fonts)",
-            "_instanceStringWidthU(font,'abcde fghi . jkl ; mno',10)",
-            "_instanceStringWidthU(font,u'abcde fghi . jkl ; mno',10)",
+            "instanceStringWidthT1(font,'abcde fghi . jkl ; mno',10)",
+            "instanceStringWidthT1(font,u'abcde fghi . jkl ; mno',10)",
             ):
             print('%s %s' % (modname,cmd))
             s=';'.join((
                 "from reportlab.pdfbase.pdfmetrics import getFont",
-                "from %s import unicode2T1,_instanceStringWidthU" % modname,
+                "from %s import unicode2T1,instanceStringWidthT1" % modname,
                 "fonts=[getFont('Helvetica')]+getFont('Helvetica').substitutionFonts""",
                 "font=fonts[0]",
                 ))
-            os.system('%s -m timeit -s"%s" "%s"' % (sys.executable,s,cmd))
+            subprocess.check_call([sys.executable,'-mtimeit','-s',s,cmd])

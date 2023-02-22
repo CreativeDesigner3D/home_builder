@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/widgetbase.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/widgetbase.py
+__version__='3.3.0'
 __doc__='''Base class for user-defined graphical widgets'''
 
 from reportlab.graphics import shapes
@@ -9,6 +9,7 @@ from reportlab import rl_config
 from reportlab.lib import colors
 from reportlab.lib.validators import *
 from reportlab.lib.attrmap import *
+from weakref import ref as weakref_ref
 
 class PropHolder:
     '''Base for property holders'''
@@ -140,11 +141,11 @@ class Widget(PropHolder, shapes.UserNode):
 
     def draw(self):
         msg = "draw() must be implemented for each Widget!"
-        raise shapes.NotImplementedError(msg)
+        raise NotImplementedError(msg)
 
     def demo(self):
         msg = "demo() must be implemented for each Widget!"
-        raise shapes.NotImplementedError(msg)
+        raise NotImplementedError(msg)
 
     def provideNode(self):
         return self.draw()
@@ -202,13 +203,13 @@ class TypedPropertyCollection(PropHolder):
     create wedge no. 3 if one is needed; no error is raised if
     there are only two data points.
 
-    We try and make sensible use of tuple indeces.
-        line[(3,x)] is backed by line[(3,)], line[3] & line
+    We try and make sensible use of tuple indices.
+        line[(3,x)] is backed by line[(3,)] == line[3] & line
     """
 
-    def __init__(self, exampleClass):
+    def __init__(self, exampleClass, **kwds):
         #give it same validation rules as what it holds
-        self.__dict__['_value'] = exampleClass()
+        self.__dict__['_value'] = exampleClass(**kwds)
         self.__dict__['_children'] = {}
 
     def wKlassFactory(self,Klass):
@@ -217,21 +218,23 @@ class TypedPropertyCollection(PropHolder):
                 try:
                     return self.__class__.__bases__[0].__getattr__(self,name)
                 except:
-                    i = self._index
-                    if i:
-                        c = self._parent._children
-                        if i in c and name in c[i].__dict__:
-                            return getattr(c[i],name)
-                        elif len(i)==1:
-                            i = i[0]
-                            if i in c and name in c[i].__dict__:
-                                return getattr(c[i],name)
-                    return getattr(self._parent,name)
+                    parent = self.parent
+                    c = parent._children
+                    x = self.__propholder_index__
+                    while x:
+                        if x in c:
+                            return getattr(c[x],name)
+                        x = x[:-1]
+                    return getattr(parent,name)
+            @property
+            def parent(self):
+                return self.__propholder_parent__()
         return WKlass
 
-    def __getitem__(self, index):
+    def __getitem__(self, x):
+        x = tuple(x) if isinstance(x,(tuple,list)) else (x,)
         try:
-            return self._children[index]
+            return self._children[x]
         except KeyError:
             Klass = self._value.__class__
             if Klass in _ItemWrapper:
@@ -240,28 +243,23 @@ class TypedPropertyCollection(PropHolder):
                 _ItemWrapper[Klass] = WKlass = self.wKlassFactory(Klass)
 
             child = WKlass()
-            child._parent = self
-            if type(index) in (type(()),type([])):
-                index = tuple(index)
-                if len(index)>1:
-                    child._index = tuple(index[:-1])
-                else:
-                    child._index = None
-            else:
-                child._index = None
+            
             for i in filter(lambda x,K=list(child.__dict__.keys()): x in K,list(child._attrMap.keys())):
                 del child.__dict__[i]
+            child.__dict__.update(dict(
+                                    __propholder_parent__ = weakref_ref(self),
+                                    __propholder_index__ = x[:-1])
+                                    )
 
-            self._children[index] = child
+            self._children[x] = child
             return child
 
     def __contains__(self,key):
-        if type(key) in (type(()),type([])): key = tuple(key)
-        return key in self._children
+        return (tuple(key) if isinstance(key,(tuple,list)) else (key,)) in self._children
 
     def __setitem__(self, key, value):
-        msg = "This collection can only hold objects of type %s" % self._value.__class__.__name__
-        assert isinstance(value, self._value.__class__), msg
+        assert isinstance(value, self._value.__class__), (
+            "This collection can only hold objects of type %s" % self._value.__class__.__name__)
 
     def __len__(self):
         return len(list(self._children.keys()))
@@ -278,20 +276,33 @@ class TypedPropertyCollection(PropHolder):
             childProps = self._children[idx].getProperties(recur=recur)
             for key, value in childProps.items():
                 if not hasattr(self,key) or getattr(self, key)!=value:
-                    newKey = '[%s].%s' % (idx, key)
+                    newKey = '[%s].%s' % (idx if len(idx)>1 else idx[0], key)
                     props[newKey] = value
         return props
 
     def setVector(self,**kw):
         for name, value in kw.items():
-            for i in range(len(value)):
-                setattr(self[i],name,value[i])
+            for i, v in enumerate(value):
+                setattr(self[i],name,v)
 
     def __getattr__(self,name):
         return getattr(self._value,name)
 
     def __setattr__(self,name,value):
         return setattr(self._value,name,value)
+
+    def checkAttr(self, key, a, default=None):
+        return getattr(self[key], a, default) if key in self else default
+
+def tpcGetItem(obj,x):
+    '''return obj if it's not a TypedPropertyCollection else obj[x]'''
+    return obj[x] if isinstance(obj,TypedPropertyCollection) else obj
+
+def isWKlass(obj):
+    if not hasattr(obj,'__propholder_parent__'): return
+    ph = obj.__propholder_parent__
+    if not isinstance(ph,weakref_ref): return
+    return isinstance(ph(),TypedPropertyCollection)
 
 ## No longer needed!
 class StyleProperties(PropHolder):
@@ -493,6 +504,121 @@ class Sizer(Widget):
         for elem in self.contents:
             g.add(elem)
         return g
+
+class CandleStickProperties(PropHolder):
+    _attrMap = AttrMap(
+        strokeWidth = AttrMapValue(isNumber, desc='Width of a line.'),
+        strokeColor = AttrMapValue(isColorOrNone, desc='Color of a line or border.'),
+        strokeDashArray = AttrMapValue(isListOfNumbersOrNone, desc='Dash array of a line.'),
+        crossWidth = AttrMapValue(isNumberOrNone,desc="cross line width",advancedUsage=1),
+        crossLo = AttrMapValue(isNumberOrNone,desc="cross line low value",advancedUsage=1),
+        crossHi = AttrMapValue(isNumberOrNone,desc="cross line high value",advancedUsage=1),
+        boxWidth = AttrMapValue(isNumberOrNone,desc="width of the box part",advancedUsage=1),
+        boxFillColor = AttrMapValue(isColorOrNone, desc='fill color of box'),
+        boxStrokeColor = AttrMapValue(NotSetOr(isColorOrNone), desc='stroke color of box'),
+        boxStrokeDashArray = AttrMapValue(NotSetOr(isListOfNumbersOrNone), desc='Dash array of the box.'),
+        boxStrokeWidth = AttrMapValue(NotSetOr(isNumber), desc='Width of the box lines.'),
+        boxLo = AttrMapValue(isNumberOrNone,desc="low value of the box",advancedUsage=1),
+        boxMid = AttrMapValue(isNumberOrNone,desc="middle box line value",advancedUsage=1),
+        boxHi = AttrMapValue(isNumberOrNone,desc="high value of the box",advancedUsage=1),
+        boxSides = AttrMapValue(isBoolean,desc="whether to show box sides",advancedUsage=1),
+        position = AttrMapValue(isNumberOrNone,desc="position of the candle",advancedUsage=1),
+        chart = AttrMapValue(None,desc="our chart",advancedUsage=1),
+        candleKind = AttrMapValue(OneOf('vertical','horizontal'),desc="candle direction",advancedUsage=1),
+        axes = AttrMapValue(SequenceOf(isString,emptyOK=0,lo=2,hi=2),desc="candle direction",advancedUsage=1),
+        )
+
+    def __init__(self,**kwds):
+        self.strokeWidth = kwds.pop('strokeWidth',1)
+        self.strokeColor = kwds.pop('strokeColor',colors.black)
+        self.strokeDashArray = kwds.pop('strokeDashArray',None)
+        self.crossWidth = kwds.pop('crossWidth',5)
+        self.crossLo = kwds.pop('crossLo',None)
+        self.crossHi = kwds.pop('crossHi',None)
+        self.boxWidth = kwds.pop('boxWidth',None)
+        self.boxFillColor = kwds.pop('boxFillColor',None)
+        self.boxStrokeColor =kwds.pop('boxStrokeColor',NotSetOr._not_set) 
+        self.boxStrokeWidth =kwds.pop('boxStrokeWidth',NotSetOr._not_set) 
+        self.boxStrokeDashArray =kwds.pop('boxStrokeDashArray',NotSetOr._not_set) 
+        self.boxLo = kwds.pop('boxLo',None)
+        self.boxMid = kwds.pop('boxMid',None)
+        self.boxHi = kwds.pop('boxHi',None)
+        self.boxSides = kwds.pop('boxSides',True)
+        self.position = kwds.pop('position',None)
+        self.candleKind = kwds.pop('candleKind','vertical')
+        self.axes = kwds.pop('axes',['categoryAxis','valueAxis'])
+        chart = kwds.pop('chart',None)
+        self.chart = weakref_ref(chart) if chart else (lambda:None)
+
+    def __call__(self,_x,_y,_size,_color):
+        '''the symbol interface'''
+        chart = self.chart()
+        xA = getattr(chart,self.axes[0])
+        _xScale = getattr(xA,'midScale',None)
+        if not _xScale: _xScale = getattr(xA,'scale')
+        xScale = lambda x: _xScale(x) if x is not None else None
+        yA = getattr(chart,self.axes[1])
+        _yScale = getattr(yA,'midScale',None)
+        if not _yScale: _yScale = getattr(yA,'scale')
+        yScale = lambda x: _yScale(x) if x is not None else None
+        G = shapes.Group().add
+        strokeWidth = self.strokeWidth
+        strokeColor = self.strokeColor
+        strokeDashArray = self.strokeDashArray
+        crossWidth = self.crossWidth
+        crossLo = yScale(self.crossLo)
+        crossHi = yScale(self.crossHi)
+        boxWidth = self.boxWidth
+        boxFillColor = self.boxFillColor
+        boxStrokeColor = NotSetOr.conditionalValue(self.boxStrokeColor,strokeColor)
+        boxStrokeWidth = NotSetOr.conditionalValue(self.boxStrokeWidth,strokeWidth)
+        boxStrokeDashArray = NotSetOr.conditionalValue(self.boxStrokeDashArray,strokeDashArray)
+        boxLo = yScale(self.boxLo)
+        boxMid = yScale(self.boxMid)
+        boxHi = yScale(self.boxHi)
+        position = xScale(self.position)
+        candleKind = self.candleKind
+        haveBox = None not in (boxWidth,boxLo,boxHi)
+        haveLine = None not in (crossLo,crossHi)
+        def aLine(x0,y0,x1,y1):
+            if candleKind!='vertical':
+                x0,y0 = y0,x0
+                x1,y1 = y1,x1
+            G(shapes.Line(x0,y0,x1,y1,strokeWidth=strokeWidth,strokeColor=strokeColor,strokeDashArray=strokeDashArray))
+        if haveBox:
+            boxLo, boxHi = min(boxLo,boxHi), max(boxLo,boxHi)
+        if haveLine:
+            crossLo, crossHi = min(crossLo,crossHi), max(crossLo,crossHi)
+            if not haveBox or crossLo>=boxHi or crossHi<=boxLo:
+                aLine(position,crossLo,position,crossHi)
+                if crossWidth is not None:
+                    aLine(position-crossWidth*0.5,crossLo,position+crossWidth*0.5,crossLo)
+                    aLine(position-crossWidth*0.5,crossHi,position+crossWidth*0.5,crossHi)
+            elif haveBox:
+                if crossLo<boxLo:
+                    aLine(position,crossLo,position,boxLo)
+                    aLine(position-crossWidth*0.5,crossLo,position+crossWidth*0.5,crossLo)
+                if crossHi>boxHi:
+                    aLine(position,boxHi,position,crossHi)
+                    aLine(position-crossWidth*0.5,crossHi,position+crossWidth*0.5,crossHi)
+        if haveBox:
+            x = position - boxWidth*0.5
+            y = boxLo
+            h = boxHi - boxLo
+            w = boxWidth
+            if candleKind!='vertical':
+                x, y, w, h = y, x, h, w
+            G(shapes.Rect(x,y,w,h,strokeColor=boxStrokeColor if self.boxSides else None,strokeWidth=boxStrokeWidth,strokeDashArray=boxStrokeDashArray,fillColor=boxFillColor))
+            if not self.boxSides:
+                aLine(position-0.5*boxWidth,boxHi,position+0.5*boxWidth,boxHi)
+                aLine(position-0.5*boxWidth,boxLo,position+0.5*boxWidth,boxLo)
+
+            if boxMid is not None:
+                aLine(position-0.5*boxWidth,boxMid,position+0.5*boxWidth,boxMid)
+        return G.__self__
+
+def CandleSticks(**kwds):
+    return TypedPropertyCollection(CandleStickProperties,**kwds)
 
 def test():
     from reportlab.graphics.charts.piecharts import WedgeProperties

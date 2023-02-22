@@ -1,35 +1,15 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2021
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/renderbase.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/renderbase.py
 
-__version__=''' $Id $ '''
+__version__='3.3.0'
 __doc__='''Superclass for renderers to factor out common functionality and default implementations.'''
 
 from reportlab.graphics.shapes import *
 from reportlab.lib.validators import DerivedValue
 from reportlab import rl_config
 
-def inverse(A):
-    "For A affine 2D represented as 6vec return 6vec version of A**(-1)"
-    # I checked this RGB
-    det = float(A[0]*A[3] - A[2]*A[1])
-    R = [A[3]/det, -A[1]/det, -A[2]/det, A[0]/det]
-    return tuple(R+[-R[0]*A[4]-R[2]*A[5],-R[1]*A[4]-R[3]*A[5]])
-
-def mmult(A, B):
-    "A postmultiplied by B"
-    # I checked this RGB
-    # [a0 a2 a4]    [b0 b2 b4]
-    # [a1 a3 a5] *  [b1 b3 b5]
-    # [      1 ]    [      1 ]
-    #
-    return (A[0]*B[0] + A[2]*B[1],
-            A[1]*B[0] + A[3]*B[1],
-            A[0]*B[2] + A[2]*B[3],
-            A[1]*B[2] + A[3]*B[3],
-            A[0]*B[4] + A[2]*B[5] + A[4],
-            A[1]*B[4] + A[3]*B[5] + A[5])
-
+from . transform import mmult, inverse
 
 def getStateDelta(shape):
     """Used to compute when we need to change the graphics state.
@@ -42,7 +22,6 @@ def getStateDelta(shape):
             delta[prop] = value
     return delta
 
-
 class StateTracker:
     """Keeps a stack of transforms and state
     properties.  It can contain any properties you
@@ -51,7 +30,7 @@ class StateTracker:
     method returns the current transformation
     matrix at any point, without needing to
     invert matrixes when you pop."""
-    def __init__(self, defaults=None):
+    def __init__(self, defaults=None, defaultObj=None):
         # one stack to keep track of what changes...
         self._deltas = []
 
@@ -61,10 +40,18 @@ class StateTracker:
         self._combined = []
         if defaults is None:
             defaults = STATE_DEFAULTS.copy()
+        if defaultObj:
+            for k in STATE_DEFAULTS.keys():
+                a = 'initial'+k[:1].upper()+k[1:]
+                if hasattr(defaultObj,a):
+                    defaults[k] = getattr(defaultObj,a)
         #ensure  that if we have a transform, we have a CTM
         if 'transform' in defaults:
             defaults['ctm'] = defaults['transform']
         self._combined.append(defaults)
+
+    def _applyDefaultObj(self,d):
+        return d
 
     def push(self,delta):
         """Take a new state dictionary of changes and push it onto
@@ -148,7 +135,6 @@ def testStateTracker():
         print('popping:',st.pop())
         print('state:  ',st.getState(),'\n')
 
-
 def _expandUserNode(node,canvas):
     if isinstance(node, UserNode):
         try:
@@ -176,16 +162,13 @@ def renderScaledDrawing(d):
 class Renderer:
     """Virtual superclass for graphics renderers."""
 
-    def __init__(self):
-        self._tracker = StateTracker()
-        self._nodeStack = []   #track nodes visited
-
     def undefined(self, operation):
         raise ValueError("%s operation not defined at superclass class=%s" %(operation, self.__class__))
 
     def draw(self, drawing, canvas, x=0, y=0, showBoundary=rl_config._unset_):
         """This is the top level function, which draws the drawing at the given
         location. The recursive part is handled by drawNode."""
+        self._tracker = StateTracker(defaultObj=drawing)
         #stash references for ease of  communication
         if showBoundary is rl_config._unset_: showBoundary=rl_config.showBoundary
         self._canvas = canvas
@@ -193,7 +176,11 @@ class Renderer:
         drawing._parent = None
         try:
             #bounding box
-            if showBoundary: canvas.rect(x, y, drawing.width, drawing.height)
+            if showBoundary:
+                if hasattr(canvas,'drawBoundary'):
+                    canvas.drawBoundary(showBoundary,x,y,drawing.width,drawing.height)
+                else:
+                    canvas.rect(x, y, drawing.width, drawing.height)
             canvas.saveState()
             self.initState(x,y)  #this is the push()
             self.drawNode(drawing)
@@ -201,11 +188,11 @@ class Renderer:
             canvas.restoreState()
         finally:
             #remove any circular references
-            del self._canvas, self._drawing, canvas._drawing, drawing._parent
+            del self._canvas, self._drawing, canvas._drawing, drawing._parent, self._tracker
 
     def initState(self,x,y):
-        deltas = STATE_DEFAULTS.copy()
-        deltas['transform'] = [1,0,0,1,x,y]
+        deltas = self._tracker._combined[-1]
+        deltas['transform'] = tuple(list(deltas['transform'])[:4])+(x,y)
         self._tracker.push(deltas)
         self.applyStateChanges(deltas, {})
 
@@ -222,13 +209,13 @@ class Renderer:
         """Return current state parameter for given key"""
         currentState = self._tracker._combined[-1]
         return currentState[key]
-    
+
     def fillDerivedValues(self, node):
         """Examine a node for any values which are Derived,
         and replace them with their calculated values.
         Generally things may look at the drawing or their
         parent.
-        
+
         """
         for key, value in node.__dict__.items():
             if isinstance(value, DerivedValue):
@@ -280,6 +267,8 @@ class Renderer:
                 self.drawGroup(node)
             elif isinstance(node, Wedge):
                 self.drawWedge(node)
+            elif isinstance(node, DirectDraw):
+                node.drawDirectly(self)
             else:
                 print('DrawingError','Unexpected element %s in drawing!' % str(node))
         finally:
@@ -297,7 +286,7 @@ class Renderer:
             node = _expandUserNode(node,canvas)
             if not node: continue
 
-            #here is where we do derived values - this seems to get everything. Touch wood.            
+            #here is where we do derived values - this seems to get everything. Touch wood.
             self.fillDerivedValues(node)
             try:
                 if hasattr(node,'_canvas'):
@@ -351,6 +340,9 @@ class Renderer:
         """This takes a set of states, and outputs the operators
         needed to set those properties"""
         self.undefined("applyStateChanges")
+
+    def drawImage(self,*args,**kwds):
+        raise NotImplementedError('drawImage')
 
 if __name__=='__main__':
     print("this file has no script interpretation")

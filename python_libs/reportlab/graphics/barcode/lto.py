@@ -4,8 +4,7 @@
 from reportlab.graphics.barcode.code39 import Standard39
 from reportlab.lib import colors
 from reportlab.lib.units import cm
-from string import digits as string_digits
-from reportlab.lib.utils import ascii_uppercase
+from string import ascii_uppercase, digits as string_digits
 
 class BaseLTOLabel(Standard39) :
     """

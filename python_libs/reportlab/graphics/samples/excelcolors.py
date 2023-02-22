@@ -1,5 +1,5 @@
 # define standard colors to mimic those used by Microsoft Excel
-from reportlab.lib.colors import CMYKColor, PCMYKColor
+from reportlab.lib.colors import PCMYKColor
 
 #colour names as comments at the end of each line are as a memory jogger ONLY
 #NOT HTML named colours!

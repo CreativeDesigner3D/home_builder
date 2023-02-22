@@ -104,8 +104,12 @@ def _startUp():
             globals()[k] = list(filter(rl_isdir,globals()[k]))
         else:
             v = _SAVED[k]
-            if isinstance(v,(int,float)): conv = type(v)
-            elif k=='defaultPageSize': conv = lambda v,M=pagesizes: getattr(M,v)
+            if isinstance(v,(int,float)):
+                conv = type(v)
+            elif k=='defaultPageSize':
+                conv = lambda v,M=pagesizes: getattr(M,v)
+            elif k in ('trustedHosts','trustedSchemes'):
+                conv = lambda v: None if v is None else [y for y in [x.strip() for x in v.split(',')] if y] if isinstance(v,str) else v
             else: conv = None
             _setOpt(k,v,conv)
 

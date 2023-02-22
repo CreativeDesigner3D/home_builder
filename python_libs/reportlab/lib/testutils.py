@@ -1,9 +1,9 @@
-#Copyright ReportLab Europe Ltd. 2000-2013
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
 import reportlab
 reportlab._rl_testing=True
 del reportlab
-__version__='''$Id$'''
+__version__='3.3.0'
 __doc__="""Provides support for the test suite.
 
 The test suite as a whole, and individual tests, need to share
@@ -13,12 +13,9 @@ nothing more than "reportlab.whatever..."
 """
 
 import sys, os, fnmatch, re
-try:
-    from configparser import ConfigParser
-except ImportError:
-    from ConfigParser import ConfigParser
+from configparser import ConfigParser
 import unittest
-from reportlab.lib.utils import isCompactDistro, __loader__, rl_isdir, asUnicode
+from reportlab.lib.utils import isCompactDistro, __rl_loader__, rl_isdir, asUnicode
 
 # Helper functions.
 def isWritable(D):
@@ -44,13 +41,18 @@ def setOutDir(name):
     global _OUTDIR, RL_HOME, testsFolder
     if _OUTDIR: return _OUTDIR
     D = [d[9:] for d in sys.argv if d.startswith('--outdir=')]
+    if not D:
+        D = os.environ.get('RL_TEST_OUTDIR','')
+        if D: D=[D]
     if D:
         _OUTDIR = D[-1]
         try:
             os.makedirs(_OUTDIR)
         except:
             pass
-        for d in D: sys.argv.remove(d)
+        for d in D:
+            if d in sys.argv:
+                sys.argv.remove(d)
     else:
         assert name=='__main__',"setOutDir should only be called in the main script"
         scriptDir=os.path.dirname(sys.argv[0])
@@ -77,6 +79,18 @@ def setOutDir(name):
     if testsFolder:
         sys.path.insert(0,os.path.dirname(testsFolder))
     return _OUTDIR
+
+_mockumap = (
+        None if os.environ.get('OFFLINE_MOCK','1')!='1' 
+            else'http://www.reportlab.com/rsrc/encryption.gif',
+        )
+def mockUrlRead(name):
+    if name in _mockumap:
+        with open(os.path.join(testsFolder,os.path.basename(name)),'rb') as f:
+            return f.read()
+    else:
+        from urllib.request import urlopen
+        return urlopen(name).read()
 
 def outputfile(fn):
     """This works out where to write test output.  If running
@@ -136,7 +150,7 @@ def getCVSEntries(folder, files=1, folders=0):
 class ExtConfigParser(ConfigParser):
     "A slightly extended version to return lists of strings."
 
-    pat = re.compile('\s*\[.*\]\s*')
+    pat = re.compile(r'\s*\[.*\]\s*')
 
     def getstringlist(self, section, option):
         "Coerce option to a list of strings or return unchanged if that fails."
@@ -148,7 +162,7 @@ class ExtConfigParser(ConfigParser):
         val = value.replace('\n', '')
 
         if self.pat.match(val):
-            return eval(val)
+            return eval(val,{__builtins__:None})
         else:
             return value
 
@@ -167,12 +181,13 @@ class GlobDirectoryWalker:
             self.stack = [directory]
             self.files = []
         else:
-            if not isCompactDistro() or not __loader__ or not rl_isdir(directory):
+            if not isCompactDistro() or not __rl_loader__ or not rl_isdir(directory):
                 raise ValueError('"%s" is not a directory' % directory)
-            self.directory = directory[len(__loader__.archive)+len(os.sep):]
+            self.directory = directory[len(__rl_loader__.archive)+len(os.sep):]
             pfx = self.directory+os.sep
             n = len(pfx)
-            self.files = list(map(lambda x, n=n: x[n:],list(filter(lambda x,pfx=pfx: x.startswith(pfx),list(__loader__._files.keys())))))
+            self.files = list(map(lambda x, n=n: x[n:],list(filter(lambda x,pfx=pfx: x.startswith(pfx),list(__rl_loader__._files.keys())))))
+            self.files.sort()
             self.stack = []
 
     def __getitem__(self, index):
@@ -209,22 +224,23 @@ class RestrictedGlobDirectoryWalker(GlobDirectoryWalker):
 
         if ignore == None:
             ignore = []
-        self.ignoredPatterns = []
-        if type(ignore) == type([]):
+        ip = [].append
+        if isinstance(ignore,(tuple,list)):
             for p in ignore:
-                self.ignoredPatterns.append(p)
-        elif type(ignore) == type(''):
-            self.ignoredPatterns.append(ignore)
-
+                ip(p)
+        elif isinstance(ignore,str):
+            ip(ignore)
+        self.ignorePatterns = ([_.replace('/',os.sep) for _ in ip.__self__] if os.sep != '/'
+                                else ip.__self__)
 
     def filterFiles(self, folder, files):
         "Filters all items from files matching patterns to ignore."
 
+        fnm = fnmatch.fnmatch
         indicesToDelete = []
-        for i in range(len(files)):
-            f = files[i]
-            for p in self.ignoredPatterns:
-                if fnmatch.fnmatch(f, p):
+        for i,f in enumerate(files):
+            for p in self.ignorePatterns:
+                if fnm(f, p) or fnm(os.path.join(folder,f),p):
                     indicesToDelete.append(i)
         indicesToDelete.reverse()
         for i in indicesToDelete:
@@ -326,11 +342,13 @@ class ScriptThatMakesFileTest(unittest.TestCase):
 
     def runTest(self):
         fmt = sys.platform=='win32' and '"%s" %s' or '%s %s'
-        p = os.popen(fmt % (sys.executable,self.scriptName),'r')
-        out = p.read()
+        import subprocess
+        out = subprocess.check_output((sys.executable,self.scriptName))
+        #p = os.popen(fmt % (sys.executable,self.scriptName),'r')
+        #out = p.read()
         if self.verbose:
             print(out)
-        status = p.close()
+        #status = p.close()
         assert os.path.isfile(self.outFileName), "File %s not created!" % self.outFileName
 
 def equalStrings(a,b,enc='utf8'):
@@ -339,3 +357,10 @@ def equalStrings(a,b,enc='utf8'):
 def eqCheck(r,x):
     if r!=x:
         print('Strings unequal\nexp: %s\ngot: %s' % (ascii(x),ascii(r)))
+
+def rlextraNeeded():
+    try:
+        import rlextra
+        return False
+    except:
+        return True

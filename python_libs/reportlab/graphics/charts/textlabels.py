@@ -1,83 +1,33 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/textlabels.py
-__version__=''' $Id$ '''
-import string
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/charts/textlabels.py
+__version__='3.3.0'
 
 from reportlab.lib import colors
-from reportlab.lib.utils import simpleSplit, _simpleSplit
+from reportlab.lib.utils import simpleSplit
 from reportlab.lib.validators import isNumber, isNumberOrNone, OneOf, isColorOrNone, isString, \
-        isTextAnchor, isBoxAnchor, isBoolean, NoneOr, isInstanceOf, isNoneOrString, isNoneOrCallable
+        isTextAnchor, isBoxAnchor, isBoolean, NoneOr, isInstanceOf, isNoneOrString, isNoneOrCallable, \
+        isSubclassOf
 from reportlab.lib.attrmap import *
 from reportlab.pdfbase.pdfmetrics import stringWidth, getAscentDescent
 from reportlab.graphics.shapes import Drawing, Group, Circle, Rect, String, STATE_DEFAULTS
-from reportlab.graphics.shapes import _PATH_OP_ARG_COUNT, _PATH_OP_NAMES, definePath
 from reportlab.graphics.widgetbase import Widget, PropHolder
-from reportlab.graphics.shapes import _baseGFontName
+from reportlab.graphics.shapes import DirectDraw
+from reportlab.platypus import XPreformatted, Flowable
+from reportlab.lib.styles import ParagraphStyle, PropertySet
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+_ta2al = dict(start=TA_LEFT,end=TA_RIGHT,middle=TA_CENTER)
+from ..utils import text2Path as _text2Path   #here for continuity
 
-_gs = None
 _A2BA=  {
         'x': {0:'n', 45:'ne', 90:'e', 135:'se', 180:'s', 225:'sw', 270:'w', 315: 'nw', -45: 'nw'},
         'y': {0:'e', 45:'se', 90:'s', 135:'sw', 180:'w', 225:'nw', 270:'n', 315: 'ne', -45: 'ne'},
         }
 
-def _pathNumTrunc(n):
-    if int(n)==n: return int(n)
-    return round(n,5)
-
-def _processGlyph(G, truncate=1, pathReverse=0):
-    O = []
-    P = []
-    R = []
-    if G and len(G)==1 and G[0][0]=='lineTo':
-        G = (('moveToClosed',)+G[0][1:],)+G #hack fix for some errors
-    for g in G+(('end',),):
-        op = g[0]
-        if O and op in ['moveTo', 'moveToClosed','end']:
-            if O[0]=='moveToClosed':
-                O = O[1:]
-                if pathReverse:
-                    for i in range(0,len(P),2):
-                        P[i+1], P[i] = P[i:i+2]
-                    P.reverse()
-                    O.reverse()
-                O.insert(0,'moveTo')
-                O.append('closePath')
-            i = 0
-            if truncate: P = list(map(_pathNumTrunc,P))
-            for o in O:
-                j = i + _PATH_OP_ARG_COUNT[_PATH_OP_NAMES.index(o)]
-                if o=='closePath':
-                    R.append(o)
-                else:
-                    R.append((o,)+ tuple(P[i:j]))
-                i = j
-            O = []
-            P = []
-        O.append(op)
-        P.extend(g[1:])
-    return R
-
-def _text2PathDescription(text, x=0, y=0, fontName=_baseGFontName, fontSize=1000,
-                            anchor='start', truncate=1, pathReverse=0):
-    from reportlab.graphics import renderPM, _renderPM
-    _gs = _renderPM.gstate(1,1)
-    renderPM._setFont(_gs,fontName,fontSize)
-    P = []
-    if not anchor=='start':
-        textLen = stringWidth(text, fontName,fontSize)
-        if anchor=='end':
-            x = x-textLen
-        elif anchor=='middle':
-            x = x - textLen/2.
-    for g in _gs._stringPath(text,x,y):
-        P.extend(_processGlyph(g,truncate=truncate,pathReverse=pathReverse))
-    return P
-
-def _text2Path(text, x=0, y=0, fontName=_baseGFontName, fontSize=1000,
-                anchor='start', truncate=1, pathReverse=0,**kwds):
-    return definePath(_text2PathDescription(text,x=x,y=y,fontName=fontName,
-                    fontSize=fontSize,anchor=anchor,truncate=truncate,pathReverse=pathReverse),**kwds)
+try:
+    from rlextra.graphics.canvasadapter import DirectDrawFlowable
+except ImportError:
+    DirectDrawFlowable = None
 
 _BA2TA={'w':'start','nw':'start','sw':'start','e':'end', 'ne': 'end', 'se':'end', 'n':'middle','s':'middle','c':'middle'}
 class Label(Widget):
@@ -119,6 +69,9 @@ class Label(Widget):
         bottomPadding = AttrMapValue(isNumber,desc='padding at bottom of box'),
         useAscentDescent = AttrMapValue(isBoolean,desc="If True then the font's Ascent & Descent will be used to compute default heights and baseline."),
         customDrawChanger = AttrMapValue(isNoneOrCallable,desc="An instance of CustomDrawChanger to modify the behavior at draw time", _advancedUsage=1),
+        ddf = AttrMapValue(NoneOr(isSubclassOf(DirectDraw),'NoneOrDirectDraw'),desc="A DirectDrawFlowable instance", _advancedUsage=1),
+        ddfKlass = AttrMapValue(NoneOr(isSubclassOf(Flowable),'NoneOrDirectDraw'),desc="A Flowable class for direct drawing (default is XPreformatted", _advancedUsage=1),
+        ddfStyle = AttrMapValue(NoneOr((isSubclassOf(PropertySet),isInstanceOf(PropertySet))),desc="A style or style class for a ddfKlass or None", _advancedUsage=1),
         )
 
     def __init__(self,**kw):
@@ -151,6 +104,9 @@ class Label(Widget):
                 textAnchor = 'start',
                 visible = 1,
                 useAscentDescent = False,
+                ddf = DirectDrawFlowable,
+                ddfKlass = None,
+                ddfStyle = None,
                 )
 
     def setText(self, text):
@@ -200,51 +156,98 @@ class Label(Widget):
             ba = _A2BA[ba[-1]][na]
         return ba
 
-    def computeSize(self):
-        # the thing will draw in its own coordinate system
-        self._lineWidths = []
-        topPadding = self.topPadding
-        leftPadding = self.leftPadding
-        rightPadding = self.rightPadding
-        bottomPadding = self.bottomPadding
-        self._lines = simpleSplit(self._text,self.fontName,self.fontSize,self.maxWidth)
-        if not self.width:
-            self._width = leftPadding+rightPadding
-            if self._lines:
-                self._lineWidths = [stringWidth(line,self.fontName,self.fontSize) for line in self._lines]
-                self._width += max(self._lineWidths)
-        else:
-            self._width = self.width
+    def _getBaseLineRatio(self):
         if self.useAscentDescent:
             self._ascent, self._descent = getAscentDescent(self.fontName,self.fontSize)
             self._baselineRatio = self._ascent/(self._ascent-self._descent)
         else:
             self._baselineRatio = 1/1.2
-        if self.leading:
-            self._leading = self.leading
-        elif self.useAscentDescent:
-            self._leading = self._ascent - self._descent
-        else:
-            self._leading = self.fontSize*1.2
-        self._height = self.height or (self._leading*len(self._lines) + topPadding + bottomPadding)
-        self._ewidth = (self._width-leftPadding-rightPadding)
-        self._eheight = (self._height-topPadding-bottomPadding)
+
+    def _computeSizeEnd(self,objH):
+        self._height = self.height or (objH + self.topPadding + self.bottomPadding)
+        self._ewidth = (self._width-self.leftPadding-self.rightPadding)
+        self._eheight = (self._height-self.topPadding-self.bottomPadding)
         boxAnchor = self._getBoxAnchor()
         if boxAnchor in ['n','ne','nw']:
-            self._top = -topPadding
+            self._top = -self.topPadding
         elif boxAnchor in ['s','sw','se']:
-            self._top = self._height-topPadding
+            self._top = self._height-self.topPadding
         else:
             self._top = 0.5*self._eheight
         self._bottom = self._top - self._eheight
 
         if boxAnchor in ['ne','e','se']:
-            self._left = leftPadding - self._width
+            self._left = self.leftPadding - self._width
         elif boxAnchor in ['nw','w','sw']:
-            self._left = leftPadding
+            self._left = self.leftPadding
         else:
             self._left = -self._ewidth*0.5
         self._right = self._left+self._ewidth
+
+    def computeSize(self):
+        # the thing will draw in its own coordinate system
+        ddfKlass = getattr(self,'ddfKlass',None)
+        if not ddfKlass:
+            self._lineWidths = []
+            self._lines = simpleSplit(self._text,self.fontName,self.fontSize,self.maxWidth)
+            if not self.width:
+                self._width = self.leftPadding+self.rightPadding
+                if self._lines:
+                    self._lineWidths = [stringWidth(line,self.fontName,self.fontSize) for line in self._lines]
+                    self._width += max(self._lineWidths)
+            else:
+                self._width = self.width
+            self._getBaseLineRatio()
+            if self.leading:
+                self._leading = self.leading
+            elif self.useAscentDescent:
+                self._leading = self._ascent - self._descent
+            else:
+                self._leading = self.fontSize*1.2
+            objH = self._leading*len(self._lines)
+        else:
+            if self.ddf is None:
+                raise RuntimeError('DirectDrawFlowable class is not available you need the rlextra package as well as reportlab')
+            sty = dict(
+                    name='xlabel-generated',
+                    fontName=self.fontName,
+                    fontSize=self.fontSize,
+                    fillColor=self.fillColor,
+                    strokeColor=self.strokeColor,
+                    )
+
+            if not self.ddfStyle:
+                sty = ParagraphStyle(**sty)
+            elif issubclass(self.ddfStyle,PropertySet):
+                sty = self.ddfStyle(**sty)
+            else:
+                sty = self.ddfStyle.clone()
+
+            self._style = sty
+            self._getBaseLineRatio()
+            if self.useAscentDescent:
+                sty.autoLeading = True
+                sty.leading = self._ascent - self._descent
+            else:
+                sty.leading = self.leading if self.leading else self.fontSize*1.2
+            self._leading = sty.leading
+            ta = self._getTextAnchor()
+            aW = self.maxWidth or 0x7fffffff
+            if ta!='start':
+                sty.alignment = TA_LEFT
+                obj = ddfKlass(self._text,style=sty)
+                _, objH = obj.wrap(aW,0x7fffffff)
+                aW = self.maxWidth or obj._width_max
+            sty.alignment = _ta2al[ta]
+            self._ddfObj = obj = ddfKlass(self._text,style=sty)
+            _, objH = obj.wrap(aW,0x7fffffff)
+
+            if not self.width:
+                self._width = self.leftPadding+self.rightPadding
+                self._width += obj._width_max
+            else:
+                self._width = self.width
+        self._computeSizeEnd(objH)
 
     def _getTextAnchor(self):
         '''This can be overridden to allow special effects'''
@@ -261,14 +264,18 @@ class Label(Widget):
         g.translate(self.x + self.dx, self.y + self.dy)
         g.rotate(self.angle)
 
-        y = self._top - self._leading*self._baselineRatio
-        textAnchor = self._getTextAnchor()
-        if textAnchor == 'start':
+        ddfKlass = getattr(self,'ddfKlass',None)
+        if ddfKlass:
             x = self._left
-        elif textAnchor == 'middle':
-            x = self._left + self._ewidth*0.5
         else:
-            x = self._right
+            y = self._top - self._leading*self._baselineRatio
+            textAnchor = self._getTextAnchor()
+            if textAnchor == 'start':
+                x = self._left
+            elif textAnchor == 'middle':
+                x = self._left + self._ewidth*0.5
+            else:
+                x = self._right
 
         # paint box behind text just in case they
         # fill it
@@ -282,26 +289,32 @@ class Label(Widget):
                         fillColor=self.boxFillColor)
                         )
 
-        fillColor, fontName, fontSize = self.fillColor, self.fontName, self.fontSize
-        strokeColor, strokeWidth, leading = self.strokeColor, self.strokeWidth, self._leading
-        svgAttrs=getattr(self,'_svgAttrs',{})
-        if strokeColor:
-            for line in self._lines:
-                s = _text2Path(line, x, y, fontName, fontSize, textAnchor)
-                s.fillColor = fillColor
-                s.strokeColor = strokeColor
-                s.strokeWidth = strokeWidth
-                g.add(s)
-                y -= leading
+        if ddfKlass:
+            g1 = Group()
+            g1.translate(x,self._top-self._eheight)
+            g1.add(self.ddf(self._ddfObj))
+            g.add(g1)
         else:
-            for line in self._lines:
-                s = String(x, y, line, _svgAttrs=svgAttrs)
-                s.textAnchor = textAnchor
-                s.fontName = fontName
-                s.fontSize = fontSize
-                s.fillColor = fillColor
-                g.add(s)
-                y -= leading
+            fillColor, fontName, fontSize = self.fillColor, self.fontName, self.fontSize
+            strokeColor, strokeWidth, leading = self.strokeColor, self.strokeWidth, self._leading
+            svgAttrs=getattr(self,'_svgAttrs',{})
+            if strokeColor:
+                for line in self._lines:
+                    s = _text2Path(line, x, y, fontName, fontSize, textAnchor)
+                    s.fillColor = fillColor
+                    s.strokeColor = strokeColor
+                    s.strokeWidth = strokeWidth
+                    g.add(s)
+                    y -= leading
+            else:
+                for line in self._lines:
+                    s = String(x, y, line, _svgAttrs=svgAttrs)
+                    s.textAnchor = textAnchor
+                    s.fontName = fontName
+                    s.fontSize = fontSize
+                    s.fillColor = fillColor
+                    g.add(s)
+                    y -= leading
 
         return g
 
@@ -352,7 +365,6 @@ class LabelDecorator:
         g.add(L)
 
     def __call__(self,l):
-        from copy import deepcopy
         L = Label()
         for a,v in self.__dict__.items():
             if v is None: v = getattr(l,a,None)
@@ -405,8 +417,8 @@ class PMVLabel(Label):
         BASE=Label,
         )
 
-    def __init__(self):
-        Label.__init__(self)
+    def __init__(self, **kwds):
+        Label.__init__(self, **kwds)
         self._pmv = 0
 
     def _getBoxAnchor(self):
@@ -433,8 +445,8 @@ class BarChartLabel(PMVLabel):
         boxTarget = AttrMapValue(OneOf('normal','anti','lo','hi','mid'),desc="one of ('normal','anti','lo','hi','mid')"),
         )
 
-    def __init__(self):
-        PMVLabel.__init__(self)
+    def __init__(self, **kwds):
+        PMVLabel.__init__(self, **kwds)
         self.lineStrokeWidth = 0
         self.lineStrokeColor = None
         self.fixedStart = self.fixedEnd = None
@@ -464,3 +476,82 @@ class RedNegativeChanger(CustomDrawChanger):
             R['fillColor'] = obj.fillColor
             obj.fillColor = self.fillColor
         return R
+
+class XLabel(Label):
+    '''like label but uses XPreFormatted/Paragraph to draw the _text'''
+    _attrMap = AttrMap(BASE=Label,
+            )
+    def __init__(self,*args,**kwds):
+        Label.__init__(self,*args,**kwds)
+        self.ddfKlass = kwds.pop('ddfKlass',XPreformatted)
+        self.ddf = kwds.pop('directDrawClass',self.ddf)
+
+    if False:
+        def __init__(self,*args,**kwds):
+            self._flowableClass = kwds.pop('flowableClass',XPreformatted)
+            ddf = kwds.pop('directDrawClass',DirectDrawFlowable)
+            if ddf is None:
+                raise RuntimeError('DirectDrawFlowable class is not available you need the rlextra package as well as reportlab')
+            self._ddf = ddf
+            Label.__init__(self,*args,**kwds)
+        def computeSize(self):
+            # the thing will draw in its own coordinate system
+            self._lineWidths = []
+            sty = self._style = ParagraphStyle('xlabel-generated',
+                    fontName=self.fontName,
+                    fontSize=self.fontSize,
+                    fillColor=self.fillColor,
+                    strokeColor=self.strokeColor,
+                    )
+            self._getBaseLineRatio()
+            if self.useAscentDescent:
+                sty.autoLeading = True
+                sty.leading = self._ascent - self._descent
+            else:
+                sty.leading = self.leading if self.leading else self.fontSize*1.2
+            self._leading = sty.leading
+            ta = self._getTextAnchor()
+            aW = self.maxWidth or 0x7fffffff
+            if ta!='start':
+                sty.alignment = TA_LEFT
+                obj = self._flowableClass(self._text,style=sty)
+                _, objH = obj.wrap(aW,0x7fffffff)
+                aW = self.maxWidth or obj._width_max
+            sty.alignment = _ta2al[ta]
+            self._obj = obj = self._flowableClass(self._text,style=sty)
+            _, objH = obj.wrap(aW,0x7fffffff)
+
+            if not self.width:
+                self._width = self.leftPadding+self.rightPadding
+                self._width += self._obj._width_max
+            else:
+                self._width = self.width
+            self._computeSizeEnd(objH)
+
+        def _rawDraw(self):
+            _text = self._text
+            self._text = _text or ''
+            self.computeSize()
+            self._text = _text
+            g = Group()
+            g.translate(self.x + self.dx, self.y + self.dy)
+            g.rotate(self.angle)
+
+            x = self._left
+
+            # paint box behind text just in case they
+            # fill it
+            if self.boxFillColor or (self.boxStrokeColor and self.boxStrokeWidth):
+                g.add(Rect( self._left-self.leftPadding,
+                            self._bottom-self.bottomPadding,
+                            self._width,
+                            self._height,
+                            strokeColor=self.boxStrokeColor,
+                            strokeWidth=self.boxStrokeWidth,
+                            fillColor=self.boxFillColor)
+                            )
+            g1 = Group()
+            g1.translate(x,self._top-self._eheight)
+            g1.add(self._ddf(self._obj))
+            g.add(g1)
+            return g

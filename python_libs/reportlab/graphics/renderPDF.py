@@ -1,9 +1,9 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/renderPDF.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/renderPDF.py
 # renderPDF - draws Drawings onto a canvas
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""Render Drawing objects within others PDFs or standalone
 
 Usage::
@@ -15,12 +15,13 @@ Execute the script to see some test drawings.
 changed
 """
 
+from io import BytesIO
+
 from reportlab.graphics.shapes import *
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.lib.utils import getBytesIO
 from reportlab import rl_config
-from reportlab.graphics.renderbase import Renderer, StateTracker, getStateDelta, renderScaledDrawing
+from reportlab.graphics.renderbase import Renderer, getStateDelta, renderScaledDrawing, STATE_DEFAULTS
 
 # the main entry point for users...
 def draw(drawing, canvas, x, y, showBoundary=rl_config._unset_):
@@ -36,7 +37,6 @@ class _PDFRenderer(Renderer):
     def __init__(self):
         self._stroke = 0
         self._fill = 0
-        self._tracker = StateTracker()
 
     def drawNode(self, node):
         """This is the recursive method called for each node
@@ -95,7 +95,7 @@ class _PDFRenderer(Renderer):
             self._canvas.circle(
                     circle.cx, circle.cy, circle.r,
                     fill=self._fill,
-                    stroke=self._stroke
+                    stroke=self._stroke,
                     )
 
     def drawPolyLine(self, polyline):
@@ -130,7 +130,8 @@ class _PDFRenderer(Renderer):
             path.close()
             self._canvas.drawPath(path,
                         fill=self._fill,
-                        stroke=self._stroke)
+                        stroke=self._stroke,
+                        )
 
     def drawEllipse(self, ellipse):
         #need to convert to pdfgen's bounding box representation
@@ -151,11 +152,15 @@ class _PDFRenderer(Renderer):
         self._canvas.drawPath(
                             path,
                             stroke=self._stroke,
-                            fill=self._fill
+                            fill=self._fill,
                             )
 
     def drawString(self, stringObj):
-        if self._fill:
+        textRenderMode = getattr(stringObj,'textRenderMode',0)
+        needFill = textRenderMode in (0,2,4,6) 
+        needStroke = textRenderMode in (1,2,5,6) 
+
+        if (self._fill and needFill) or (self._stroke and needStroke):
             S = self._tracker.getState()
             text_anchor, x, y, text, enc = S['textAnchor'], stringObj.x,stringObj.y,stringObj.text, stringObj.encoding
             if not text_anchor in ['start','inherited']:
@@ -169,25 +174,32 @@ class _PDFRenderer(Renderer):
                     x -= numericXShift(text_anchor,text,textLen,font,font_size,enc)
                 else:
                     raise ValueError('bad value for textAnchor '+str(text_anchor))
-            t = self._canvas.beginText(x,y)
-            t.textLine(text)
-            self._canvas.drawText(t)
+            self._canvas.drawString(x, y, text, mode=textRenderMode or None)
 
     def drawPath(self, path):
         from reportlab.graphics.shapes import _renderPath
         pdfPath = self._canvas.beginPath()
         drawFuncs = (pdfPath.moveTo, pdfPath.lineTo, pdfPath.curveTo, pdfPath.close)
-        isClosed = _renderPath(path, drawFuncs)
-        if isClosed:
-            fill = self._fill
+        autoclose = getattr(path,'autoclose','')
+        fill = self._fill
+        stroke = self._stroke
+        isClosed = _renderPath(path, drawFuncs, forceClose=fill and autoclose=='pdf')
+        dP = self._canvas.drawPath
+        cP = self._canvas.clipPath if path.isClipPath else dP
+        fillMode = getattr(path,'fillMode',None)
+        if autoclose=='svg':
+            if fill and stroke and not isClosed:
+                cP(pdfPath, fill=fill, stroke=0)
+                dP(pdfPath, stroke=stroke, fill=0, fillMode=fillMode)
+            else:
+                cP(pdfPath, fill=fill, stroke=stroke, fillMode=fillMode)
+        elif autoclose=='pdf':
+            cP(pdfPath, fill=fill, stroke=stroke, fillMode=fillMode)
         else:
-            fill = 0
-        if path.isClipPath:
-            self._canvas.clipPath(pdfPath, fill=fill, stroke=self._stroke)
-        else:
-            self._canvas.drawPath(pdfPath,
-                        fill=fill,
-                        stroke=self._stroke)
+            #our old broken default
+            if not isClosed:
+                fill = 0
+            cP(pdfPath, fill=fill, stroke=stroke, fillMode=fillMode)
 
     def setStrokeColor(self,c):
         self._canvas.setStrokeColor(c)
@@ -198,7 +210,7 @@ class _PDFRenderer(Renderer):
     def applyStateChanges(self, delta, newState):
         """This takes a set of states, and outputs the PDF operators
         needed to set those properties"""
-        for key, value in delta.items():
+        for key, value in (sorted(delta.items()) if rl_config.invariant else delta.items()):
             if key == 'transform':
                 self._canvas.transform(value[0], value[1], value[2],
                                  value[3], value[4], value[5])
@@ -257,6 +269,8 @@ class _PDFRenderer(Renderer):
                 self._canvas.setStrokeOverprint(value)
             elif key=='overprintMask':
                 self._canvas.setOverprintMask(value)
+            elif key=='fillMode':
+                self._canvas._fillMode = value
 
 from reportlab.platypus import Flowable
 class GraphicsFlowable(Flowable):
@@ -269,7 +283,7 @@ class GraphicsFlowable(Flowable):
     def draw(self):
         draw(self.drawing, self.canv, 0, 0)
 
-def drawToFile(d, fn, msg="", showBoundary=rl_config._unset_, autoSize=1):
+def drawToFile(d, fn, msg="", showBoundary=rl_config._unset_, autoSize=1, canvasKwds={}):
     """Makes a one-page PDF with just the drawing.
 
     If autoSize=1, the PDF will be the same size as
@@ -277,7 +291,10 @@ def drawToFile(d, fn, msg="", showBoundary=rl_config._unset_, autoSize=1):
     an A4 page with a title above it - possibly overflowing
     if too big."""
     d = renderScaledDrawing(d)
-    c = Canvas(fn)
+    for x in ('Name','Size'):
+        a = 'initialFont'+x
+        canvasKwds[a] = getattr(d,a,canvasKwds.pop(a,STATE_DEFAULTS['font'+x]))
+    c = Canvas(fn,**canvasKwds)
     if msg:
         c.setFont(rl_config.defaultGraphicsFontName, 36)
         c.drawString(80, 750, msg)
@@ -304,10 +321,10 @@ def drawToFile(d, fn, msg="", showBoundary=rl_config._unset_, autoSize=1):
         except:
             pass
 
-def drawToString(d, msg="", showBoundary=rl_config._unset_,autoSize=1):
+def drawToString(d, msg="", showBoundary=rl_config._unset_,autoSize=1,canvasKwds={}):
     "Returns a PDF as a string in memory, without touching the disk"
-    s = getBytesIO()
-    drawToFile(d, s, msg=msg, showBoundary=showBoundary,autoSize=autoSize)
+    s = BytesIO()
+    drawToFile(d, s, msg=msg, showBoundary=showBoundary,autoSize=autoSize, canvasKwds=canvasKwds)
     return s.getvalue()
 
 #########################################################
@@ -335,8 +352,9 @@ def test(outDir='pdfout',shout=False):
     drawings = []
     for funcname in dir(testshapes):
         if funcname[0:10] == 'getDrawing':
-            drawing = eval('testshapes.' + funcname + '()')  #execute it
-            docstring = eval('testshapes.' + funcname + '.__doc__')
+            func = getattr(testshapes,funcname)
+            drawing = func()  #execute it
+            docstring = getattr(func,'__doc__','')
             drawings.append((drawing, docstring))
 
     #print in a loop, with their doc strings
@@ -366,32 +384,6 @@ def test(outDir='pdfout',shout=False):
     c.save()
     if shout or verbose>2:
         print('saved %s' % ascii(fn))
-
-##def testFlowable():
-##    """Makes a platypus document"""
-##    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-##    from reportlab.lib.styles import getSampleStyleSheet
-##    styles = getSampleStyleSheet()
-##    styNormal = styles['Normal']
-##
-##    doc = SimpleDocTemplate('test_flowable.pdf')
-##    story = []
-##    story.append(Paragraph("This sees is a drawing can work as a flowable", styNormal))
-##
-##    import testdrawings
-##    drawings = []
-##
-##    for funcname in dir(testdrawings):
-##        if funcname[0:10] == 'getDrawing':
-##            drawing = eval('testdrawings.' + funcname + '()')  #execute it
-##            docstring = eval('testdrawings.' + funcname + '.__doc__')
-##            story.append(Paragraph(docstring, styNormal))
-##            story.append(Spacer(18,18))
-##            story.append(drawing)
-##            story.append(Spacer(36,36))
-##
-##    doc.build(story)
-##    print 'saves test_flowable.pdf'
 
 if __name__=='__main__':
     test(shout=True)

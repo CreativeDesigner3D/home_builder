@@ -1,25 +1,23 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/legends.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/charts/legends.py
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""This will be a collection of legends to be used with charts."""
 
-import copy, operator
+import copy
 
 from reportlab.lib import colors
 from reportlab.lib.validators import isNumber, OneOf, isString, isColorOrNone,\
-        isNumberOrNone, isListOfNumbersOrNone, isStringOrNone, isBoolean,\
+        isNumberOrNone, isListOfNumbersOrNone, isBoolean,\
         EitherOr, NoneOr, AutoOr, isAuto, Auto, isBoxAnchor, SequenceOf, isInstanceOf
 from reportlab.lib.attrmap import *
 from reportlab.pdfbase.pdfmetrics import stringWidth, getFont
 from reportlab.graphics.widgetbase import Widget, TypedPropertyCollection, PropHolder
 from reportlab.graphics.shapes import Drawing, Group, String, Rect, Line, STATE_DEFAULTS
-from reportlab.graphics.charts.areas import PlotArea
 from reportlab.graphics.widgets.markers import uSymbol2Symbol, isSymbol
-from reportlab.lib.utils import isSeq, find_locals
+from reportlab.lib.utils import isSeq, find_locals, isStr, asNative
 from reportlab.graphics.shapes import _baseGFontName
-from functools import reduce
 
 def _transMax(n,A):
     X = n*[0]
@@ -34,8 +32,8 @@ def _transMax(n,A):
     return X
 
 def _objStr(s):
-    if isinstance(s,str):
-        return s
+    if isStr(s):
+        return asNative(s)
     else:
         return str(s)
 
@@ -87,12 +85,13 @@ class SubColProperty(PropHolder):
         align = AttrMapValue(OneOf('left','right','center','centre','numeric'),desc='alignment in subCol'),
         fontName = AttrMapValue(isString, desc="Font name of the strings"),
         fontSize = AttrMapValue(isNumber, desc="Font size of the strings"),
-        leading = AttrMapValue(isNumber, desc="leading for the strings"),
+        leading = AttrMapValue(isNumberOrNone, desc="leading for the strings"),
         fillColor = AttrMapValue(isColorOrNone, desc="fontColor"),
         underlines = AttrMapValue(EitherOr((NoneOr(isInstanceOf(Line)),SequenceOf(isInstanceOf(Line),emptyOK=0,lo=0,hi=0x7fffffff))), desc="underline definitions"),
         overlines = AttrMapValue(EitherOr((NoneOr(isInstanceOf(Line)),SequenceOf(isInstanceOf(Line),emptyOK=0,lo=0,hi=0x7fffffff))), desc="overline definitions"),
         dx = AttrMapValue(isNumber, desc="x offset from default position"),
         dy = AttrMapValue(isNumber, desc="y offset from default position"),
+        vAlign = AttrMapValue(OneOf('top','bottom','middle'),desc='vertical alignment in the row'),
         )
 
 class LegendCallout:
@@ -147,6 +146,7 @@ class Legend(Widget):
         colorNamePairs = AttrMapValue(None, desc="List of color/name tuples (color can also be widget)"),
         fontName = AttrMapValue(isString, desc="Font name of the strings"),
         fontSize = AttrMapValue(isNumber, desc="Font size of the strings"),
+        leading = AttrMapValue(isNumberOrNone, desc="text leading"),
         fillColor = AttrMapValue(isColorOrNone, desc="swatches filling color"),
         strokeColor = AttrMapValue(isColorOrNone, desc="Border color of the swatches"),
         strokeWidth = AttrMapValue(isNumber, desc="Width of the border color of the swatches"),
@@ -204,6 +204,7 @@ class Legend(Widget):
         # Font name and size of the labels.
         self.fontName = STATE_DEFAULTS['fontName']
         self.fontSize = STATE_DEFAULTS['fontSize']
+        self.leading = None #will be used as 1.2*fontSize
         self.fillColor = STATE_DEFAULTS['fillColor']
         self.strokeColor = STATE_DEFAULTS['strokeColor']
         self.strokeWidth = STATE_DEFAULTS['strokeWidth']
@@ -226,6 +227,8 @@ class Legend(Widget):
         sc.dx = sc.dy = sc.minWidth = 0
         sc.align = 'right'
         sc[0].align = 'left' 
+        sc.vAlign = 'top'   #that's current
+        sc.leading = None
 
     def _getChartStyleName(self,chart):
         for a in 'lines', 'bars', 'slices', 'strands':
@@ -264,7 +267,8 @@ class Legend(Widget):
         yGap = self.yGap
         thisy = upperlefty = self.y - dy
         fontSize = self.fontSize
-        ascent=getFont(self.fontName).face.ascent/1000.
+        fontName = self.fontName
+        ascent=getFont(fontName).face.ascent/1000.
         if ascent==0: ascent=0.718 # default (from helvetica)
         ascent *= fontSize
         leading = fontSize*1.2
@@ -283,7 +287,7 @@ class Legend(Widget):
             if count==lim:
                 count = 0
                 thisy = upperlefty
-                columnCount = columnCount + 1
+                columnCount += 1
             else:
                 thisy = newy
                 count = count+1
@@ -372,7 +376,7 @@ class Legend(Widget):
             dividerOffsX = self.dividerOffsX
             dividerOffsY = self.dividerOffsY
 
-        for i in xrange(n):
+        for i in range(n):
             if autoCP:
                 col = autoCP
                 col.index = i
@@ -404,6 +408,7 @@ class Legend(Widget):
                 raise ValueError("bad alignment")
             if not isSeq(name):
                 T = [T]
+            lineCount = _getLineCount(name)
             yd = y
             for k,lines in enumerate(T):
                 y = y0
@@ -417,13 +422,21 @@ class Legend(Widget):
                 fN = getattr(sc,'fontName',fontName)
                 fS = getattr(sc,'fontSize',fontSize)
                 fC = getattr(sc,'fillColor',fillColor)
-                fL = getattr(sc,'leading',1.2*fontSize)
+                fL = sc.leading or 1.2*fontSize
                 if fN==fontName:
                     fA = (ascent*fS)/fontSize
                 else:
                     fA = getFont(fontName).face.ascent/1000.
                     if fA==0: fA=0.718
                     fA *= fS
+
+                vA = sc.vAlign
+                if vA=='top':
+                    vAdy = 0
+                else:
+                    vAdy = -fL * (lineCount - len(lines))
+                    if vA=='middle': vAdy *= 0.5
+
                 if anchor=='left':
                     anchor = 'start'
                     xoffs = x1
@@ -436,7 +449,7 @@ class Legend(Widget):
                     anchor = 'middle'
                     xoffs = 0.5*(x1+x2)
                 for t in lines:
-                    aS(String(xoffs+scdx,y+scdy,t,fontName=fN,fontSize=fS,fillColor=fC, textAnchor = anchor))
+                    aS(String(xoffs+scdx,y+scdy+vAdy,t,fontName=fN,fontSize=fS,fillColor=fC, textAnchor = anchor))
                     y -= fL
                 yd = min(yd,y)
                 y += fL
@@ -593,7 +606,6 @@ class LineSwatch(Widget):
 
     def __init__(self):
         from reportlab.lib.colors import red
-        from reportlab.graphics.shapes import Line
         self.x = 0
         self.y = 0
         self.width  = 20
@@ -630,87 +642,3 @@ class LineLegend(Legend):
         l.height = dy
         l.strokeColor = fillColor
         return l
-
-def sample1c():
-    "Make sample legend."
-
-    d = Drawing(200, 100)
-
-    legend = Legend()
-    legend.alignment = 'right'
-    legend.x = 0
-    legend.y = 100
-    legend.dxTextSpace = 5
-    items = 'red green blue yellow pink black white'.split()
-    items = [(getattr(colors, i), i) for i in items]
-    legend.colorNamePairs = items
-
-    d.add(legend, 'legend')
-
-    return d
-
-
-def sample2c():
-    "Make sample legend."
-
-    d = Drawing(200, 100)
-
-    legend = Legend()
-    legend.alignment = 'right'
-    legend.x = 20
-    legend.y = 90
-    legend.deltax = 60
-    legend.dxTextSpace = 10
-    legend.columnMaximum = 4
-    items = 'red green blue yellow pink black white'.split()
-    items = [(getattr(colors, i), i) for i in items]
-    legend.colorNamePairs = items
-
-    d.add(legend, 'legend')
-
-    return d
-
-def sample3():
-    "Make sample legend with line swatches."
-
-    d = Drawing(200, 100)
-
-    legend = LineLegend()
-    legend.alignment = 'right'
-    legend.x = 20
-    legend.y = 90
-    legend.deltax = 60
-    legend.dxTextSpace = 10
-    legend.columnMaximum = 4
-    items = 'red green blue yellow pink black white'.split()
-    items = [(getattr(colors, i), i) for i in items]
-    legend.colorNamePairs = items
-    d.add(legend, 'legend')
-
-    return d
-
-
-def sample3a():
-    "Make sample legend with line swatches and dasharrays on the lines."
-
-    d = Drawing(200, 100)
-
-    legend = LineLegend()
-    legend.alignment = 'right'
-    legend.x = 20
-    legend.y = 90
-    legend.deltax = 60
-    legend.dxTextSpace = 10
-    legend.columnMaximum = 4
-    items = 'red green blue yellow pink black white'.split()
-    darrays = ([2,1], [2,5], [2,2,5,5], [1,2,3,4], [4,2,3,4], [1,2,3,4,5,6], [1])
-    cnp = []
-    for i in range(0, len(items)):
-        l =  LineSwatch()
-        l.strokeColor = getattr(colors, items[i])
-        l.strokeDashArray = darrays[i]
-        cnp.append((l, items[i]))
-    legend.colorNamePairs = cnp
-    d.add(legend, 'legend')
-
-    return d

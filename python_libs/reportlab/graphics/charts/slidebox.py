@@ -1,12 +1,12 @@
-from reportlab.lib.colors import Color, white, black
-from reportlab.graphics.charts.textlabels import Label
-from reportlab.graphics.shapes import Polygon, Line, Circle, String, Drawing, PolyLine, Group, Rect
-from reportlab.graphics.widgetbase import Widget, TypedPropertyCollection
+from reportlab.lib import colors
+from reportlab.lib.colors import black, white
+from reportlab.graphics.shapes import Polygon, String, Drawing, Group, Rect
+from reportlab.graphics.widgetbase import Widget
 from reportlab.lib.attrmap import *
 from reportlab.lib.validators import *
 from reportlab.lib.units import cm
-from reportlab.pdfbase.pdfmetrics import stringWidth, getFont
-from reportlab.graphics.widgets.grids import ShadedRect, Grid
+from reportlab.pdfbase.pdfmetrics import getFont
+from reportlab.graphics.widgets.grids import ShadedRect
 
 class SlideBox(Widget):
     """Returns a slidebox widget"""
@@ -91,7 +91,6 @@ class SlideBox(Widget):
         return colorsList
 
     def demo(self,drawing=None):
-        from reportlab.lib import colors
         if not drawing:
             tx,ty=self._getDrawingDimensions()
             drawing = Drawing(tx,ty)

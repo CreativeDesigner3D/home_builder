@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfgen/pathobject.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/pdfgen/pathobject.py
+__version__='3.3.0'
 __doc__="""
 PDFPathObject is an efficient way to draw paths on a Canvas. Do not
 instantiate directly, obtain one from the Canvas instead.
@@ -25,7 +25,7 @@ class PDFPathObject:
 
     Path objects are probably not long, so we pack onto one line
 
-    the code argument allows a canvas to get the operatiosn appended directly so
+    the code argument allows a canvas to get the operations appended directly so
     avoiding the final getCode
     """
     def __init__(self,code=None):
@@ -95,31 +95,43 @@ class PDFPathObject:
         #use a precomputed set of factors for the bezier approximation
         #to a circle. There are six relevant points on the x axis and y axis.
         #sketch them and it should all make sense!
-        t = 0.4472 * radius
-
-        x0 = x
-        x1 = x0 + t
-        x2 = x0 + radius
-        x3 = x0 + width - radius
-        x4 = x0 + width - t
-        x5 = x0 + width
-
-        y0 = y
-        y1 = y0 + t
-        y2 = y0 + radius
-        y3 = y0 + height - radius
-        y4 = y0 + height - t
-        y5 = y0 + height
-
-        self.moveTo(x2, y0)
-        self.lineTo(x3, y0) #bottom row
-        self.curveTo(x4, y0, x5, y1, x5, y2) #bottom right
-        self.lineTo(x5, y3) #right edge
-        self.curveTo(x5, y4, x4, y5, x3, y5) #top right
-        self.lineTo(x2, y5) #top row
-        self.curveTo(x1, y5, x0, y4, x0, y3) #top left
-        self.lineTo(x0, y2) #left edge
-        self.curveTo(x0, y1, x1, y0, x2, y0) #bottom left
+        m = 0.4472  #radius multiplier
+        xhi = x,x+width
+        xlo, xhi = min(xhi), max(xhi)
+        yhi = y,y+height
+        ylo, yhi = min(yhi), max(yhi)
+        if isinstance(radius,(list,tuple)):
+            r = [max(0,r) for r in radius]
+            if len(r)<4: r += (4-len(r))*[0]
+            self.moveTo(xlo + r[2], ylo)    #start at bottom left
+            self.lineTo(xhi - r[3], ylo)    #bottom row
+            if r[3]>0:
+                t = m*r[3]
+                self.curveTo(xhi - t, ylo, xhi, ylo + t, xhi, ylo + r[3]) #bottom right
+            self.lineTo(xhi, yhi - r[1]) #right edge
+            if r[1]>0:
+                t = m*r[1]
+                self.curveTo(xhi, yhi - t, xhi - t, yhi, xhi - r[1], yhi) #top right
+            self.lineTo(xlo + r[0], yhi) #top row
+            if r[0]>0:
+                t = m*r[0]
+                self.curveTo(xlo + t, yhi, xlo, yhi - t, xlo, yhi - r[0]) #top left
+            self.lineTo(xlo, ylo + r[2]) #left edge
+            if r[2]>0:
+                t = m*r[2]
+                self.curveTo(xlo, ylo + t, xlo + t, ylo, xlo + r[2], ylo) #bottom left
+            # 4 radii top left top right bittom left bottom right
+        else:
+            t = m * radius
+            self.moveTo(xlo + radius, ylo)
+            self.lineTo(xhi - radius, ylo) #bottom row
+            self.curveTo(xhi - t, ylo, xhi, ylo + t, xhi, ylo + radius) #bottom right
+            self.lineTo(xhi, yhi - radius) #right edge
+            self.curveTo(xhi, yhi - t, xhi - t, yhi, xhi - radius, yhi) #top right
+            self.lineTo(xlo + radius, yhi) #top row
+            self.curveTo(xlo + t, yhi, xlo, yhi - t, xlo, yhi - radius) #top left
+            self.lineTo(xlo, ylo + radius) #left edge
+            self.curveTo(xlo, ylo + t, xlo + t, ylo, xlo + radius, ylo) #bottom left
         self.close()
 
     def close(self):

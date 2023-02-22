@@ -1,9 +1,9 @@
 #!/bin/env python
-#Copyright ReportLab Europe Ltd. 2000-2013
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/randomtext.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/randomtext.py
 
-__version__=''' $Id$ '''
+__version__='3.3.0'
 
 ###############################################################################
 #   generates so-called 'Greek Text' for use in filling documents.
@@ -319,11 +319,83 @@ def chomsky(times = 1):
 
 from reportlab import rl_config
 if rl_config.invariant:
+    import random
+    #monkey patch random.randrange
+    class RLMonkeyPatchRandom(random.Random):
+        def randrange(self, start, stop=None, step=1, _int=int, _maxwidth=1<<random.BPF):
+            """Choose a random item from range(start, stop[, step]).
+
+            This fixes the problem with randint() which includes the
+            endpoint; in Python this is usually not what you want.
+
+            """
+
+            # This code is a bit messy to make it fast for the
+            # common case while still doing adequate error checking.
+            istart = _int(start)
+            if istart != start:
+                raise ValueError("non-integer arg 1 for randrange()")
+            if stop is None:
+                if istart > 0:
+                    if istart >= _maxwidth:
+                        return self._randbelow(istart)
+                    return _int(self.random() * istart)
+                raise ValueError("empty range for randrange()")
+
+            # stop argument supplied.
+            istop = _int(stop)
+            if istop != stop:
+                raise ValueError("non-integer stop for randrange()")
+            width = istop - istart
+            if step == 1 and width > 0:
+                # Note that
+                #     int(istart + self.random()*width)
+                # instead would be incorrect.  For example, consider istart
+                # = -2 and istop = 0.  Then the guts would be in
+                # -2.0 to 0.0 exclusive on both ends (ignoring that random()
+                # might return 0.0), and because int() truncates toward 0, the
+                # final result would be -1 or 0 (instead of -2 or -1).
+                #     istart + int(self.random()*width)
+                # would also be incorrect, for a subtler reason:  the RHS
+                # can return a long, and then randrange() would also return
+                # a long, but we're supposed to return an int (for backward
+                # compatibility).
+
+                if width >= _maxwidth:
+                    return _int(istart + self._randbelow(width))
+                return _int(istart + _int(self.random()*width))
+            if step == 1:
+                raise ValueError("empty range for randrange() (%d,%d, %d)" % (istart, istop, width))
+
+            # Non-unit step argument supplied.
+            istep = _int(step)
+            if istep != step:
+                raise ValueError("non-integer step for randrange()")
+            if istep > 0:
+                n = (width + istep - 1) // istep
+            elif istep < 0:
+                n = (width + istep + 1) // istep
+            else:
+                raise ValueError("zero step for randrange()")
+
+            if n <= 0:
+                raise ValueError("empty range for randrange()")
+
+            if n >= _maxwidth:
+                return istart + istep*self._randbelow(n)
+            return istart + istep*_int(self.random() * n)
+        def choice(self, seq):
+            """Choose a random element from a non-empty sequence."""
+            return seq[int(self.random() * len(seq))]
+    random.Random.randrange = RLMonkeyPatchRandom.randrange
+    random.Random.choice = RLMonkeyPatchRandom.choice
+    random.randrange = random._inst.randrange
+    random.choice = random._inst.choice
+    del RLMonkeyPatchRandom
     if not getattr(rl_config,'_random',None):
         rl_config._random = 1
-        import random
         random.seed(2342471922)
-        del random
+    del random
 del rl_config
 
 def randomText(theme=STARTUP, sentences=5):

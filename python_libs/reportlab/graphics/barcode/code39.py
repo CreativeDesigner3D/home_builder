@@ -33,7 +33,7 @@
 from reportlab.lib.units import inch
 from reportlab.lib.utils import asNative
 from reportlab.graphics.barcode.common import Barcode
-from string import digits as string_digits
+from string import ascii_uppercase, ascii_lowercase, digits as string_digits
 
 _patterns = {
     '0':    ("bsbSBsBsb", 0),       '1': ("BsbSbsbsB", 1),
@@ -60,7 +60,6 @@ _patterns = {
     '+':    ("bSbsbSbSb", 41),      '%': ("bsbSbSbSb", 42)
     }
 
-from reportlab.lib.utils import ascii_uppercase, ascii_lowercase
 _stdchrs = string_digits + ascii_uppercase + "-. $/+%"
 
 _extended = {

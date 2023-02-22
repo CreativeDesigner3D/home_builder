@@ -1,9 +1,24 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-__version__=''' $Id$ '''
+__version__='3.4.34'
 __doc__='''Utility functions to position and resize boxes within boxes'''
 
-def aspectRatioFix(preserve,anchor,x,y,width,height,imWidth,imHeight):
+def rectCorner(x, y, width, height, anchor='sw', dims=False):
+    '''given rectangle controlled by x,y width and height return 
+    the corner corresponding to the anchor'''
+    if anchor not in ('nw','w','sw'):
+        if anchor in ('n','c','s'):
+            x += width/2.
+        else:
+            x += width
+    if anchor not in ('sw','s','se'):
+        if anchor in ('w','c','e'):
+            y += height/2.
+        else:
+            y += height
+    return (x,y,width,height) if dims else (x,y)
+
+def aspectRatioFix(preserve,anchor,x,y,width,height,imWidth,imHeight,anchorAtXY=False):
     """This function helps position an image within a box.
 
     It first normalizes for two cases:
@@ -47,16 +62,23 @@ def aspectRatioFix(preserve,anchor,x,y,width,height,imWidth,imHeight):
         oheight = height
         width = scale*imWidth-1e-8
         height = scale*imHeight-1e-8
-        if anchor not in ('nw','w','sw'):
-            dx = owidth-width
-            if anchor in ('n','c','s'):
-                x += dx/2.
-            else:
-                x += dx
+        if not anchorAtXY:
+#           if anchor not in ('nw','w','sw'):
+#               dx = owidth-width
+#               if anchor in ('n','c','s'):
+#                   x += dx/2.
+#               else:
+#                   x += dx
+#           if anchor not in ('sw','s','se'):
+#               dy = oheight-height
+#               if anchor in ('w','c','e'):
+#                   y += dy/2.
+#               else:
+#                   y += dy
+            x, y = rectCorner(x,y,owidth-width,oheight-height,anchor)
+    if anchorAtXY:
         if anchor not in ('sw','s','se'):
-            dy = oheight-height
-            if anchor in ('w','c','e'):
-                y += dy/2.
-            else:
-                y += dy
+            y -= height/2. if anchor in ('e','c','w') else height
+        if anchor not in ('nw','w','sw'):
+            x -= width/2. if anchor in ('n','c','s') else width
     return x,y, width, height, scale

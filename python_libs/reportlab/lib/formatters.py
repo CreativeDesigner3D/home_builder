@@ -1,14 +1,14 @@
 #!/bin/env python
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/formatters.py
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/lib/formatters.py
 __all__=('Formatter','DecimalFormatter')
-__version__=''' $Id$ '''
+__version__='3.3.0'
 __doc__="""
 These help format numbers and dates in a user friendly way.
 Used by the graphics framework.
 """
-import string, sys, os, re
+import re
 
 class Formatter:
     "Base formatter - simply applies python format strings"

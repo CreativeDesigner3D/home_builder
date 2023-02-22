@@ -1,7 +1,7 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/widgets/grids.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/graphics/widgets/grids.py
+__version__='3.3.0'
 
 from reportlab.lib import colors
 from reportlab.lib.validators import isNumber, isColorOrNone, isBoolean, isListOfNumbers, OneOf, isListOfColors, isNumberOrNone
@@ -442,7 +442,7 @@ def rotatedEnclosingRect(P, angle, rect):
 
     The class R
     '''
-    from math import pi, cos, sin, tan
+    from math import pi, cos, sin
     x0, y0 = centroid(P)
     theta = (angle/180.)*pi
     s,c=sin(theta),cos(theta)
@@ -511,8 +511,6 @@ class ShadedPolygon(Widget,LineShape):
         return g
 
 if __name__=='__main__': #noruntests
-    from reportlab.lib.colors import blue
-    from reportlab.graphics.shapes import Drawing
     angle=45
     D = Drawing(120,120)
     D.add(ShadedPolygon(points=(10,10,60,60,110,10),strokeColor=None,strokeWidth=1,angle=90,numShades=50,cylinderMode=0))

@@ -1,16 +1,17 @@
-#Copyright ReportLab Europe Ltd. 2000-2012
+#Copyright ReportLab Europe Ltd. 2000-2017
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/pdfutils.py
-__version__=''' $Id$ '''
+#history https://hg.reportlab.com/hg-public/reportlab/log/tip/src/reportlab/pdfbase/pdfutils.py
+__version__='3.3.0'
 __doc__=''
 # pdfutils.py - everything to do with images, streams,
 # compression, and some constants
 
-import sys
 import os
 import binascii
+from io import BytesIO
+
 from reportlab import rl_config
-from reportlab.lib.utils import getBytesIO, ImageReader, isUnicode, isPy3
+from reportlab.lib.utils import ImageReader, isUnicode
 from reportlab.lib.rl_accel import asciiBase85Encode, asciiBase85Decode
 
 def _chunker(src,dst=[],chunkSize=60):
@@ -26,10 +27,13 @@ def _chunker(src,dst=[],chunkSize=60):
 ##########################################################
 _mode2cs = {'RGB':'RGB', 'CMYK': 'CMYK', 'L': 'G'}
 _mode2bpp = {'RGB': 3, 'CMYK':4, 'L':1}
-def makeA85Image(filename,IMG=None):
+def makeA85Image(filename,IMG=None, detectJpeg=False):
     import zlib
     img = ImageReader(filename)
-    if IMG is not None: IMG.append(img)
+    if IMG is not None:
+        IMG.append(img)
+        if detectJpeg and img.jpeg_fh():
+            return None
 
     imgwidth, imgheight = img.getSize()
     raw = img.getRGBData()
@@ -50,10 +54,13 @@ def makeA85Image(filename,IMG=None):
 
     append('EI')
     return code
-def makeRawImage(filename,IMG=None):
+def makeRawImage(filename,IMG=None,detectJpeg=False):
     import zlib
     img = ImageReader(filename)
-    if IMG is not None: IMG.append(img)
+    if IMG is not None:
+        IMG.append(img)
+        if detectJpeg and img.jpeg_fh():
+            return None
 
     imgwidth, imgheight = img.getSize()
     raw = img.getRGBData()
@@ -102,7 +109,7 @@ def cacheImageFile(filename, returnInMemory=0, IMG=None):
 def preProcessImages(spec):
     """Preprocesses one or more image files.
 
-    Accepts either a filespec ('C:\mydir\*.jpg') or a list
+    Accepts either a filespec ('C:\\mydir\\*.jpg') or a list
     of image filenames, crunches them all to save time.  Run this
     to save huge amounts of time when repeatedly building image
     documents."""
@@ -166,7 +173,7 @@ def _AsciiHexEncode(input):
     Helper function used by images."""
     if isUnicode(input):
         input = input.encode('utf-8')
-    output = getBytesIO()
+    output = BytesIO()
     output.write(binascii.b2a_hex(input))
     output.write(b'>')
     return output.getvalue()
@@ -232,13 +239,13 @@ def readJPEGInfo(image):
         [ 0xC3, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF ]
 
     #read JPEG marker segments until we find SOFn marker or EOF
+    dpi = (72,72)
     done = 0
     while not done:
         x = struct.unpack('B', image.read(1))
         if x[0] == 0xFF:                    #found marker
             x = struct.unpack('B', image.read(1))
-            #print "Marker: ", '%0.2x' % x[0]
-            #check marker type is acceptable and process it
+            #print('marker=%2x' % x[0])
             if x[0] in validMarkers:
                 image.seek(2, 1)            #skip segment length
                 x = struct.unpack('B', image.read(1)) #data precision
@@ -250,7 +257,14 @@ def readJPEGInfo(image):
                 width =  (y[0] << 8) + y[1]
                 y = struct.unpack('B', image.read(1))
                 color =  y[0]
-                return width, height, color
+                return width, height, color, dpi
+            elif x[0]==0xE0:
+                x = struct.unpack('BB', image.read(2))
+                n = (x[0] << 8) + x[1] - 2
+                x = image.read(n)
+                y = struct.unpack('BB', x[10:12])
+                x = struct.unpack('BB', x[8:10])
+                dpi = ((x[0]<<8) + x[1],(y[0]<<8)+y[1])
             elif x[0] in unsupportedMarkers:
                 raise PDFError('JPEG Unsupported JPEG marker: %0.2x' % x[0])
             elif x[0] not in noParamMarkers:

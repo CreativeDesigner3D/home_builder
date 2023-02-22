@@ -1,11 +1,11 @@
-#copyright ReportLab Europe Limited. 2000-2012
+#copyright ReportLab Europe Limited. 2000-2016
 #see license.txt for license details
 '''
 Arciv Stream  ciphering
 '''
 __all__='''ArcIV encode decode'''.split()
-__version__=''' 1.0 '''
-from reportlab.lib.utils import isUnicode, isPy3
+__version__="1.0"
+from reportlab.lib.utils import isUnicode
 class ArcIV:
 	'''
 	performs 'ArcIV' Stream Encryption of S using key
@@ -27,12 +27,8 @@ class ArcIV:
 		sbox = list(range(256))
 		k = list(range(256))
 		lk = len(key)
-		if isPy3:
-			for i in sbox:
-				k[i] = key[i % lk] % 256
-		else:
-			for i in sbox:
-				k[i] = ord(key[i % lk]) % 256
+		for i in sbox:
+			k[i] = key[i % lk] % 256
 
 		#Re-order sbox using the private key, k.
 		#Iterating each element of sbox re-calculate the counter j
@@ -50,12 +46,7 @@ class ArcIV:
 		'''
 		sbox, i, j = self._sbox, self._i, self._j
 
-		if isPy3:
-			C = list(B.encode('utf8')) if isinstance(B,str) else (list(B) if isinstance(B,bytes) else B[:])
-		elif isinstance(B,basestring):
-			C = list(map(ord,B.encode('utf8') if isinstance(B,unicode) else B))
-		else:
-			C = B[:]
+		C = list(B.encode('utf8')) if isinstance(B,str) else (list(B) if isinstance(B,bytes) else B[:])
 		n = len(C)
 		p = 0
 		while p<n:
@@ -69,14 +60,9 @@ class ArcIV:
 			p += 1
 		return C
 
-	if isPy3:
-		def encode(self,S):
-			'ArcIV encode string S'
-			return bytes(self._encode(S))
-	else:
-		def encode(self,S):
-			'ArcIV encode string S'
-			return "".join(map(chr,self._encode(S)))
+	def encode(self,S):
+		'ArcIV encode string S'
+		return bytes(self._encode(S))
 
 _TESTS=[{
 		'key': b"\x01\x23\x45\x67\x89\xab\xcd\xef",

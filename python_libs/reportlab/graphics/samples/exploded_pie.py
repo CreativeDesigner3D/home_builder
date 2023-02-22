@@ -3,7 +3,7 @@ from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.samples.excelcolors import *
 from reportlab.graphics.widgets.grids import ShadedRect
 from reportlab.graphics.charts.legends import Legend
-from reportlab.graphics.shapes import Drawing, _DrawingEditorMixin, String
+from reportlab.graphics.shapes import Drawing, _DrawingEditorMixin
 from reportlab.graphics.charts.textlabels import Label
 
 class ExplodedPie(_DrawingEditorMixin,Drawing):
