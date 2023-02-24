@@ -1016,8 +1016,7 @@ class hb_sample_cabinets_OT_opening_cabinet_prompts(bpy.types.Operator):
 
     product_tabs: bpy.props.EnumProperty(name="Product Tabs",
                                          items=[('MAIN',"Main","Main Options"),
-                                                ('CONSTRUCTION',"Construction","Construction Options"),
-                                                ('MACHINING',"Machining","Machining Options")])
+                                                ('CONSTRUCTION',"Construction","Construction Options")])
 
     set_height: bpy.props.EnumProperty(name="Set Height",
                                        items=const.PANEL_HEIGHTS,
@@ -1412,7 +1411,6 @@ class hb_sample_cabinets_OT_opening_cabinet_prompts(bpy.types.Operator):
         row = prompt_box.row(align=True)
         row.prop_enum(self, "product_tabs", 'MAIN') 
         row.prop_enum(self, "product_tabs", 'CONSTRUCTION') 
-        row.prop_enum(self, "product_tabs", 'MACHINING')
 
         if self.product_tabs == 'MAIN':
             self.draw_closet_prompts(prompt_box,context)   
@@ -1420,13 +1418,6 @@ class hb_sample_cabinets_OT_opening_cabinet_prompts(bpy.types.Operator):
         if self.product_tabs == 'CONSTRUCTION':
             self.draw_construction_prompts(prompt_box,context)
 
-        if self.product_tabs == 'MACHINING':
-            pass
-            # for carcass in reversed(self.cabinet.carcasses):
-            #     if carcass.exterior:
-            #         box = prompt_box.box()
-            #         box.label(text=carcass.exterior.obj_bp.name)
-            #         carcass.exterior.draw_prompts(box,context)
 
 class hb_sample_cabinets_OT_inside_corner_cabinet_prompts(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.inside_corner_cabinet_prompts"
