@@ -450,6 +450,13 @@ def get_material(library_path,material_name):
         for mat in data_to.materials:
             return mat
 
+def assign_pointer_to_object(obj,pointer_name):
+    if len(obj.pyclone.pointers) == 0:
+        bpy.ops.pc_material.add_material_slot(object_name=obj.name)    
+    for index, pointer in enumerate(obj.pyclone.pointers):  
+        pointer.pointer_name = pointer_name  
+    assign_materials_to_object(obj)  
+    
 def assign_materials_to_object(obj):
     scene_props = bpy.context.scene.home_builder  
     pointers = scene_props.material_pointers  

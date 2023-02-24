@@ -161,6 +161,7 @@ def load_libraries(context):
     pointer_list.append(("Walls","Room Materials","Default Room Materials","White Wall Paint",mat_library_path))
     pointer_list.append(("Floor","Room Materials","Default Room Materials","Wood Floor",mat_library_path))
     pointer_list.append(("Ceiling","Room Materials","Default Room Materials","White Wall Paint",mat_library_path)) 
+    pointer_list.append(("Dimensions","Room Materials","Default Room Materials","Dimension",mat_library_path)) 
     
     #LOAD BUILT IN LIBRARIES
     dirs = os.listdir(product_path) 

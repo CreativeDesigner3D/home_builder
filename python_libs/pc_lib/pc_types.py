@@ -713,10 +713,15 @@ class Title_Block(Assembly):
             collection.objects.link(obj)
 
         self.obj_bp.parent = layout_view.camera
+        # self.obj_bp.location.x = -1.53691
+        # self.obj_bp.location.y = -1.18811
+        # self.obj_bp.location.z = -1
+        # self.obj_bp.scale = (11,11,11)
         self.obj_bp.location.x = -0.5
         self.obj_bp.location.y = -0.386363 
         self.obj_bp.location.z = -1
         self.obj_bp.scale = (3.5791,3.5791,3.5791)
+
         # if bpy.context.scene.pyclone.page_size == 'LETTER':
         #     self.obj_bp.location.x = -0.13959
         #     self.obj_bp.location.y = -0.108
@@ -873,7 +878,9 @@ class Dimension(Assembly):
             if "obj_prompts" in obj:
                 self.obj_prompts = obj    
             if obj.type == 'FONT':
-                self.obj_text = obj            
+                self.obj_text = obj   
+            if obj.type in {'MESH','CURVE','FONT'}:
+                pc_utils.assign_materials_to_object(obj)         
             obj["PROMPT_ID"] = "pc_assembly.show_dimension_properties"
             collection.objects.link(obj)
 

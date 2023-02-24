@@ -80,14 +80,67 @@ class hb_sample_cabinets_OT_create_2d_plan_view(bpy.types.Operator):
             y = (smallest_y - largest_y)/2 + largest_y
 
         z = tallest_wall - pc_unit.inch(.01)
-        return x,y,z        
+
+        width = largest_x - smallest_x
+        depth = largest_y - smallest_y
+        if width > depth:
+            size = width
+        else:
+            size = depth
+        return x,y,z,size        
 
     def add_title_block(self,view_layout,description,number,scale):
         title_block = pc_types.Title_Block()
         title_block.create_title_block(view_layout,title_block_name="Title Block")
 
+    def create_text_annotation(self,view_layout,parent,x_loc,y_loc,z_loc,text):
+        font_curve = bpy.data.curves.new(type="FONT", name=text)
+        font_curve.body = text
+        font_curve.align_x = 'CENTER'
+        font_curve.align_y = 'CENTER'
+        font_curve.size = .15
+        font_obj = bpy.data.objects.new(name="Font Object", object_data=font_curve)
+        view_layout.dimension_collection.objects.link(font_obj) 
+        font_obj.parent = parent 
+        font_obj.location.x = x_loc
+        font_obj.location.y = y_loc
+        font_obj.location.z = z_loc
+        font_obj.display.show_shadows = False
+        font_obj.color = [0.000000, 0.000000, 0.000000, 1.000000]
+        pc_utils.assign_pointer_to_object(font_obj,"Dimensions")
+        return font_obj
+
+    def create_wall_width_dim(self,view_layout,parent,y_loc,z_loc,width):
+        dim = pc_types.Dimension()
+        dim.create_dimension(view_layout)
+        dim.obj_bp['PLAN_VIEW'] = True
+        dim.obj_bp.rotation_euler.x = 0
+        dim.obj_bp.rotation_euler.y = 0
+        dim.obj_y.location.y = .2
+        dim.obj_bp.parent = parent
+        dim.obj_bp.location.y = y_loc
+        dim.obj_bp.location.z = z_loc
+        dim.obj_x.location.x = width
+        dim.update_dim_text()
+        return dim
+
+    def add_wall_labels(self,wall_bp,view_layout):
+        wall = pc_types.Assembly(wall_bp)
+        wall_height = wall.obj_z.location.z + pc_unit.inch(3)
+        wall_length = wall.obj_x.location.x
+        wall_depth = wall.obj_y.location.y
+        # wall_number = wall.obj_bp.hb_cabinet.wall_number
+        label = self.create_text_annotation(view_layout,wall.obj_bp,wall_length/2,wall_depth/2,wall_height,wall_bp.name)
+
+    def add_wall_dimensions(self,wall_bp,view_layout):
+        wall = pc_types.Assembly(wall_bp)
+        wall_height = wall.obj_z.location.z + pc_unit.inch(3)
+        wall_length = wall.obj_x.location.x
+        wall_depth = wall.obj_y.location.y
+        label = self.create_wall_width_dim(view_layout,wall.obj_bp,wall_depth,wall_height,wall_length)
+
     def create_plan_view_layout(self,context,walls):
-        x,y,z = self.get_center_of_room(context)
+        x,y,z,size = self.get_center_of_room(context)
 
         bpy.ops.object.select_all(action='DESELECT')
         longest_wall = pc_types.Assembly(walls[0]).obj_x.location.x
@@ -114,6 +167,10 @@ class hb_sample_cabinets_OT_create_2d_plan_view(bpy.types.Operator):
         layout.scene.name = "00 Plan View"
         wall_view = layout.add_assembly_view(collection)
 
+        for wall in walls:
+            self.add_wall_labels(wall,layout)
+            self.add_wall_dimensions(wall,layout)
+
         layout.add_layout_camera()
         layout.scene.world = self.model_scene.world
         layout.camera.rotation_euler = (0,0,0)
@@ -121,11 +178,11 @@ class hb_sample_cabinets_OT_create_2d_plan_view(bpy.types.Operator):
         layout.camera.location.y = y
         layout.camera.location.z = z + pc_unit.inch(10)
 
-        layout.scene.pyclone.numeric_page_scale = longest_wall * 2
+        layout.scene.pyclone.numeric_page_scale = size * 2
 
         layout.scene.world.node_tree.nodes['Background'].inputs[1].default_value = 15
         layout.scene.render.film_transparent = True
-        self.add_title_block(layout,"Plan View","1","")    
+        self.add_title_block(layout,"Plan View","1","")
         return layout.scene
 
     def execute(self, context):
