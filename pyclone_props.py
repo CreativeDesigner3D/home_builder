@@ -19,6 +19,7 @@ import os
 import inspect
 import math
 from . import addon_updater_ops
+from pc_lib import pc_types, pc_unit
 
 prompt_types = [('FLOAT',"Float","Float"),
                 ('DISTANCE',"Distance","Distance"),
@@ -598,6 +599,31 @@ def update_numeric_page_scale(self,context):
     cam_obj.scale = (self.numeric_page_scale,self.numeric_page_scale,self.numeric_page_scale)
     cam_obj.data.ortho_scale = self.numeric_page_scale
 
+def update_dimension_info(self,context):
+    scene = context.scene
+    for obj in scene.objects:
+        if 'IS_DIMENSION' in obj:
+            dim_assembly = pc_types.Dimension(obj)
+            font_size = dim_assembly.get_prompt("Font Size")
+            arrow_height = dim_assembly.get_prompt("Arrow Height")
+            arrow_length = dim_assembly.get_prompt("Arrow Length")
+            line_thickness = dim_assembly.get_prompt("Line Thickness")
+            if font_size:
+                font_size.set_value(self.text_size)
+            if arrow_height:
+                arrow_height.set_value(self.arrow_height)
+            if arrow_length:
+                arrow_length.set_value(self.arrow_length)  
+            if line_thickness:
+                line_thickness.set_value(self.line_thickness)                  
+            dim_assembly.update_dim_text()
+
+        if 'IS_ANNOTATION' in obj:
+            dim_assembly = pc_types.Dimension(obj)
+            font_size = dim_assembly.get_prompt("Font Size")
+            if font_size:
+                font_size.set_value(self.text_size)
+
 class PC_Scene_Props(PropertyGroup):
     assembly_tabs: EnumProperty(name="Assembly Tabs",
                                 items=[('MAIN',"Main","Show the Main Properties"),
@@ -626,6 +652,14 @@ class PC_Scene_Props(PropertyGroup):
     active_library_name: StringProperty(name="Active Library Name",default="")
 
     numeric_page_scale: FloatProperty(name="Numeric Page Scale",default=1.00,update=update_numeric_page_scale)
+
+    text_size: FloatProperty(name="Text Size",default=.07,update=update_dimension_info)
+
+    arrow_length: FloatProperty(name="Arrow Length",default=pc_unit.inch(1.1811),subtype='DISTANCE',update=update_dimension_info)
+
+    arrow_height: FloatProperty(name="Arrow Height",default=pc_unit.inch(1.1811),subtype='DISTANCE',update=update_dimension_info)
+
+    line_thickness: FloatProperty(name="Line Thickness",default=pc_unit.inch(0.07874),subtype='DISTANCE',update=update_dimension_info)
 
     is_view_scene: BoolProperty(name="Is View Scene",default=False)
     

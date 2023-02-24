@@ -40,6 +40,7 @@ class VIEW3D_PT_pc_layout_view(Panel):
     def draw_camera_settings(self,context,layout):
         scene = context.scene
         rd = scene.render
+        view = context.space_data
         wm_props = context.window_manager.pyclone
         scene_props = pyclone_utils.get_scene_props(scene)
         box = layout.box()
@@ -55,13 +56,13 @@ class VIEW3D_PT_pc_layout_view(Panel):
             
             box = layout.box()
             box.label(text="Page Setup",icon='FILE')
-            row = box.row()
-            row.label(text="Page Size")
-            row.prop(scene_props,'page_size',text="")
+            # row = box.row()
+            # row.label(text="Page Size")
+            # row.prop(scene_props,'page_size',text="")
 
-            row = box.row()
-            row.label(text="Page Scale Unit")
-            row.prop(scene_props,'page_scale_unit_type',text="")
+            # row = box.row()
+            # row.label(text="Page Scale Unit")
+            # row.prop(scene_props,'page_scale_unit_type',text="")
 
             row = box.row()
             row.label(text="Drawing Scale")        
@@ -73,30 +74,53 @@ class VIEW3D_PT_pc_layout_view(Panel):
             #         row.prop(scene_props,'metric_page_scale',text="")
             #     else:
             #         row.prop(scene_props,'imperial_page_scale',text="")
-            row = box.row()
-            row.label(text="Print Style")                   
-            row.prop(scene_props,'page_style',text="")
+
+            # row = box.row()
+            # row.label(text="Print Style")                   
+            # row.prop(scene_props,'page_style',text="")
+
             row = box.row()
             row.label(text="Render Lines") 
             row.prop(rd, "use_freestyle", text="")            
             row = box.row()
             row.label(text="Transparent Background") 
-            row.prop(rd, "film_transparent", text="")    
+            row.prop(rd, "film_transparent", text="") 
 
             #CREATE VIEW OF ASSEMBLY    
-            box = layout.box()
-            box.label(text="Create View",icon='SEQ_PREVIEW')    
-            row = box.row()        
-            row.operator('pc_assembly.create_assembly_view',text="Top",icon='AXIS_TOP').view = 'TOP'
-            row.operator('pc_assembly.create_assembly_view',text="Front",icon='FACESEL').view = 'FRONT'
-            row.operator('pc_assembly.create_assembly_view',text="Side",icon='AXIS_SIDE').view = 'SIDE'
+            # box = layout.box()
+            # box.label(text="Create View",icon='SEQ_PREVIEW')    
+            # row = box.row()        
+            # row.operator('pc_assembly.create_assembly_view',text="Top",icon='AXIS_TOP').view = 'TOP'
+            # row.operator('pc_assembly.create_assembly_view',text="Front",icon='FACESEL').view = 'FRONT'
+            # row.operator('pc_assembly.create_assembly_view',text="Side",icon='AXIS_SIDE').view = 'SIDE'
 
             #ADD DIMENSION ADD ANNOTATION
             box = layout.box()
-            box.label(text="Dimensions and Annotations",icon='DRIVER_DISTANCE')               
-            box.operator('pc_assembly.create_assembly_dimension',text="Add Dimension",icon='TRACKING_FORWARDS_SINGLE')
-            box.operator('pc_assembly.add_add_annotation',text="Add Annotation",icon='CON_ROTLIMIT')
-            box.operator('pc_assembly.add_title_block',text="Add Title Block",icon='MENU_PANEL')
+            box.label(text="Dimensions and Annotations",icon='DRIVER_DISTANCE')       
+
+            row = box.row()
+            row.label(text="Text Size")        
+            row.prop(scene_props,'text_size',text="")
+
+            row = box.row()
+            row.label(text="Arrow Height")        
+            row.prop(scene_props,'arrow_height',text="")
+
+            row = box.row()
+            row.label(text="Arrow Length")        
+            row.prop(scene_props,'arrow_length',text="")         
+
+            row = box.row()
+            row.label(text="Line Thickness")        
+            row.prop(scene_props,'line_thickness',text="")  
+
+            # box.operator('pc_assembly.create_assembly_dimension',text="Add Dimension",icon='TRACKING_FORWARDS_SINGLE')
+            # box.operator('pc_assembly.add_add_annotation',text="Add Annotation",icon='CON_ROTLIMIT')
+            # box.operator('pc_assembly.add_title_block',text="Add Title Block",icon='MENU_PANEL')
+
+            box = layout.box()
+            box.label(text='Camera Properties',icon='CAMERA_DATA')
+            box.prop(view, "lock_camera")
 
         else:
             box = layout.box()
