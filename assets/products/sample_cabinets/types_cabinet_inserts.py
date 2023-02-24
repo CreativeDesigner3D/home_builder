@@ -99,7 +99,7 @@ class Shelves(Closet_Insert):
         self.obj_bp[const.CLOSET_SHELVES_TAG] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.adj_shelves_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -162,7 +162,7 @@ class Hanging_Rod(Closet_Insert):
         self.obj_bp[const.CLOSET_HANGING_ROD] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.hanging_rod_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -233,7 +233,7 @@ class Slanted_Shoe_Shelf(Closet_Insert):
         self.obj_bp[const.CLOSET_SLANTED_SHOE_SHELVES] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.slanted_shoe_shelf_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -333,7 +333,7 @@ class Cubbies(Closet_Insert):
         self.obj_bp[const.CLOSET_CUBBIES_TAG] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.cubby_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -439,7 +439,7 @@ class Wire_Baskets(Closet_Insert):
         self.obj_bp[const.CLOSET_WIRE_BASKETS_TAG] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp['PROMPT_ID'] = 'hb_sample_cabinets.wire_baskets_prompts'
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -533,7 +533,7 @@ class Wine_Rack(Closet_Insert):
         self.obj_bp[const.WINE_RACK_TAG] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp['PROMPT_ID'] = 'hb_sample_cabinets.wine_rack_prompts'
-        # self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -642,7 +642,7 @@ class Vertical_Splitter(Closet_Insert):
         self.obj_bp[const.VERTICAL_SPLITTER_TAG] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "home_builder.splitter_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)
@@ -740,7 +740,7 @@ class Horizontal_Splitter(Closet_Insert):
         self.obj_bp[const.HORIZONTAL_SPLITTER_TAG] = True
         self.obj_bp[const.INSERT_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.division_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
         
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)

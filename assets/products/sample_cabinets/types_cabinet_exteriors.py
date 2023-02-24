@@ -113,7 +113,7 @@ class Doors(types_fronts.Fronts):
         self.obj_bp[const.DOOR_INSERT_TAG] = True
         self.obj_bp["IS_EXTERIOR_BP"] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.door_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_insert_commands"
 
         self.obj_x.location.x = pc_unit.inch(20)
         self.obj_y.location.y = pc_unit.inch(12)

@@ -42,10 +42,10 @@ class hb_sample_cabinets_OT_active_cabinet_library(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class hb_sample_cabinets_OT_change_closet_offsets(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.change_closet_offsets"
-    bl_label = "Change Closet Offsets"
-    bl_description = "This allows you to easily adjust the closets left and right offset"
+class hb_sample_cabinets_OT_change_cabinet_offsets(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.change_cabinet_offsets"
+    bl_label = "Change Cabinet Offsets"
+    bl_description = "This allows you to easily adjust the left and right multi opening cabinet offsets"
     bl_options = {'UNDO'}
     
     anchor_type: EnumProperty(name="Anchor Type",
@@ -166,9 +166,9 @@ class hb_sample_cabinets_OT_change_closet_offsets(bpy.types.Operator):
         return {'FINISHED'}    
 
 
-class hb_sample_cabinets_OT_change_closet_openings(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.change_closet_openings"
-    bl_label = "Change Closet Openings"
+class hb_sample_cabinets_OT_change_number_of_openings(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.change_number_of_openings"
+    bl_label = "Change Number of Openings"
 
     change_type: bpy.props.EnumProperty(name="Change Type",
                                         items=[('SET_QUANTITY',"Set Quantity","Set Quantity"),
@@ -211,8 +211,8 @@ class hb_sample_cabinets_OT_change_closet_openings(bpy.types.Operator):
         row.prop(self,'change_type',expand=True)
         if self.change_type == 'ADD_REMOVE_LAST':
             row = layout.row()
-            row.operator('hb_sample_cabinets.delete_closet_opening',text="Delete Last Opening",icon='X')
-            row.operator('hb_sample_cabinets.add_closet_opening',text="Add Opening",icon='ADD')            
+            row.operator('hb_sample_cabinets.delete_opening',text="Delete Last Opening",icon='X')
+            row.operator('hb_sample_cabinets.add_opening',text="Add Opening",icon='ADD')            
         else:
             row = layout.row()
             row.label(text="Opening Quantity:")
@@ -283,9 +283,9 @@ class hb_sample_cabinets_OT_change_closet_openings(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class hb_sample_cabinets_OT_add_closet_opening(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.add_closet_opening"
-    bl_label = "Add Closet Opening"
+class hb_sample_cabinets_OT_add_opening(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.add_opening"
+    bl_label = "Add Opening"
 
     closet = None
 
@@ -377,9 +377,9 @@ class hb_sample_cabinets_OT_add_closet_opening(bpy.types.Operator):
         self.closet = types_cabinet_starters.Closet_Starter(bp)
 
 
-class hb_sample_cabinets_OT_delete_closet_opening(bpy.types.Operator):
-    bl_idname = "hb_sample_cabinets.delete_closet_opening"
-    bl_label = "Delete Closet Opening"
+class hb_sample_cabinets_OT_delete_opening(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.delete_opening"
+    bl_label = "Delete Opening"
 
     closet = None
 
@@ -1108,10 +1108,10 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
 classes = (
     Cabinet_Library_Item,
     hb_sample_cabinets_OT_active_cabinet_library,
-    hb_sample_cabinets_OT_change_closet_offsets,
-    hb_sample_cabinets_OT_change_closet_openings,
-    hb_sample_cabinets_OT_add_closet_opening,
-    hb_sample_cabinets_OT_delete_closet_opening,
+    hb_sample_cabinets_OT_change_cabinet_offsets,
+    hb_sample_cabinets_OT_change_number_of_openings,
+    hb_sample_cabinets_OT_add_opening,
+    hb_sample_cabinets_OT_delete_opening,
     hb_sample_cabinets_OT_duplicate_closet_insert,
     hb_sample_cabinets_OT_clear_cabinet_carcass,
     hb_sample_cabinets_OT_delete_cabinet_insert,

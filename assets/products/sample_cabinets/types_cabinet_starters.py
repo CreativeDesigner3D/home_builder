@@ -695,7 +695,7 @@ class Closet_Starter(Closet):
         if self.is_base:
             self.obj_bp["IS_BASE_BP"] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.opening_cabinet_prompts"
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_closet_commands"
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_opening_commands"
         self.obj_y['IS_MIRROR'] = True
 
         width = self.obj_x.pyclone.get_var('location.x','width')

@@ -30,20 +30,28 @@ class HOME_BUILDER_MT_cabinet_commands(bpy.types.Menu):
         layout.operator('home_builder.delete_assembly',text="Delete Cabinet",icon='X').obj_name = bp.name
 
 
-class HOME_BUILDER_MT_closet_commands(bpy.types.Menu):
-    bl_label = "Closet Commands"
+class HOME_BUILDER_MT_cabinet_opening_commands(bpy.types.Menu):
+    bl_label = "Cabinet Opening Commands"
 
     def draw(self, context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CLOSET_TAG)
-        # insert_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
         layout = self.layout
-        layout.operator('hb_sample_cabinets.change_closet_offsets',icon='TRACKING_CLEAR_FORWARDS')  
-        layout.operator('hb_sample_cabinets.change_closet_openings',icon='UV_ISLANDSEL')  
-        layout.operator('hb_sample_cabinets.duplicate_closet_insert',icon='DUPLICATE')
+        layout.operator('hb_sample_cabinets.change_cabinet_offsets',icon='TRACKING_CLEAR_FORWARDS')  
+        layout.operator('hb_sample_cabinets.change_number_of_openings',icon='UV_ISLANDSEL')  
         layout.separator()
-        layout.operator('hb_sample_cabinets.delete_cabinet_insert',text="Delete Insert",icon='X')
         layout.operator('home_builder.delete_assembly',text="Delete Starter",icon='X').obj_name = bp.name
         
+
+class HOME_BUILDER_MT_cabinet_insert_commands(bpy.types.Menu):
+    bl_label = "Cabinet Insert Commands"
+
+    def draw(self, context):
+        insert_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
+        layout = self.layout      
+        layout.operator('hb_sample_cabinets.duplicate_closet_insert',icon='DUPLICATE')  
+        layout.separator()
+        layout.operator('hb_sample_cabinets.delete_cabinet_insert',text="Delete Insert",icon='X')        
+
 
 class HOME_BUILDER_MT_closets_corner_commands(bpy.types.Menu):
     bl_label = "Closet Corner Commands"
@@ -300,7 +308,8 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_MT_cabinet_commands,
-    HOME_BUILDER_MT_closet_commands,
+    HOME_BUILDER_MT_cabinet_opening_commands,
+    HOME_BUILDER_MT_cabinet_insert_commands,
     HOME_BUILDER_MT_closets_corner_commands,
     HOME_BUILDER_MT_appliance_commands,
     HOME_BUILDER_PT_cabinet_sizes,
