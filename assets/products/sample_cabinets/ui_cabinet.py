@@ -13,8 +13,8 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
         layout.popover(panel="HOME_BUILDER_PT_cabinet_material_thickness",text="Cabinet Material Thickness",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_hardware",text="Cabinet Hardware",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_fronts",text="Cabinet Fronts",icon='SNAP_FACE')
-        layout.separator()
-        layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
+        # layout.separator()
+        # layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
 
 
 class HOME_BUILDER_MT_cabinet_commands(bpy.types.Menu):
