@@ -19,24 +19,25 @@ import os, math, sys
 from .. import pyclone_utils
 from pc_lib import pc_types, pc_utils, pc_unit
 
-try:
-    import reportlab
-except ModuleNotFoundError:
-    print('NOT FOUND')
-    ROOT_PATH = os.path.dirname(__file__)
-    PATH = os.path.join(os.path.dirname(ROOT_PATH),"python_libs")
-    sys.path.append(PATH)
+#TODO: Figure out how to get reportlab to work with MacOS
+# try:
+#     import reportlab
+# except ModuleNotFoundError:
+#     print('NOT FOUND')
+#     ROOT_PATH = os.path.dirname(__file__)
+#     PATH = os.path.join(os.path.dirname(ROOT_PATH),"python_libs")
+#     sys.path.append(PATH)
 
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import legal,letter,inch
-from reportlab.platypus import Image
-from reportlab.platypus import Paragraph,Table,TableStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Frame, Spacer, PageTemplate, PageBreak
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A3, A4, landscape, portrait
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
-from reportlab.platypus.flowables import HRFlowable
+# from reportlab.pdfgen import canvas
+# from reportlab.lib.pagesizes import legal,letter,inch
+# from reportlab.platypus import Image
+# from reportlab.platypus import Paragraph,Table,TableStyle
+# from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Frame, Spacer, PageTemplate, PageBreak
+# from reportlab.lib import colors
+# from reportlab.lib.pagesizes import A3, A4, landscape, portrait
+# from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+# from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
+# from reportlab.platypus.flowables import HRFlowable
 
 class Item(PropertyGroup):
     pass  
@@ -1059,22 +1060,23 @@ class pc_assembly_OT_create_pdf_of_assembly_views(bpy.types.Operator):
         return filepath
 
     def create_pdf(self,context,images):
-        
-        filepath = os.path.join(bpy.app.tempdir,"2D Views.PDF")
-        filename = "2D Views.PDF"
-        if context.scene.pyclone.page_size == 'LETTER':
-            c = canvas.Canvas(filepath, pagesize=landscape(letter))
-            width, height = landscape(letter)
-        else:
-            c = canvas.Canvas(filepath, pagesize=landscape(legal))
-            width, height = landscape(legal)
+        pass
+        #TODO: Figure out how to make Reportlab work with MacOS
+        # filepath = os.path.join(bpy.app.tempdir,"2D Views.PDF")
+        # filename = "2D Views.PDF"
+        # if context.scene.pyclone.page_size == 'LETTER':
+        #     c = canvas.Canvas(filepath, pagesize=landscape(letter))
+        #     width, height = landscape(letter)
+        # else:
+        #     c = canvas.Canvas(filepath, pagesize=landscape(legal))
+        #     width, height = landscape(legal)
 
-        for image in images:
-            c.drawImage(image,0,0,width=width, height=height, mask='auto',preserveAspectRatio=True)  
-            c.showPage()
-        c.save()
+        # for image in images:
+        #     c.drawImage(image,0,0,width=width, height=height, mask='auto',preserveAspectRatio=True)  
+        #     c.showPage()
+        # c.save()
 
-        os.system('start "Title" /D "' + bpy.app.tempdir + '" "' + filename + '"')
+        # os.system('start "Title" /D "' + bpy.app.tempdir + '" "' + filename + '"')
 
     def execute(self, context):
         images = []
