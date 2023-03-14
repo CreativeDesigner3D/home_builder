@@ -485,10 +485,15 @@ class home_builder_OT_save_assembly_to_build_library(bpy.types.Operator):
         layout = self.layout
         layout.label(text="Assembly Name: " + self.assembly_name)
 
-        directory_to_save_to = self.get_directory_to_save_to(context)
-        files = os.listdir(directory_to_save_to) if os.path.exists(directory_to_save_to) else []
-        if self.assembly_name + ".blend" in files or self.assembly_name + ".png" in files:
+        file_exists = False
+        for asset in context.window_manager.home_builder.home_builder_library_assets:
+            if asset.file_data.name == self.assembly_name:
+                file_exists = True
+
+        if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
+        if bpy.data.filepath != "" and bpy.data.is_dirty:
+            layout.label(text="File is not saved. Save file before saving asset.",icon='ERROR')
 
     def select_assembly_objects(self,coll):
         for obj in coll.objects:
@@ -676,10 +681,15 @@ class home_builder_OT_save_decoration(bpy.types.Operator):
             if self.include_child_objects:
                 layout.label(text="Including " + str(len(self.child_objects)) + " Child Objects")
 
-        directory_to_save_to = self.get_directory_to_save_to(context)
-        files = os.listdir(directory_to_save_to) if os.path.exists(directory_to_save_to) else []
-        if self.obj.name + ".blend" in files or self.obj.name + ".png" in files:
+        file_exists = False
+        for asset in context.window_manager.home_builder.home_builder_library_assets:
+            if asset.file_data.name == self.obj.name:
+                file_exists = True
+
+        if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
+        if bpy.data.filepath != "" and bpy.data.is_dirty:
+            layout.label(text="File is not saved. Save file before saving asset.",icon='ERROR')
 
     def select_assembly_objects(self,coll):
         for obj in coll.objects:
@@ -855,10 +865,15 @@ class home_builder_OT_save_material(bpy.types.Operator):
 
         layout.label(text="Material Name: " + self.mat.name)
 
-        directory_to_save_to = self.get_directory_to_save_to(context)
-        files = os.listdir(directory_to_save_to) if os.path.exists(directory_to_save_to) else []
-        if self.mat.name + ".blend" in files or self.mat.name + ".png" in files:
+        file_exists = False
+        for asset in context.window_manager.home_builder.home_builder_library_assets:
+            if asset.file_data.name == self.mat.name:
+                file_exists = True
+
+        if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
+        if bpy.data.filepath != "" and bpy.data.is_dirty:
+            layout.label(text="File is not saved. Save file before saving asset.",icon='ERROR')
 
     def create_asset_script(self,asset_name,source_file,thumbnail_path):
         file = codecs.open(os.path.join(bpy.app.tempdir,"asset_temp.py"),'w',encoding='utf-8')
@@ -872,6 +887,13 @@ class home_builder_OT_save_material(bpy.types.Operator):
         file.write("for mat in data_to.materials:\n")
         file.write("    save_mat = mat\n")
         file.write("save_mat.asset_mark()\n")
+
+        file.write("override = bpy.context.copy()\n")
+        file.write("override['id'] = save_mat\n")
+        file.write("test_path = r'" + thumbnail_path + "'\n")
+        file.write("with bpy.context.temp_override(**override):\n")
+        file.write("    bpy.ops.ed.lib_id_load_custom_preview(filepath=test_path)\n")    
+
         file.write("bpy.ops.wm.save_mainfile()\n")
         file.close()
         return os.path.join(bpy.app.tempdir,'asset_temp.py')
@@ -889,6 +911,49 @@ class home_builder_OT_save_material(bpy.types.Operator):
         file.write("bpy.ops.wm.save_as_mainfile(filepath=r'" + library_path + "')\n")
         file.close()
         return os.path.join(bpy.app.tempdir,'save_library_temp.py')
+
+    def create_thumbnail_script(self,dir_to_save_to,asset_path,mat_name):
+        file = codecs.open(os.path.join(bpy.app.tempdir,"thumb_temp.py"),'w',encoding='utf-8')
+        file.write("import bpy\n")
+        file.write("import os\n")
+        file.write("import sys\n")
+
+        file.write("path = r'" + os.path.join(dir_to_save_to,mat_name)  + "'\n")
+
+        file.write("bpy.ops.object.select_all(action='DESELECT')\n")
+
+        file.write("with bpy.data.libraries.load(r'" + asset_path + "') as (data_from, data_to):\n")
+        file.write("    for mat in data_from.materials:\n")
+        file.write("        if mat == '" + mat_name + "':\n")
+        file.write("            data_to.materials = [mat]\n")
+        file.write("            break\n")
+        file.write("for mat in data_to.materials:\n")
+        file.write("    bpy.ops.mesh.primitive_uv_sphere_add()\n")
+        file.write("    obj = bpy.context.view_layer.objects.active\n")
+        file.write("    bpy.ops.object.shade_smooth()\n")
+        file.write("    obj.dimensions = (2,2,2)\n")
+        file.write("    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)\n")
+        # file.write("    mod = obj.modifiers.new('bevel','BEVEL')\n")
+        # file.write("    mod.segments = 5\n")
+        # file.write("    mod.width = .05\n")
+        file.write("    bpy.ops.object.modifier_apply(modifier='bevel')\n")
+        file.write("    bpy.ops.object.editmode_toggle()\n")
+        file.write("    bpy.ops.mesh.select_all(action='SELECT')\n")
+        file.write("    bpy.ops.uv.smart_project(angle_limit=66, island_margin=0)\n")
+        file.write("    bpy.ops.object.editmode_toggle()\n")
+        file.write("    bpy.ops.object.material_slot_add()\n")
+        file.write("    for slot in obj.material_slots:\n")
+        file.write("        slot.material = mat\n")
+
+        file.write("bpy.ops.view3d.camera_to_view_selected()\n")
+
+        #RENDER
+        file.write("render = bpy.context.scene.render\n")
+        file.write("render.use_file_extension = True\n")
+        file.write("render.filepath = path\n")
+        file.write("bpy.ops.render.render(write_still=True)\n")        
+        file.close()
+        return os.path.join(bpy.app.tempdir,'thumb_temp.py')    
 
     def get_thumbnail_path(self):
         return os.path.join(os.path.dirname(__file__),'thumbnail.blend')
@@ -916,12 +981,16 @@ class home_builder_OT_save_material(bpy.types.Operator):
             create_library_command = [bpy.app.binary_path,"-b","--python",library_script_path]
             subprocess.call(create_library_command)
 
+        thumbnail_script_path = self.create_thumbnail_script(directory_to_save_to, bpy.data.filepath, self.mat.name)
         asset_script_path = self.create_asset_script(self.mat.name,bpy.data.filepath,os.path.join(directory_to_save_to,self.mat.name + ".png"))
 
+        tn_command = [bpy.app.binary_path,self.get_thumbnail_path(),"-b","--python",thumbnail_script_path]
         asset_command = [bpy.app.binary_path,library.library_path,"-b","--python",asset_script_path]
 
+        subprocess.call(tn_command)
         subprocess.call(asset_command)
 
+        os.remove(thumbnail_script_path)
         os.remove(asset_script_path)
 
         bpy.ops.asset.library_refresh()
