@@ -359,7 +359,12 @@ class HOME_BUILDER_MT_decoration_library_commands(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
+        wm_props = context.window_manager.home_builder
+        library = wm_props.get_active_library(context)
+        library_filepath = library.library_path
+        folder_path = os.path.dirname(library_filepath)        
         layout.operator('home_builder.create_new_library_category',text="Create New Category",icon='FILE_FOLDER').library_type = 'DECORATIONS' 
+        layout.operator('home_builder.open_browser_window',text="Open Folder in File Browser",icon='FILE_FOLDER').path = folder_path
         layout.operator('home_builder.save_decoration',text="Save Selected Object to Library",icon='ADD')
 
 
@@ -371,10 +376,12 @@ class HOME_BUILDER_MT_material_library_commands(bpy.types.Menu):
         wm_props = context.window_manager.home_builder
         library = wm_props.get_active_library(context)
         library_filepath = library.library_path
+        folder_path = os.path.dirname(library_filepath)
         if os.path.exists(library_filepath):
             props = layout.operator('wm.open_mainfile',text="Open Library File",icon='ASSET_MANAGER')
             props.filepath = library_filepath
             props.display_file_selector = False
+        layout.operator('home_builder.open_browser_window',text="Open Folder in File Browser",icon='FILE_FOLDER').path = folder_path
         layout.operator('home_builder.create_new_library_category',text="Create New Category",icon='FILE_FOLDER').library_type = 'MATERIALS' 
         layout.operator('home_builder.save_material',text="Save Active Material to Library",icon='ADD')
 
