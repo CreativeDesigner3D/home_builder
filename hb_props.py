@@ -39,10 +39,6 @@ def update_library_tab(self,context):
         # if workspace.home_builder_library_index > len(wm_props.home_builder_library_assets):
         #     print("INDEX GREATER THAN LENGTH")
 
-def update_library_package_path(self,context):
-    bpy.ops.home_builder.update_library_xml()
-    hb_utils.load_libraries(context)
-
 def update_wall_index(self,context):
     bpy.ops.object.select_all(action='DESELECT')
     wall = self.walls[self.wall_index]
@@ -63,6 +59,7 @@ class Asset_Library(PropertyGroup):
     activate_id: StringProperty(name="Activate ID")
     drop_id: StringProperty(name="Drop ID")
     enabled: BoolProperty(name="Enabled",default=True)
+    is_external_library: BoolProperty(name="Is External Library",default=False)
 
 
 class Wall(PropertyGroup):
@@ -78,7 +75,7 @@ class Wall(PropertyGroup):
 class Library_Package(PropertyGroup):
     enabled: BoolProperty(name="Enabled",default=True)
     expand: BoolProperty(name="Expand",default=False)
-    package_path: bpy.props.StringProperty(name="Package Path",subtype='DIR_PATH',update=update_library_package_path)
+    package_path: bpy.props.StringProperty(name="Package Path",subtype='DIR_PATH')
     asset_libraries: bpy.props.CollectionProperty(type=Asset_Library)
 
 

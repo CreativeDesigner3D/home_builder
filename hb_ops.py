@@ -95,6 +95,7 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
             row.label(text="Installed Libraries")
             row.label(text=" ")
             row.operator('home_builder.add_external_library',text="Add Library",icon='IMPORT')
+            row.operator('home_builder.save_library_settings',text="Save Settings",icon='CHECKMARK')
             
             row = main_box.row()
             row.alignment = 'LEFT'
@@ -102,14 +103,14 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
             if wm_props.show_built_in_asset_libraries:
                 col = main_box.column(align=True)
                 for lib in wm_props.asset_libraries:
-                    row = col.row()
-                    print(lib.library_type)
-                    row.label(text="",icon=self.get_library_icon(lib))
-                    row.prop(lib,'enabled',text=lib.name)
+                    if lib.is_external_library == False:
+                        row = col.row()
+                        row.label(text="",icon=self.get_library_icon(lib))
+                        row.prop(lib,'enabled',text=lib.name)
                     
-
             for ex_lib in wm_props.library_packages:
-                row = main_box.row()
+                ex_lib_box = main_box.box()
+                row = ex_lib_box.row()
                 if os.path.exists(ex_lib.package_path):
                     dir_name = os.path.dirname(ex_lib.package_path) 
                     folder_name = os.path.basename(dir_name)                    
@@ -124,7 +125,32 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
                     row.operator('home_builder.delete_external_library',text="",icon='X',emboss=False).package_path = ex_lib.package_path
                     
                 if ex_lib.expand:
-                    row = main_box.row()
+                    mat_lib_count = 0
+                    deco_lib_count = 0
+                    build_lib_count = 0
+                    product_lib_count = 0                    
+                    for asset_lib in ex_lib.asset_libraries:
+                        if asset_lib.library_type == 'MATERIALS':
+                            mat_lib_count += 1
+                        if asset_lib.library_type == 'DECORATIONS':
+                            deco_lib_count += 1
+                        if asset_lib.library_type == 'BUILD_LIBRARY':
+                            build_lib_count += 1
+                        if asset_lib.library_type == 'PRODUCTS':
+                            product_lib_count += 1                                                                        
+                    row = ex_lib_box.row()
+                    row.label(text="",icon='BLANK1')
+                    row.label(text="Material",icon='MATERIAL_DATA')
+                    row.label(text="Decoration",icon='SCENE_DATA')
+                    row.label(text="Build",icon='USER')
+                    row.label(text="Product",icon='META_CUBE')
+                    row = ex_lib_box.row()
+                    row.label(text="",icon='BLANK1')
+                    row.label(text=str(mat_lib_count))
+                    row.label(text=str(deco_lib_count))
+                    row.label(text=str(build_lib_count))
+                    row.label(text=str(product_lib_count))                    
+                    row = ex_lib_box.row()
                     row.label(text="",icon='BLANK1')
                     row.prop(ex_lib,'package_path',text="Set Path")
                     row.operator('home_builder.delete_external_library',text="",icon='X',emboss=False).package_path = ex_lib.package_path
@@ -1295,6 +1321,16 @@ class home_builder_OT_edit_part(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_save_library_settings(bpy.types.Operator):
+    bl_idname = "home_builder.save_library_settings"
+    bl_label = "Save Library Settings"
+
+    def execute(self, context):
+        bpy.ops.home_builder.update_library_xml()
+        hb_utils.load_libraries_from_xml(context)
+        hb_utils.load_libraries(context)
+        return {'FINISHED'}
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_update_library_xml,
@@ -1323,6 +1359,7 @@ classes = (
     home_builder_OT_add_wall_length_dimension,
     home_builder_OT_open_browser_window,
     home_builder_OT_edit_part,
+    home_builder_OT_save_library_settings,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

@@ -115,6 +115,10 @@ def add_material_pointers(pointers):
 
 def load_libraries_from_xml(context):
     wm_props = context.window_manager.home_builder
+
+    for pkg in wm_props.library_packages:
+        wm_props.library_packages.remove(0)
+
     xml_file = hb_paths.get_library_path_xml()
     if os.path.exists(xml_file):
         root = ET.parse(xml_file).getroot()
@@ -185,6 +189,7 @@ def load_libraries(context):
                                 asset_lib.name = lib["library_name"]
                                 asset_lib.library_type = lib["library_type"]
                                 asset_lib.library_path = lib["library_path"]
+                                asset_lib.is_external_library = False
                                 if "library_menu_id" in lib:
                                     asset_lib.library_menu_ui = lib["library_menu_id"]
                                 if "library_activate_id" in lib:
@@ -199,9 +204,9 @@ def load_libraries(context):
                                         lib_path = os.path.dirname(p2[1])
                                         pointer_list.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
 
-    load_library_from_path(context,hb_paths.get_build_library_path(),'BUILD_LIBRARY')
-    load_library_from_path(context,hb_paths.get_decoration_library_path(),'DECORATIONS')
-    load_library_from_path(context,hb_paths.get_material_library_path(),'MATERIALS')
+    load_library_from_path(context,hb_paths.get_build_library_path(),'BUILD_LIBRARY',None)
+    load_library_from_path(context,hb_paths.get_decoration_library_path(),'DECORATIONS',None)
+    load_library_from_path(context,hb_paths.get_material_library_path(),'MATERIALS',None)
 
     #LOAD EXTERNAL LIBRARIES
     for library_package in wm_props.library_packages:
@@ -210,15 +215,15 @@ def load_libraries(context):
             dirs = os.listdir(path)
             for folder in dirs:
                 if folder == 'materials':
-                    load_library_from_path(context,os.path.join(path,folder),'MATERIALS')
+                    load_library_from_path(context,os.path.join(path,folder),'MATERIALS',library_package)
                 if folder == 'decorations':
-                    load_library_from_path(context,os.path.join(path,folder),'DECORATIONS')
+                    load_library_from_path(context,os.path.join(path,folder),'DECORATIONS',library_package)
                 if folder == 'build_library':
-                    load_library_from_path(context,os.path.join(path,folder),'BUILD_LIBRARY')
+                    load_library_from_path(context,os.path.join(path,folder),'BUILD_LIBRARY',library_package)
 
     add_material_pointers(pointer_list)
 
-def load_library_from_path(context,path,library_type):
+def load_library_from_path(context,path,library_type,library_package):
     wm_props = context.window_manager.home_builder
 
     if library_type == 'MATERIALS':
@@ -240,6 +245,15 @@ def load_library_from_path(context,path,library_type):
                 asset_lib.library_type = library_type
                 asset_lib.library_path = os.path.join(cat_path,"library.blend")
                 asset_lib.drop_id = drop_id
+                if library_package:
+                    asset_lib.is_external_library = True
+                    asset_lib.enabled = library_package.enabled
+                    #Used to display libraries in packages
+                    package_asset_lib = library_package.asset_libraries.add()
+                    package_asset_lib.name = dir  
+                    package_asset_lib.library_type = library_type
+                else:
+                    asset_lib.is_external_library = False
 
 def load_custom_driver_functions():
     import inspect
