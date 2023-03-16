@@ -676,6 +676,7 @@ class home_builder_OT_save_decoration(bpy.types.Operator):
 
     bp_name: bpy.props.StringProperty(name="Object Name")
     include_child_objects: bpy.props.BoolProperty(name="Include Child Objects")
+    autosave: bpy.props.BoolProperty(name="Autosave",default=True)
 
     obj = None
     child_objects = []
@@ -696,7 +697,7 @@ class home_builder_OT_save_decoration(bpy.types.Operator):
         for child in self.obj.children_recursive:
             self.child_objects.append(child)
         wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=300)
+        return wm.invoke_props_dialog(self, width=350)
 
     def draw(self, context):
         layout = self.layout
@@ -715,7 +716,8 @@ class home_builder_OT_save_decoration(bpy.types.Operator):
         if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
         if bpy.data.filepath != "" and bpy.data.is_dirty:
-            layout.label(text="File is not saved. Save file before saving asset.",icon='ERROR')
+            layout.label(text="File is not saved. File needs to be saved before saving asset.",icon='ERROR')
+            layout.prop(self,'autosave',text="Use Autosave")
 
     def select_assembly_objects(self,coll):
         for obj in coll.objects:
@@ -822,6 +824,9 @@ class home_builder_OT_save_decoration(bpy.types.Operator):
         current_rotation = get_current_view_rotation(context)
         rotation = (current_rotation.to_euler().x,current_rotation.to_euler().y,current_rotation.to_euler().z)
 
+        if bpy.data.filepath != "" and bpy.data.is_dirty and self.autosave:
+            bpy.ops.wm.save_mainfile()
+
         if bpy.data.filepath == "":
             bpy.ops.wm.save_as_mainfile(filepath=os.path.join(bpy.app.tempdir,"temp_blend.blend"))
 
@@ -868,6 +873,7 @@ class home_builder_OT_save_material(bpy.types.Operator):
     bl_description = "This will save the material to the material library"
 
     mat_name: bpy.props.StringProperty(name="Object Name")
+    autosave: bpy.props.BoolProperty(name="Autosave",default=True)
 
     mat = None
 
@@ -884,7 +890,7 @@ class home_builder_OT_save_material(bpy.types.Operator):
     def invoke(self,context,event):
         self.mat = context.object.active_material
         wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=300)
+        return wm.invoke_props_dialog(self, width=350)
 
     def draw(self, context):
         layout = self.layout
@@ -899,7 +905,8 @@ class home_builder_OT_save_material(bpy.types.Operator):
         if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
         if bpy.data.filepath != "" and bpy.data.is_dirty:
-            layout.label(text="File is not saved. Save file before saving asset.",icon='ERROR')
+            layout.label(text="File is not saved. File needs to be saved before saving asset.",icon='ERROR')
+            layout.prop(self,'autosave',text="Use Autosave")
 
     def create_asset_script(self,asset_name,source_file,thumbnail_path):
         file = codecs.open(os.path.join(bpy.app.tempdir,"asset_temp.py"),'w',encoding='utf-8')
@@ -992,6 +999,9 @@ class home_builder_OT_save_material(bpy.types.Operator):
 
     def execute(self, context):
         wm_props = context.window_manager.home_builder
+
+        if bpy.data.filepath != "" and bpy.data.is_dirty and self.autosave:
+            bpy.ops.wm.save_mainfile()
 
         if bpy.data.filepath == "":
             bpy.ops.wm.save_as_mainfile(filepath=os.path.join(bpy.app.tempdir,"temp_blend.blend"))
