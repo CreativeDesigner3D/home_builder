@@ -6,6 +6,7 @@ import inspect
 import sys
 import codecs
 import subprocess
+import shutil
 from bpy_extras.io_utils import ImportHelper
 from pc_lib import pc_utils, pc_unit, pc_types
 from . import addon_updater_ops
@@ -13,6 +14,7 @@ from . import hb_utils
 from . import pyclone_utils
 from . import hb_utils
 from . import hb_paths
+from . import hb_props
 from .walls import wall_library
 
 def get_current_view_rotation(context):
@@ -92,14 +94,16 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
         if self.tabs == 'INSTALLED_LIBRARIES':
             main_box = layout.box()
             row = main_box.row()
-            row.label(text="Installed Libraries")
-            row.label(text=" ")
-            row.operator('home_builder.add_external_library',text="Add Library",icon='IMPORT')
+            # row.label(text="Installed Libraries")
+            # row.label(text=" ")
+            row.operator('home_builder.create_new_external_library',text="Create Library",icon='ADD')
+            row.operator('home_builder.add_external_library',text="Install Library",icon='IMPORT')
             row.operator('home_builder.save_library_settings',text="Save Settings",icon='CHECKMARK')
             
             row = main_box.row()
             row.alignment = 'LEFT'
             row.prop(wm_props,'show_built_in_asset_libraries',text="Built-In Libraries",icon='DISCLOSURE_TRI_DOWN' if wm_props.show_built_in_asset_libraries else 'DISCLOSURE_TRI_RIGHT',emboss=False)
+            row.operator('home_builder.open_browser_window',text="Open Folder in File Browser",icon='WINDOW').path = hb_paths.get_built_in_asset_path()
             if wm_props.show_built_in_asset_libraries:
                 col = main_box.column(align=True)
                 for lib in wm_props.asset_libraries:
@@ -107,17 +111,22 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
                         row = col.row()
                         row.label(text="",icon=self.get_library_icon(lib))
                         row.prop(lib,'enabled',text=lib.name)
+                        
                     
             for ex_lib in wm_props.library_packages:
                 ex_lib_box = main_box.box()
                 row = ex_lib_box.row()
                 if os.path.exists(ex_lib.package_path):
-                    dir_name = os.path.dirname(ex_lib.package_path) 
-                    folder_name = os.path.basename(dir_name)                    
+                    path = ex_lib.package_path
+                    if path[-1] == '\\':
+                        dir_name = os.path.dirname(ex_lib.package_path)
+                        folder_name = os.path.basename(dir_name)
+                    else:
+                        dir_name = os.path.dirname(ex_lib.package_path + "\\")
+                        folder_name = os.path.basename(dir_name)
                     row.alignment = 'LEFT'
                     row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
                     row.prop(ex_lib,'enabled',text=folder_name)
-                    
                 else:
                     row.prop(ex_lib,'expand',text="",icon='DISCLOSURE_TRI_DOWN' if ex_lib.expand else 'DISCLOSURE_TRI_RIGHT',emboss=False)
                     row.prop(ex_lib,'enabled',text="")
@@ -272,6 +281,90 @@ class home_builder_OT_delete_external_library(bpy.types.Operator):
         hb_utils.load_libraries(context)
         return {'FINISHED'}
 
+
+class home_builder_OT_create_new_external_library(bpy.types.Operator, ImportHelper):
+    bl_idname = "home_builder.create_new_external_library"
+    bl_label = "Create New External Library"
+    bl_description = "This allows you to create a new external library"
+
+    directory: bpy.props.StringProperty(name="Directory",subtype='DIR_PATH')
+    filter_glob: bpy.props.StringProperty(default="*.blend", options={'HIDDEN'})
+    display_type: bpy.props.EnumProperty(name="Display Type",
+                                        items=[('DEFAULT',"Standard","Standard"),
+                                               ('LIST_VERTICAL',"Standard","Standard"),
+                                               ('LIST_HORIZONTAL',"Standard","Standard"),
+                                               ('THUMBNAIL',"Blum Soft Close","Blum Soft Close")],
+                                        default='LIST_VERTICAL')
+    hide_props_region: bpy.props.BoolProperty(name="Hide Props Region",default=False)
+    asset_libraries: bpy.props.CollectionProperty(
+        type=hb_props.Asset_Library,
+        description="Collection of all asset libraries loaded into Home Builder")
+    
+    library_pack_name: bpy.props.StringProperty(name="Library Pack Name",default="New Library Pack Name")
+    remove_libraries: bpy.props.BoolProperty(name="Hide Props Region",default=False)
+
+    def invoke(self, context, event):
+        self.load_libraries(context)
+        self.display_type = 'LIST_VERTICAL'
+        wm = context.window_manager
+        wm.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def load_libraries(self,context):
+        for library in self.asset_libraries:
+            self.asset_libraries.remove(0)
+
+        wm = context.window_manager        
+        wm_props = wm.home_builder        
+        for lib in wm_props.asset_libraries:
+            if lib.is_external_library == False:     
+                new_lib = self.asset_libraries.add()  
+                new_lib.name = lib.name
+                new_lib.enabled = False
+                new_lib.library_type = lib.library_type
+                new_lib.library_path = lib.library_path
+
+    def execute(self, context):
+        wm_props = context.window_manager.home_builder
+
+        libraries = []
+        for lib in self.asset_libraries:
+            if lib.enabled:
+                libraries.append(lib)
+
+        library_pack_path = os.path.join(self.directory,self.library_pack_name)
+        deco_path = os.path.join(library_pack_path,"decorations")
+        mat_path = os.path.join(library_pack_path,"materials")
+        os.makedirs(deco_path)
+        os.makedirs(mat_path)
+        for library in libraries:
+            if library.library_type == 'DECORATIONS':
+                shutil.copytree(os.path.dirname(library.library_path),os.path.join(deco_path,library.name))
+            if library.library_type == 'MATERIALS':         
+                shutil.copytree(os.path.dirname(library.library_path),os.path.join(mat_path,library.name))
+
+        lib = wm_props.library_packages.add()
+        lib.name = self.library_pack_name
+        lib.package_path = library_pack_path
+        lib.enabled = True
+        hb_utils.load_libraries(context)
+        return {'FINISHED'}
+    
+    def draw(self, context):
+        layout = self.layout
+        box = layout.box()
+        box.prop(self,'library_pack_name',text="Name")
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text="Decoration Libraries",icon='SCENE_DATA')  
+        for lib in self.asset_libraries:
+            if lib.library_type == 'DECORATIONS':
+                col.prop(lib,'enabled',text=lib.name)
+        col.separator()
+        col.label(text="Material Libraries",icon='MATERIAL_DATA') 
+        for lib in self.asset_libraries:
+            if lib.library_type == 'MATERIALS':
+                col.prop(lib,'enabled',text=lib.name)                       
 
 class home_builder_OT_update_library_path(bpy.types.Operator):
     bl_idname = "home_builder.update_library_path"
@@ -1348,6 +1441,7 @@ classes = (
     home_builder_OT_load_library,
     home_builder_OT_add_external_library,
     home_builder_OT_delete_external_library,
+    home_builder_OT_create_new_external_library,
     home_builder_OT_update_library_path,
     home_builder_OT_show_library_material_pointers,
     home_builder_OT_assign_material_to_pointer,

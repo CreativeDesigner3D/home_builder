@@ -133,9 +133,9 @@ def load_libraries_from_xml(context):
                                     lib = wm_props.library_packages.add()
                                     lib.name = path
                                     lib.package_path = path
-                                for nnc_node in nc_node:
-                                    if "Enabled" in nnc_node.tag:
-                                        lib.enabled = True if nnc_node.text == "True" else False
+                                    for nnc_node in nc_node:
+                                        if "Enabled" in nnc_node.tag:
+                                            lib.enabled = True if nnc_node.text == "True" else False
 
 def load_libraries(context):
     product_path = hb_paths.get_product_library_path()
