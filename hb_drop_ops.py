@@ -162,6 +162,9 @@ class home_builder_OT_drop_decoration(bpy.types.Operator):
             obj.location.x += location[0]
             obj.location.y += location[1]
             obj.location.z += location[2]
+        wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
+        if wall_bp:
+            obj.rotation_euler.z = wall_bp.rotation_euler.z
 
     def cancel_drop(self,context):
         obj_list = []
