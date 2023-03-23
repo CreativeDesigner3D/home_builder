@@ -97,22 +97,49 @@ def unwrap_obj(context,obj):
 
     bpy.ops.pc_assembly.connect_meshes_to_hooks_in_assembly(obj_name = obj.name)      
 
-def add_material_pointers(pointers):
-    scene_props = bpy.context.scene.home_builder
+def add_material_pointers(context,pointers):
+    scene_props = context.scene.home_builder
 
-    #TODO: Update Existing Pointers and Remove Unused Ones
-    #      For now clear entire collection
+    #Collect Current Pointers then Clear Collection
+    current_pointers = {}
+    custom_pointers = {}
+    for p in scene_props.material_pointers:
+        if p.is_custom:
+            custom_pointers[p.name] = (p.library_name,p.category_name,p.material_name,p.library_path)
+        else:
+            current_pointers[p.name] = (p.library_name,p.category_name,p.material_name,p.library_path)
+    
     for p in scene_props.material_pointers:
         scene_props.material_pointers.remove(0)
-
+    
+    #Add Default Pointers and Update Value if Found
     for pointer in pointers:
         p = scene_props.material_pointers.add()
-        p.name = pointer[0]
-        p.library_name = pointer[1]
-        p.category_name = pointer[2]
-        p.material_name = pointer[3]  
-        p.library_path = pointer[4]    
+        if pointer[0] in current_pointers:
+            # print("FOUND POINTER IN DICT",pointer[0])
+            p.name = pointer[0]
+            p.library_name = current_pointers[pointer[0]][0]
+            p.category_name = current_pointers[pointer[0]][1]
+            p.material_name = current_pointers[pointer[0]][2]
+            p.library_path = current_pointers[pointer[0]][3]   
+        else:
+            # print("DIDNT FIND POINTER IN DICT",pointer[0])
+            p.name = pointer[0]
+            p.library_name = pointer[1]
+            p.category_name = pointer[2]
+            p.material_name = pointer[3]  
+            p.library_path = pointer[4] 
 
+    #Add Custom Pointers
+    for custom_pointer in custom_pointers:
+        p = scene_props.material_pointers.add()   
+        p.name = custom_pointer
+        p.is_custom = True
+        p.library_name = custom_pointers[custom_pointer][0]
+        p.category_name = custom_pointers[custom_pointer][1]
+        p.material_name = custom_pointers[custom_pointer][2]
+        p.library_path = custom_pointers[custom_pointer][3]   
+        
 def load_libraries_from_xml(context):
     wm_props = context.window_manager.home_builder
 
@@ -221,7 +248,7 @@ def load_libraries(context):
                 if folder == 'build_library':
                     load_library_from_path(context,os.path.join(path,folder),'BUILD_LIBRARY',library_package)
 
-    add_material_pointers(pointer_list)
+    add_material_pointers(context,pointer_list)
 
 def load_library_from_path(context,path,library_type,library_package):
     wm_props = context.window_manager.home_builder

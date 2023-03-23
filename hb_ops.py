@@ -433,12 +433,13 @@ class home_builder_OT_show_library_material_pointers(bpy.types.Operator):
         layout = self.layout
         scene_props = context.scene.home_builder
         box = layout.box()
+        box.operator('home_builder.add_material_pointer',text="Add Pointer",icon='ADD').library_name = self.library_name
         # row = box.row()
         # row.label(text=self.library_name)
         # row.label(text="Selected Material: " + asset.file_data.name)
         col = box.column(align=True)
         for pointer in scene_props.material_pointers:
-            if pointer.library_name == self.library_name:
+            if pointer.library_name == self.library_name or self.library_name == "":
                 row = col.row()
                 # row.alignment = 'LEFT'
                 # props = row.operator('home_builder.assign_material_to_pointer',text=pointer.name)
@@ -446,6 +447,10 @@ class home_builder_OT_show_library_material_pointers(bpy.types.Operator):
                 row.label(text=pointer.name,icon='DOT')
                 row.label(text=pointer.category_name,icon='FILEBROWSER')
                 row.label(text=pointer.material_name,icon='MATERIAL')
+                if pointer.is_custom:
+                    row.operator('home_builder.delete_material_pointer',text="",icon='X',emboss=False).material_pointer_name = pointer.name
+                else:
+                    row.label(text="",icon='BLANK1')
                 # row.label(text=pointer.category_name + " - " + pointer.material_name,icon='MATERIAL')             
         
 
@@ -511,6 +516,69 @@ class home_builder_OT_update_materials_for_pointer(bpy.types.Operator):
 
         return {'FINISHED'}
 
+
+class home_builder_OT_add_material_pointer(bpy.types.Operator):
+    bl_idname = "home_builder.add_material_pointer"
+    bl_label = "Add Material Pointer"
+    bl_description = "This will add a new material pointer"
+    bl_options = {'UNDO'}
+    
+    #READONLY
+    material_pointer_name: bpy.props.StringProperty(name="Material Pointer Name",default="New Pointer")
+    library_name: bpy.props.StringProperty(name="Library Name",default="")
+
+    def execute(self,context):
+        scene_props = context.scene.home_builder
+        material_pointers = scene_props.material_pointers
+        pointer = material_pointers.add()
+        pointer.name = self.material_pointer_name
+        pointer.library_name = self.library_name
+        pointer.is_custom = True
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=350)
+        
+    def draw(self,context):
+        layout = self.layout
+        row = layout.row()
+        row.label(text="Material Pointer Name")
+        layout.prop(self,'material_pointer_name',text="")
+
+
+class home_builder_OT_delete_material_pointer(bpy.types.Operator):
+    bl_idname = "home_builder.delete_material_pointer"
+    bl_label = "Delete Material Pointer"
+    bl_description = "This will add a delete the material pointer"
+    bl_options = {'UNDO'}
+    
+    #READONLY
+    material_pointer_name: bpy.props.StringProperty(name="Material Pointer Name",default="New Pointer")
+
+    def execute(self,context):
+        scene_props = context.scene.home_builder
+        material_pointers = scene_props.material_pointers
+        for i, p in enumerate(material_pointers):
+            if p.name == self.material_pointer_name:
+                material_pointers.remove(i)
+                break        
+        return {'FINISHED'}
+
+
+class home_builder_OT_display_hook_modifiers_in_edit_mode(bpy.types.Operator):
+    bl_idname = "home_builder.display_hook_modifiers_in_edit_mode"
+    bl_label = "Display Hook Modifiers in Edit Mode"
+    bl_description = "This turn on the option to display hook modifers in edit mode"
+    bl_options = {'UNDO'}
+    
+    def execute(self,context):
+        for obj in bpy.data.objects:
+            for mod in obj.modifiers:
+                if mod.type == 'HOOK':
+                    mod.show_in_editmode = True
+                    mod.show_on_cage = True
+        return {'FINISHED'}
 
 class home_builder_OT_disconnect_constraint(bpy.types.Operator):
     bl_idname = "home_builder.disconnect_constraint"
@@ -1456,6 +1524,9 @@ classes = (
     home_builder_OT_assign_material_dialog,
     home_builder_OT_assign_material_to_slot,
     home_builder_OT_assign_material_to_all_slots,
+    home_builder_OT_add_material_pointer,
+    home_builder_OT_delete_material_pointer,
+    home_builder_OT_display_hook_modifiers_in_edit_mode,
     home_builder_OT_update_checkbox_prompt_in_scene,
     home_builder_OT_update_distance_prompt_in_scene,
     home_builder_OT_update_wall_height,

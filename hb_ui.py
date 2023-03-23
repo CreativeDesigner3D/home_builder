@@ -248,6 +248,7 @@ class HOME_BUILDER_MT_home_builder_menu(bpy.types.Menu):
         layout = self.layout
         layout.menu('HOME_BUILDER_MT_materials_pointers',text="Material Pointers",icon='MATERIAL')
         layout.operator('home_builder.unit_settings',text="Change Units",icon='SETTINGS')
+        layout.operator('home_builder.display_hook_modifiers_in_edit_mode',icon='HOOK')
 
 
 class HOME_BUILDER_MT_build_library(bpy.types.Menu):
@@ -350,8 +351,10 @@ class HOME_BUILDER_MT_materials_pointers(bpy.types.Menu):
             if pointer.library_name not in library_names:
                 library_names.append(pointer.library_name)
 
+        layout.operator('home_builder.show_library_material_pointers',text="All Pointers").library_name = ""
         for library in library_names:
-            layout.operator('home_builder.show_library_material_pointers',text=library).library_name = library
+            if library != "":
+                layout.operator('home_builder.show_library_material_pointers',text=library).library_name = library
 
 
 class HOME_BUILDER_MT_decoration_library_commands(bpy.types.Menu):

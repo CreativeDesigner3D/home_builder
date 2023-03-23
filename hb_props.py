@@ -50,6 +50,7 @@ class Material_Pointer(PropertyGroup):
     library_name: StringProperty(name="Library Name")
     category_name: StringProperty(name="Category Name")
     material_name: StringProperty(name="Material Name")
+    is_custom: BoolProperty(name="Is Custom",default=False)
 
 
 class Asset_Library(PropertyGroup):
