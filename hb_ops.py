@@ -1502,6 +1502,107 @@ class home_builder_OT_save_library_settings(bpy.types.Operator):
         hb_utils.load_libraries(context)
         return {'FINISHED'}
 
+
+class home_builder_OT_set_scale_with_two_points(bpy.types.Operator):
+    bl_idname = "home_builder.set_scale_with_two_points"
+    bl_label = "Set Scale with Two Points"
+    bl_options = {'UNDO'}
+    
+    #READONLY
+    drawing_plane = None
+    empty_image = None
+
+    first_point = (0,0,0)
+    second_point = (0,0,0)
+    region = None
+    
+    header_text = "Select the First Point"
+
+    known_distance: bpy.props.FloatProperty(name="Know Distance",
+                                            description="Enter in a known distance on the drawing then select the two points.",
+                                            subtype='DISTANCE')
+    
+    @classmethod
+    def poll(cls, context):
+        if context.object:
+            if context.object.type == 'EMPTY' and context.object.empty_display_type == 'IMAGE':
+                return True
+            else:
+                return False
+        else:
+            return False
+            
+    def cancel_drop(self,context,event):
+        context.window.cursor_set('DEFAULT')
+        pc_utils.delete_obj_list([self.drawing_plane])
+        return {'FINISHED'}
+        
+    def __del__(self):
+        bpy.context.area.header_text_set()
+        
+    def invoke(self,context,event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=200)
+            
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self,'known_distance')
+
+    def create_drawing_plane(self,context):
+        bpy.ops.mesh.primitive_plane_add()
+        plane = context.active_object
+        plane.location = (0,0,0)
+        self.drawing_plane = context.active_object
+        self.drawing_plane.display_type = 'WIRE'
+        self.drawing_plane.dimensions = (100,100,1)
+
+    def event_is_cancel(self,event):
+        if event.type == 'RIGHTMOUSE' and event.value == 'PRESS':
+            return True
+        elif event.type == 'ESC' and event.value == 'PRESS':
+            return True
+        else:
+            return False
+            
+    def modal(self, context, event):
+        context.window.cursor_set('PAINT_BRUSH')
+        context.area.tag_redraw()
+
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event)
+
+        bpy.ops.object.select_all(action='DESELECT')
+        if selected_obj:
+            if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+                if self.first_point != (0,0,0):
+                    self.second_point = selected_point
+                    
+                    distance = pc_utils.calc_distance(self.first_point,self.second_point)
+                    diff = pc_unit.inch(98) / distance
+
+                    self.empty_image.empty_display_size = self.empty_image.empty_display_size*diff
+
+                    return self.cancel_drop(context,event)
+                else:
+                    self.first_point = selected_point
+
+        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            return {'PASS_THROUGH'}
+            
+        if self.event_is_cancel(event):
+            return self.cancel_drop(context,event)
+            
+        return {'RUNNING_MODAL'}
+        
+    def execute(self,context):
+        self.region = pc_utils.get_3d_view_region(context)
+        self.first_point = (0,0,0)
+        self.second_point = (0,0,0)
+        self.empty_image = context.active_object
+        self.create_drawing_plane(context)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+    
+
 classes = (
     home_builder_OT_about_home_builder,
     home_builder_OT_update_library_xml,
@@ -1535,6 +1636,7 @@ classes = (
     home_builder_OT_open_browser_window,
     home_builder_OT_edit_part,
     home_builder_OT_save_library_settings,
+    home_builder_OT_set_scale_with_two_points,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

@@ -116,6 +116,9 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row = box.row()
                 row.scale_y = 1.3
                 row.operator('home_builder.collect_walls')
+                if context.object:
+                    if context.object.type == 'EMPTY' and context.object.empty_display_type == 'IMAGE':
+                        row.operator('home_builder.set_scale_with_two_points')
                 
                 if len(hb_scene.walls) > 0:
                     box.label(text="Room Tools",icon='MODIFIER')
