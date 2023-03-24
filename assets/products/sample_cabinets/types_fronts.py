@@ -208,23 +208,23 @@ class Fronts(pc_types.Assembly):
         if location == 'Left':
             hide.set_formula('IF(hide_doors,True,IF(OR(door_swing==0,door_swing==2),False,True))',[hide_doors,door_swing])
             front.loc_x('-lo_var',[lo_var])
-            front.rot_z('-door_rotation*open_door',[door_rotation,open_door])
+            front.rot_z('-door_rotation*(open_door/100)',[door_rotation,open_door])
             front.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)*-1',[door_swing,x,lo_var,ro_var,vertical_gap])
         if location == 'Right':
             hide.set_formula('IF(hide_doors,True,IF(OR(door_swing==1,door_swing==2),False,True))',[hide_doors,door_swing])
             front.loc_x('x+ro_var',[x,ro_var])
-            front.rot_z('door_rotation*open_door',[door_rotation,open_door])
+            front.rot_z('door_rotation*(open_door/100)',[door_rotation,open_door])
             front.dim_y('IF(door_swing==2,((x+lo_var+ro_var)-vertical_gap)/2,x+lo_var+ro_var)',[door_swing,x,lo_var,ro_var,vertical_gap])  
         if location == 'Top':
             hide.set_formula('IF(hide_doors,True,IF(door_swing==3,False,True))',[hide_doors,door_swing])
             front.rot_x(value = 0)
-            front.rot_y('radians(90)-(door_rotation*open_door)',[door_rotation,open_door])  
+            front.rot_y('radians(90)-(door_rotation*(open_door/100))',[door_rotation,open_door])  
             front.rot_z(value = math.radians(-90)) 
             front.loc_x('x+ro_var',[x,ro_var])
             front.dim_y('(x+lo_var+ro_var)*-1',[x,lo_var,ro_var])  
         if location == 'Bottom':
             front.rot_x(value = 0)
-            front.rot_y('radians(-90)-(door_rotation*open_door)',[door_rotation,open_door])  
+            front.rot_y('radians(-90)-(door_rotation*(open_door/100))',[door_rotation,open_door])  
             front.rot_z(value = math.radians(90))  
             hide.set_formula('IF(hide_doors,True,IF(door_swing==4,False,True))',[hide_doors,door_swing])
             front.loc_x('-lo_var',[lo_var])

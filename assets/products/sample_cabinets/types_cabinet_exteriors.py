@@ -198,7 +198,7 @@ class Drawers(types_fronts.Fronts):
         drawer_front.obj_bp["FRONT_NUMBER"] = index  
         drawer_front.set_name('Drawer Front')
         drawer_front.loc_x('-left_overlay',[left_overlay])
-        drawer_front.loc_y('IF(inset,front_thickness,-door_to_cabinet_gap)-(y*open_drawer)',[inset,front_thickness,door_to_cabinet_gap,y,open_drawer])
+        drawer_front.loc_y('IF(inset,front_thickness,-door_to_cabinet_gap)-(y*(open_drawer/100))',[inset,front_thickness,door_to_cabinet_gap,y,open_drawer])
         drawer_front.loc_z('drawer_z_loc',[drawer_z_loc])
         drawer_front.rot_x(value = math.radians(90))
         drawer_front.rot_y(value = math.radians(-90))

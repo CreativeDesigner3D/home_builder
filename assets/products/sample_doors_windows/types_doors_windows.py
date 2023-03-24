@@ -227,10 +227,10 @@ class Swing_Door(Door):
         l_door_panel.loc_y('IF(outswing,depth,0)',[outswing,depth])
         l_door_panel.loc_z(value = 0)
         if not l_open_door:
-            l_door_panel.rot_z('IF(outswing,radians(180),0)-door_rotation*open_door',[open_door,door_rotation,outswing])
+            l_door_panel.rot_z('IF(outswing,radians(180),0)-door_rotation*(open_door/100)',[open_door,door_rotation,outswing])
         else:
             l_door_panel.rot_z('IF(outswing,radians(180),0)',[outswing])
-            l_open_door.set_formula('open_door',[open_door])
+            l_open_door.set_formula('(open_door/100)',[open_door])
         l_door_panel.dim_x('IF(entry_door_swing==2,(width-(door_frame_width*2)-(door_reveal*3)-(door_frame_reveal*2))/2,width-(door_frame_width*2)-(door_reveal*2)-(door_frame_reveal*2))',[width,entry_door_swing,door_frame_width,door_reveal,door_frame_reveal])
         l_door_panel.dim_y('door_thickness',[door_thickness])
         l_door_panel.dim_z('height-door_frame_width-door_reveal-door_frame_reveal',[height,door_frame_width,door_reveal,door_frame_reveal])       
@@ -250,10 +250,10 @@ class Swing_Door(Door):
         r_door_panel.loc_y('IF(outswing,depth,0)',[outswing,depth])
         r_door_panel.loc_z(value = 0)
         if not r_open_door:
-            r_door_panel.rot_z('IF(outswing,radians(180),0)+door_rotation*open_door',[open_door,door_rotation,outswing])
+            r_door_panel.rot_z('IF(outswing,radians(180),0)+door_rotation*(open_door/100)',[open_door,door_rotation,outswing])
         else:
             r_door_panel.rot_z('IF(outswing,radians(180),0)',[outswing])
-            r_open_door.set_formula('open_door',[open_door])
+            r_open_door.set_formula('(open_door/100)',[open_door])
         r_door_panel.dim_x('IF(entry_door_swing==2,(width-(door_frame_width*2)-(door_reveal*3)-(door_frame_reveal*2))/2,width-(door_frame_width*2)-(door_reveal*2)-(door_frame_reveal*2))*-1',[width,entry_door_swing,door_frame_width,door_reveal,door_frame_reveal])
         r_door_panel.dim_y('door_thickness',[door_thickness])
         r_door_panel.dim_z('height-door_frame_width-door_reveal-door_frame_reveal',[height,door_frame_width,door_reveal,door_frame_reveal])      

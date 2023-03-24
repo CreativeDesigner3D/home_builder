@@ -95,7 +95,7 @@ class Prompt(PropertyGroup):
     distance_value: FloatProperty(name="Distance Value",subtype='DISTANCE',precision=5)
     angle_value: FloatProperty(name="Angle Value",subtype='ANGLE')
     quantity_value: IntProperty(name="Quantity Value",subtype='DISTANCE',min=0)
-    percentage_value: FloatProperty(name="Percentage Value",subtype='PERCENTAGE',min=0,max=1)
+    percentage_value: FloatProperty(name="Percentage Value",subtype='PERCENTAGE',min=0,max=100)
     checkbox_value: BoolProperty(name="Checkbox Value", description="")
     text_value: StringProperty(name="Text Value", description="")
 
