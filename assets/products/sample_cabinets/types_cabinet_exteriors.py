@@ -190,10 +190,14 @@ class Drawers(types_fronts.Fronts):
         drawer_front = assemblies_cabinet.add_door_assembly(self)
         drawer_front.add_prompt("Pull Length",'DISTANCE',0)      
         self.add_drawer_pull(drawer_front)
-        top_o = drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
-        bottom_o = drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
-        left_o = drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
-        right_o = drawer_front.add_prompt("Right Overlay",'DISTANCE',0)    
+        drawer_front.add_prompt("Top Overlay",'DISTANCE',0)
+        drawer_front.add_prompt("Bottom Overlay",'DISTANCE',0)
+        drawer_front.add_prompt("Left Overlay",'DISTANCE',0)
+        drawer_front.add_prompt("Right Overlay",'DISTANCE',0)    
+        top_o = drawer_front.get_prompt("Top Overlay")
+        bottom_o = drawer_front.get_prompt("Bottom Overlay")
+        left_o = drawer_front.get_prompt("Left Overlay")
+        right_o = drawer_front.get_prompt("Right Overlay")
         drawer_front.obj_bp[const.DRAWER_FRONT_TAG] = True
         drawer_front.obj_bp["FRONT_NUMBER"] = index  
         drawer_front.set_name('Drawer Front')
