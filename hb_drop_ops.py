@@ -28,8 +28,8 @@ class home_builder_OT_drop_material(bpy.types.Operator):
     def get_material(self,context):
         wm_props = context.window_manager.home_builder
         library = wm_props.get_active_library(context)
-        asset = wm_props.get_active_asset(context)
-        return pc_utils.get_material(library.library_path,asset.file_data.name)
+        asset_file_handle = context.asset_file_handle  
+        return pc_utils.get_material(library.library_path,asset_file_handle.name)
 
     def modal(self, context, event):
         context.window.cursor_set('PAINT_BRUSH')
@@ -116,8 +116,8 @@ class home_builder_OT_drop_decoration(bpy.types.Operator):
     def get_object(self,context):
         wm_props = context.window_manager.home_builder
         library = wm_props.get_active_library(context)
-        asset = wm_props.get_active_asset(context)   
-        path = os.path.join(os.path.dirname(library.library_path),'assets',asset.file_data.name + ".blend")
+        asset_file_handle = context.asset_file_handle 
+        path = os.path.join(os.path.dirname(library.library_path),'assets',asset_file_handle.name + ".blend")
         
         with bpy.data.libraries.load(path) as (data_from, data_to):
                 data_to.objects = data_from.objects
@@ -238,8 +238,8 @@ class home_builder_OT_drop_build_library(bpy.types.Operator):
     def get_asset(self,context):
         wm_props = context.window_manager.home_builder
         library = wm_props.get_active_library(context)
-        asset = wm_props.get_active_asset(context)
-        path = os.path.join(os.path.dirname(library.library_path),'assets',asset.file_data.name + ".blend")
+        asset_file_handle = context.asset_file_handle 
+        path = os.path.join(os.path.dirname(library.library_path),'assets',asset_file_handle.name + ".blend")
         with bpy.data.libraries.load(path) as (data_from, data_to):
                 data_to.objects = data_from.objects
         for obj in data_to.objects:
@@ -332,9 +332,8 @@ class home_builder_OT_lookup_drop_id(bpy.types.Operator):
     bl_options = {'UNDO'}
 
     def execute(self, context):
-        wm_props = context.window_manager.home_builder
-        asset = wm_props.get_active_asset(context)
-        for tag in asset.file_data.asset_data.tags:
+        asset_file_handle = context.asset_file_handle
+        for tag in asset_file_handle.asset_data.tags:
             if "drop_id:" in tag.name:
                 drop_id = tag.name.split(":")[-1]
                 eval("bpy.ops." + drop_id + "()")

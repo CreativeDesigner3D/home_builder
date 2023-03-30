@@ -39,16 +39,10 @@ class hb_sample_fixtures_OT_drop_fixture(bpy.types.Operator):
     def get_object(self,context):
         wm_props = context.window_manager.home_builder
         sel_library = wm_props.get_active_library(context)
-        asset = wm_props.get_active_asset(context)       
 
-        # sel_library = None
-        # for library in wm_props.asset_libraries:
-        #     if library.name == wm_props.active_fixture_library_name:
-        #         sel_library = library
-        # workspace = context.workspace
-        # wm = context.window_manager
-        # asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]     
-        path = os.path.join(sel_library.library_path,'assets',asset.file_data.name + ".blend")
+        asset_file_handle = context.asset_file_handle
+ 
+        path = os.path.join(sel_library.library_path,'assets',asset_file_handle.name + ".blend")
 
         with bpy.data.libraries.load(path) as (data_from, data_to):
                 data_to.objects = data_from.objects

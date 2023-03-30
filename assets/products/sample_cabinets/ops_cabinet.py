@@ -1078,8 +1078,8 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
         asset_lib.path = library_folder            
         scene_props.library_tabs = scene_props.library_tabs
         bpy.ops.asset.library_refresh()
-        for asset in wm.home_builder.home_builder_library_assets:
-            print('ASSET',asset.file_data.name)                 
+        # for asset in wm.home_builder.home_builder_library_assets:
+        #     print('ASSET',asset.file_data.name)                 
                 # item_class = eval('cabinet_library.' + item.name.replace(" ","_") + '()')
         #         item_class.draw()
                 # for mod_name, mod in inspect.getmembers(cabinet_library):

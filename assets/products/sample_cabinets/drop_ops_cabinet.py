@@ -196,11 +196,10 @@ class hb_sample_cabinets_OT_drop_cabinet(Cabinet_Drop):
 
     def get_cabinet(self,context):
         scene_props = utils_cabinet.get_scene_props(context.scene)
-        wm_props = context.window_manager.home_builder
-        asset = wm_props.get_active_asset(context)
-        self.cabinet = eval("library_cabinet." + asset.file_data.name.replace(" ","_") + "()")
+        asset_file_handle = context.asset_file_handle
+        self.cabinet = eval("library_cabinet." + asset_file_handle.name.replace(" ","_") + "()")
         self.cabinet.draw()
-        self.cabinet.set_name(asset.file_data.name.replace(" ","_"))
+        self.cabinet.set_name(asset_file_handle.name.replace(" ","_"))
         self.set_child_properties(self.cabinet.obj_bp)
         self.get_calculators(self.cabinet.obj_bp)
 
@@ -423,9 +422,8 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         return {'RUNNING_MODAL'}
 
     def get_appliance(self,context):
-        wm_props = context.window_manager.home_builder
-        asset = wm_props.get_active_asset(context)        
-        self.cabinet = eval("library_appliance." + asset.file_data.name.replace(" ","_") + "()")
+        asset_file_handle = context.asset_file_handle     
+        self.cabinet = eval("library_appliance." + asset_file_handle.name.replace(" ","_") + "()")
         self.cabinet.draw()
         self.set_child_properties(self.cabinet.obj_bp)
 
@@ -625,16 +623,16 @@ class hb_sample_cabinets_OT_drop_cabinet_fill_wall(Cabinet_Drop):
         return {'RUNNING_MODAL'}
 
     def get_cabinet(self,context):
-        wm_props = context.window_manager.home_builder
-        asset = wm_props.get_active_asset(context)
-        self.cabinet = eval("library_cabinet_starters." + asset.file_data.name.replace(" ","_") + "()")
+        asset_file_handle = context.asset_file_handle
+
+        self.cabinet = eval("library_cabinet_starters." + asset_file_handle.name.replace(" ","_") + "()")
 
         if hasattr(self.cabinet,'pre_draw'):
             self.cabinet.pre_draw()
         else:
             self.cabinet.draw()
 
-        self.cabinet.set_name(asset.file_data.name)
+        self.cabinet.set_name(asset_file_handle.name)
         self.set_child_properties(self.cabinet.obj_bp)
         self.get_calculators(self.cabinet.obj_bp)
 
@@ -811,9 +809,9 @@ class hb_sample_cabinets_OT_drop_cabinet_corner(Cabinet_Drop):
     def get_cabinet(self,context):
         scene_props = utils_cabinet.get_scene_props(context.scene)
 
-        wm_props = context.window_manager.home_builder
-        asset = wm_props.get_active_asset(context)
-        self.cabinet = eval("library_cabinet_starters." + asset.file_data.name.replace(" ","_") + "()")
+        asset_file_handle = context.asset_file_handle
+
+        self.cabinet = eval("library_cabinet_starters." + asset_file_handle.name.replace(" ","_") + "()")
 
         if hasattr(self.cabinet,'pre_draw'):
             self.cabinet.pre_draw()
@@ -824,7 +822,7 @@ class hb_sample_cabinets_OT_drop_cabinet_corner(Cabinet_Drop):
             self.height_above_floor = scene_props.height_above_floor - self.cabinet.obj_z.location.z
             print('HAF',self.height_above_floor)
 
-        self.cabinet.set_name(asset.file_data.name)
+        self.cabinet.set_name(asset_file_handle.name)
         self.set_child_properties(self.cabinet.obj_bp)
         self.get_calculators(self.cabinet.obj_bp)
 
@@ -1004,8 +1002,8 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
         for child in obj.children:
             self.add_exclude_objects(child)
 
-    def get_custom_drop_operator(self,asset):
-        for tag in asset.file_data.asset_data.tags:
+    def get_custom_drop_operator(self,asset_file_handle):
+        for tag in asset_file_handle.asset_data.tags:
             if "drop_id:" in tag.name:
                 drop_id = tag.name.split(":")[-1]
                 return drop_id
@@ -1016,21 +1014,20 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
             obj_bp = bpy.data.objects[self.obj_bp_name]
             self.insert = pc_types.Assembly(obj_bp)
         else:        
-            wm_props = context.window_manager.home_builder
-            asset = wm_props.get_active_asset(context)
-            custom_drop_id = self.get_custom_drop_operator(asset)
+            asset_file_handle = context.asset_file_handle
+            custom_drop_id = self.get_custom_drop_operator(asset_file_handle)
             if custom_drop_id:
                 # eval("bpy.ops." + custom_drop_id + "()")
                 return custom_drop_id
 
-            self.insert = eval("library_cabinet_inserts." + asset.file_data.name.replace(" ","_") + "()")
+            self.insert = eval("library_cabinet_inserts." + asset_file_handle.name.replace(" ","_") + "()")
 
             if hasattr(self.insert,'pre_draw'):
                 self.insert.pre_draw()
             else:
                 self.insert.draw()
 
-            self.insert.set_name(asset.file_data.name)
+            self.insert.set_name(asset_file_handle.name)
             self.insert.obj_bp[const.INSERT_TAG] = True
 
         self.add_exclude_objects(self.insert.obj_bp)
@@ -1987,8 +1984,8 @@ class hb_sample_cabinets_OT_place_molding(bpy.types.Operator):
     def get_profile(self,context):
         wm_props = context.window_manager.home_builder
         library = wm_props.get_active_library(context)
-        asset = wm_props.get_active_asset(context)
-        asset_name = asset.file_data.name
+        asset_file_handle = context.asset_file_handle
+        asset_name = asset_file_handle.name
         if "CR" in asset_name:
             self.is_base_molding = False
         else:

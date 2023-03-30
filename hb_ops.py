@@ -427,31 +427,22 @@ class home_builder_OT_show_library_material_pointers(bpy.types.Operator):
         return {'FINISHED'}
 
     def draw(self, context):
-        wm_props = context.window_manager.home_builder
-        # asset = wm_props.get_active_asset(context)
-
         layout = self.layout
         scene_props = context.scene.home_builder
         box = layout.box()
         box.operator('home_builder.add_material_pointer',text="Add Pointer",icon='ADD').library_name = self.library_name
-        # row = box.row()
-        # row.label(text=self.library_name)
-        # row.label(text="Selected Material: " + asset.file_data.name)
+
         col = box.column(align=True)
         for pointer in scene_props.material_pointers:
             if pointer.library_name == self.library_name or self.library_name == "":
                 row = col.row()
-                # row.alignment = 'LEFT'
-                # props = row.operator('home_builder.assign_material_to_pointer',text=pointer.name)
-                # props.pointer_name = pointer.name     
                 row.label(text=pointer.name,icon='DOT')
                 row.label(text=pointer.category_name,icon='FILEBROWSER')
                 row.label(text=pointer.material_name,icon='MATERIAL')
                 if pointer.is_custom:
                     row.operator('home_builder.delete_material_pointer',text="",icon='X',emboss=False).material_pointer_name = pointer.name
                 else:
-                    row.label(text="",icon='BLANK1')
-                # row.label(text=pointer.category_name + " - " + pointer.material_name,icon='MATERIAL')             
+                    row.label(text="",icon='BLANK1')            
         
 
 class home_builder_OT_assign_material_to_pointer(bpy.types.Operator):
@@ -459,18 +450,18 @@ class home_builder_OT_assign_material_to_pointer(bpy.types.Operator):
     bl_label = "Assign Material to Pointer"
     bl_description = "This assigns a material to the pointer and will update all of the materials in the scene"
 
+    material_name: bpy.props.StringProperty(name="Material Name")
     library_name: bpy.props.StringProperty(name="Library Name")
     pointer_name: bpy.props.StringProperty(name="Pointer Name")
 
     def execute(self, context):  
         wm_props = context.window_manager.home_builder
         library = wm_props.get_active_library(context)
-        asset = wm_props.get_active_asset(context)
 
         scene_props = context.scene.home_builder
         for pointer in scene_props.material_pointers:
             if pointer.name == self.pointer_name:
-                pointer.material_name = asset.file_data.name
+                pointer.material_name = self.material_name
                 pointer.category_name = library.name
                 pointer.library_path = os.path.join(library.library_path)
                 bpy.ops.home_builder.update_materials_for_pointer(pointer_name=self.pointer_name)                
@@ -673,9 +664,10 @@ class home_builder_OT_save_assembly_to_build_library(bpy.types.Operator):
         layout.label(text="Assembly Name: " + self.assembly_name)
 
         file_exists = False
-        for asset in context.window_manager.home_builder.home_builder_library_assets:
-            if asset.file_data.name == self.assembly_name:
-                file_exists = True
+        directory_to_save_to = self.get_directory_to_save_to(context)
+        files = os.listdir(directory_to_save_to) if os.path.exists(directory_to_save_to) else []
+        if self.assembly_name + ".blend" in files or self.assembly_name + ".png" in files:
+            file_exists = True
 
         if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
@@ -870,9 +862,10 @@ class home_builder_OT_save_decoration(bpy.types.Operator):
                 layout.label(text="Including " + str(len(self.child_objects)) + " Child Objects")
 
         file_exists = False
-        for asset in context.window_manager.home_builder.home_builder_library_assets:
-            if asset.file_data.name == self.obj.name:
-                file_exists = True
+        directory_to_save_to = self.get_directory_to_save_to(context)
+        files = os.listdir(directory_to_save_to) if os.path.exists(directory_to_save_to) else []
+        if self.obj.name + ".blend" in files or self.obj.name + ".png" in files:
+            file_exists = True
 
         if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
@@ -1059,9 +1052,10 @@ class home_builder_OT_save_material(bpy.types.Operator):
         layout.label(text="Material Name: " + self.mat.name)
 
         file_exists = False
-        for asset in context.window_manager.home_builder.home_builder_library_assets:
-            if asset.file_data.name == self.mat.name:
-                file_exists = True
+        directory_to_save_to = self.get_directory_to_save_to(context)
+        files = os.listdir(directory_to_save_to) if os.path.exists(directory_to_save_to) else []
+        if self.mat.name + ".blend" in files or self.mat.name + ".png" in files:
+            file_exists = True
 
         if file_exists:
             layout.label(text="File already exists. Change name before saving.",icon="ERROR")
@@ -1320,6 +1314,7 @@ class home_builder_OT_assign_material_dialog(bpy.types.Operator):
                 row.label(text=pointer + ": " + mat_pointer.category_name + "/" + mat_pointer.material_name)    
                 props = row.operator('home_builder.assign_material_to_pointer',text="Update All",icon='FILE_REFRESH')
                 props.pointer_name = pointer
+                props.material_name = self.material_name
         
     def execute(self,context):
         return {'FINISHED'}        
@@ -1538,7 +1533,8 @@ class home_builder_OT_set_scale_with_two_points(bpy.types.Operator):
         return {'FINISHED'}
         
     def __del__(self):
-        bpy.context.area.header_text_set()
+        if bpy.context.area:
+            bpy.context.area.header_text_set()
         
     def invoke(self,context,event):
         wm = context.window_manager

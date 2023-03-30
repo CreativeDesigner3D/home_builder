@@ -50,17 +50,9 @@ class home_builder_OT_place_door_window(bpy.types.Operator):
             self.assembly = pc_types.Assembly(obj_bp)
             self.remove_old_boolean_modifier()
         else:
-            workspace = context.workspace
-            wm = context.window_manager
-            asset = wm.home_builder.home_builder_library_assets[workspace.home_builder.home_builder_library_index]
-            self.assembly = eval("library_doors_windows." + asset.file_data.name.replace(" ","_") + "()")
+            asset_file_handle = context.asset_file_handle
+            self.assembly = eval("library_doors_windows." + asset_file_handle.name.replace(" ","_") + "()")
             self.assembly.draw_assembly()
-            # self.set_child_properties(self.cabinet.obj_bp)           
-
-            # directory, file = os.path.split(self.filepath)
-            # filename, ext = os.path.splitext(file)
-            # self.assembly = eval("library_doors_windows." + filename.replace(" ","_") + "()")     
-            # self.assembly.draw_assembly()
 
         self.set_child_properties(self.assembly.obj_bp)
 
