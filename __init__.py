@@ -59,6 +59,8 @@ def load_library(dummy):
     hb_utils.load_libraries_from_xml(bpy.context)
     hb_utils.load_libraries(bpy.context)
 
+    bpy.context.scene.home_builder.library_tabs = bpy.context.scene.home_builder.library_tabs
+
 
 class Home_Builder_AddonPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
