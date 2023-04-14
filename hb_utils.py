@@ -114,31 +114,31 @@ def add_material_pointers(context,pointers):
     
     #Add Default Pointers and Update Value if Found
     for pointer in pointers:
-        p = scene_props.material_pointers.add()
-        if pointer[0] in current_pointers:
-            # print("FOUND POINTER IN DICT",pointer[0])
-            p.name = pointer[0]
-            p.library_name = current_pointers[pointer[0]][0]
-            p.category_name = current_pointers[pointer[0]][1]
-            p.material_name = current_pointers[pointer[0]][2]
-            p.library_path = current_pointers[pointer[0]][3]   
-        else:
-            # print("DIDNT FIND POINTER IN DICT",pointer[0])
-            p.name = pointer[0]
-            p.library_name = pointer[1]
-            p.category_name = pointer[2]
-            p.material_name = pointer[3]  
-            p.library_path = pointer[4] 
+        if pointer[0] not in scene_props.material_pointers:
+            p = scene_props.material_pointers.add()
+            if pointer[0] in current_pointers:
+                p.name = pointer[0]
+                p.library_name = current_pointers[pointer[0]][0]
+                p.category_name = current_pointers[pointer[0]][1]
+                p.material_name = current_pointers[pointer[0]][2]
+                p.library_path = current_pointers[pointer[0]][3]   
+            else:
+                p.name = pointer[0]
+                p.library_name = pointer[1]
+                p.category_name = pointer[2]
+                p.material_name = pointer[3]  
+                p.library_path = pointer[4] 
 
     #Add Custom Pointers
     for custom_pointer in custom_pointers:
-        p = scene_props.material_pointers.add()   
-        p.name = custom_pointer
-        p.is_custom = True
-        p.library_name = custom_pointers[custom_pointer][0]
-        p.category_name = custom_pointers[custom_pointer][1]
-        p.material_name = custom_pointers[custom_pointer][2]
-        p.library_path = custom_pointers[custom_pointer][3]   
+        if custom_pointer not in scene_props.material_pointers:
+            p = scene_props.material_pointers.add()   
+            p.name = custom_pointer
+            p.is_custom = True
+            p.library_name = custom_pointers[custom_pointer][0]
+            p.category_name = custom_pointers[custom_pointer][1]
+            p.material_name = custom_pointers[custom_pointer][2]
+            p.library_path = custom_pointers[custom_pointer][3]   
         
 def load_libraries_from_xml(context):
     wm_props = context.window_manager.home_builder
@@ -165,8 +165,6 @@ def load_libraries_from_xml(context):
                                             lib.enabled = True if nnc_node.text == "True" else False
 
 def load_libraries(context):
-    product_path = hb_paths.get_product_library_path()
-
     prefs = context.preferences
     asset_lib = prefs.filepaths.asset_libraries.get("home_builder_library")
 
@@ -174,13 +172,6 @@ def load_libraries(context):
         bpy.ops.preferences.asset_library_add()
         asset_lib = prefs.filepaths.asset_libraries[-1]
         asset_lib.name = "home_builder_library"
-    #     asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')
-    # else:
-    #     asset_lib.name = "home_builder_library"
-    #     asset_lib.path = os.path.join(os.path.dirname(__file__),'asset_libraries','sample_cabinets','library','Sample Cabinets')        
-
-    # for workspace in bpy.data.workspaces:
-    #     workspace.asset_library_ref = "home_builder_library"
 
     wm_props = context.window_manager.home_builder
     
@@ -193,44 +184,9 @@ def load_libraries(context):
     pointer_list.append(("Floor","Room Materials","Default Room Materials","Wood Floor",mat_library_path))
     pointer_list.append(("Ceiling","Room Materials","Default Room Materials","White Wall Paint",mat_library_path)) 
     pointer_list.append(("Dimensions","Room Materials","Default Room Materials","Dimension",mat_library_path)) 
-    
+
     #LOAD BUILT IN LIBRARIES
-    dirs = os.listdir(product_path) 
-    for folder in dirs:
-        if os.path.isdir(os.path.join(product_path,folder)):
-            files = os.listdir(os.path.join(product_path,folder))
-            for file in files:
-                if file == '__init__.py':            
-                    sys.path.append(product_path)
-                    mod = __import__(folder)
-                    if hasattr(mod,'register'):
-                        #If register fails the module is already registered
-                        try:
-                            mod.register()
-                        except:
-                            pass
-                        if hasattr(mod,"LIBRARIES"):
-                            libs = list(mod.LIBRARIES)
-                            for lib in libs:
-                                asset_lib = wm_props.asset_libraries.add()
-                                asset_lib.name = lib["library_name"]
-                                asset_lib.library_type = lib["library_type"]
-                                asset_lib.library_path = lib["library_path"]
-                                asset_lib.is_external_library = False
-                                if "library_menu_id" in lib:
-                                    asset_lib.library_menu_ui = lib["library_menu_id"]
-                                if "library_activate_id" in lib:
-                                    asset_lib.activate_id = lib["library_activate_id"]
-                                if "libary_drop_id" in lib:
-                                    asset_lib.drop_id = lib["libary_drop_id"]
-
-                        if hasattr(mod,"MATERIAL_POINTERS"):
-                            for pointers in mod.MATERIAL_POINTERS:
-                                for p in pointers:
-                                    for p2 in pointers[p]:
-                                        lib_path = os.path.dirname(p2[1])
-                                        pointer_list.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
-
+    load_library_from_path(context,hb_paths.get_product_library_path(),'PRODUCTS',None,pointer_list)
     load_library_from_path(context,hb_paths.get_build_library_path(),'BUILD_LIBRARY',None)
     load_library_from_path(context,hb_paths.get_decoration_library_path(),'DECORATIONS',None)
     load_library_from_path(context,hb_paths.get_material_library_path(),'MATERIALS',None)
@@ -247,10 +203,38 @@ def load_libraries(context):
                     load_library_from_path(context,os.path.join(path,folder),'DECORATIONS',library_package)
                 if folder == 'build_library':
                     load_library_from_path(context,os.path.join(path,folder),'BUILD_LIBRARY',library_package)
+                if folder == 'products':
+                    load_library_from_path(context,os.path.join(path,folder),'PRODUCTS',library_package,pointer_list)
 
     add_material_pointers(context,pointer_list)
 
-def load_library_from_path(context,path,library_type,library_package):
+def get_product_libraries_and_pointers(path):
+    dirs = os.listdir(path) 
+    libs = []
+    pointers = []
+    for folder in dirs:
+        if os.path.isdir(os.path.join(path,folder)):
+            files = os.listdir(os.path.join(path,folder))
+            for file in files:
+                if file == '__init__.py':            
+                    sys.path.append(path)
+                    mod = __import__(folder)
+                    if hasattr(mod,'register'):
+                        #If register fails the module is already registered
+                        try:
+                            mod.register()
+                        except:
+                            pass
+                        if hasattr(mod,"LIBRARIES"):
+                            for lib in mod.LIBRARIES:
+                                libs.append(lib)
+                        if hasattr(mod,"MATERIAL_POINTERS"):
+                            for pointer in mod.MATERIAL_POINTERS:
+                                pointers.append(pointer)
+    return libs, pointers
+                        
+def load_library_from_path(context,path,library_type,library_package,material_pointers=[]):
+
     wm_props = context.window_manager.home_builder
 
     if library_type == 'MATERIALS':
@@ -262,13 +246,43 @@ def load_library_from_path(context,path,library_type,library_package):
     if library_type == 'BUILD_LIBRARY':
         drop_id = 'home_builder.drop_build_library'
 
-    if os.path.exists(path):
+    if not os.path.exists(path):
+        return None
+    
+    if library_type == 'PRODUCTS':
+        libs, pointers = get_product_libraries_and_pointers(path)
+        for lib in libs:
+            asset_lib = wm_props.asset_libraries.add()
+            asset_lib.name = lib["library_name"]
+            asset_lib.library_type = lib["library_type"]
+            asset_lib.library_path = lib["library_path"]
+            if library_package:
+                asset_lib.is_external_library = True
+                asset_lib.enabled = library_package.enabled
+                #Used to display libraries in packages
+                package_asset_lib = library_package.asset_libraries.add()
+                package_asset_lib.name = lib["library_name"]
+                package_asset_lib.library_type = lib["library_type"]
+            else:
+                asset_lib.is_external_library = False
+            if "library_menu_id" in lib:
+                asset_lib.library_menu_ui = lib["library_menu_id"]
+            if "library_activate_id" in lib:
+                asset_lib.activate_id = lib["library_activate_id"]
+            if "libary_drop_id" in lib:
+                asset_lib.drop_id = lib["libary_drop_id"]   
+        for pointers in pointers:      
+            for p in pointers:
+                for p2 in pointers[p]:
+                    lib_path = os.path.dirname(p2[1])
+                    material_pointers.append((p2[0],p,os.path.basename(lib_path),p2[2],p2[1]))
+    else:
         library_dirs = os.listdir(path)
-        for dir in library_dirs:
-            cat_path = os.path.join(path,dir)
+        for dir_name in library_dirs:
+            cat_path = os.path.join(path,dir_name)
             if os.path.isdir(cat_path):
                 asset_lib = wm_props.asset_libraries.add()
-                asset_lib.name = dir
+                asset_lib.name = dir_name
                 asset_lib.library_type = library_type
                 asset_lib.library_path = os.path.join(cat_path,"library.blend")
                 asset_lib.drop_id = drop_id
@@ -277,7 +291,7 @@ def load_library_from_path(context,path,library_type,library_package):
                     asset_lib.enabled = library_package.enabled
                     #Used to display libraries in packages
                     package_asset_lib = library_package.asset_libraries.add()
-                    package_asset_lib.name = dir  
+                    package_asset_lib.name = dir_name  
                     package_asset_lib.library_type = library_type
                 else:
                     asset_lib.is_external_library = False
