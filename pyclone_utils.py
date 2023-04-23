@@ -23,9 +23,10 @@ def get_drivers(obj):
         for driver in obj.data.animation_data.drivers:
             drivers.append(driver)
 
-    if obj.data and obj.data.shape_keys and obj.data.shape_keys.animation_data:
-        for driver in obj.data.shape_keys.animation_data.drivers:
-            drivers.append(driver)
+    if hasattr(obj.data,'shape_keys'):
+        if obj.data and obj.data.shape_keys and obj.data.shape_keys.animation_data:
+            for driver in obj.data.shape_keys.animation_data.drivers:
+                drivers.append(driver)
 
     return drivers            
 
