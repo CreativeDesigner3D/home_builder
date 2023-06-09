@@ -7,6 +7,8 @@ from pc_lib import pc_utils, pc_types, pc_unit
 from .. import hb_utils
 # from .. import home_builder_pointers
 from . import wall_library
+from mathutils import Vector
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
     bl_idname = "home_builder.draw_multiple_walls"
@@ -110,6 +112,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             self.exclude_objects.append(obj)
             
     def connect_walls(self):
+        self.current_wall.obj_bp.location = self.previous_wall.obj_x.matrix_world.translation
         constraint_obj = self.previous_wall.obj_x
         constraint = self.current_wall.obj_bp.constraints.new('COPY_LOCATION')
         constraint.target = constraint_obj
@@ -208,11 +211,14 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
         driver.driver.expression = 'distance'
 
-    # def warp_cursor_to_bp(self,context):
-    #     region = context.region
-    #     co = location_3d_to_region_2d(region,context.region_data,obj_bp.matrix_world.translation)
-    #     region_offset = Vector((region.x,region.y))
-    #     context.window.cursor_warp(*(co + region_offset))    
+    def warp_cursor_to_bp(self,context):
+        context.view_layer.update()
+        region = context.region
+        self.previous_wall.obj_x
+        co = location_3d_to_region_2d(region,context.region_data,self.current_wall.obj_bp.matrix_world.translation)
+        region_offset = Vector((region.x,region.y))
+        x_y = (co + region_offset)
+        context.window.cursor_warp(x=int(x_y[0]),y=int(x_y[1]))    
 
     def modal(self, context, event):
         context.area.tag_redraw()
@@ -260,8 +266,10 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             self.set_placed_properties(self.current_wall.obj_bp)
             self.create_wall()
             self.connect_walls()
+            self.warp_cursor_to_bp(context)
             self.typed_value = ""
-            self.starting_point = (selected_point[0],selected_point[1],0)
+            new_wall_loc = self.current_wall.obj_bp.matrix_world.translation
+            self.starting_point = (new_wall_loc[0],new_wall_loc[1],0)
             return {'RUNNING_MODAL'}
 
         if self.event_is_cancel_command(event):
