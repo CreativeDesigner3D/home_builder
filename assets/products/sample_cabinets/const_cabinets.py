@@ -1,3 +1,5 @@
+lib_name = "sample_cabinets"
+
 WALL_TAG = "IS_WALL_BP"
 CABINET_TAG = "IS_CABINET_BP"
 WINDOW_TAG = "IS_WINDOW_BP"

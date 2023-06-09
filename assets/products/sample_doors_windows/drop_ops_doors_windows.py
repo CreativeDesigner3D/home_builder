@@ -1,10 +1,11 @@
 import bpy
 import os
 from . import library_doors_windows
+from . import const_doors_windows as const
 from pc_lib import pc_types,pc_utils,pc_unit,pc_placement_utils
 
 class home_builder_OT_place_door_window(bpy.types.Operator):
-    bl_idname = "home_builder.place_door_window"
+    bl_idname = const.lib_name + ".place_door_window"
     bl_label = "Place Door or Window"
     bl_options = {'UNDO'}
     

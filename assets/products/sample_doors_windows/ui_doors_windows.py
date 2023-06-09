@@ -14,6 +14,7 @@ class HOME_BUILDER_MT_doors_windows_settings(bpy.types.Menu):
 
 
 class HOME_BUILDER_MT_window_commands(bpy.types.Menu):
+    bl_idname = const.menu_name + "_MT_window_commands"
     bl_label = "Window Commands"
 
     def draw(self, context):

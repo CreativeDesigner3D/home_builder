@@ -1,4 +1,5 @@
 import os
+from . import const_doors_windows as const
 from . import material_pointers_doors_windows
 from . import ui_doors_windows
 from . import props_doors_windows
@@ -12,7 +13,7 @@ DOOR_AND_WINDOWS = {"library_name": "Doors and Windows",
                     "library_type": "PRODUCTS",
                     "library_path": DOOR_WINDOW_LIBRARY_PATH,
                     "library_menu_id": "HOME_BUILDER_MT_doors_windows_settings",
-                    "libary_drop_id": "home_builder.place_door_window"}
+                    "libary_drop_id": const.lib_name + ".place_door_window"}
             
 DOOR_WINDOW_MATERIALS = {"library_name": "Door and Window Materials",
                          "library_type": "MATERIALS",

@@ -376,7 +376,7 @@ class Standard_Window(pc_types.Assembly):
         self.create_assembly("Window")
         self.obj_bp[const.WINDOW_TAG] = True
         self.obj_bp["PROMPT_ID"] = "hb_sample_door_windows.window_prompts" 
-        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_window_commands"
+        self.obj_bp["MENU_ID"] = const.menu_name + "_MT_window_commands"
 
         self.add_prompt("Boolean Overhang",'DISTANCE',pc_unit.inch(1))
         self.add_prompt("Left Window Frame Width",'DISTANCE',pc_unit.inch(3))
