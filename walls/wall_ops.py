@@ -38,6 +38,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
     wall_counter = 1
 
+    distance_to_snap_to_end = pc_unit.inch(10)
+
     def reset_properties(self):
         self.drawing_plane = None
         self.current_wall = None
@@ -70,8 +72,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             wall = wall_library.Wall()
         wall.draw_wall()
         wall.set_name("Wall")
-        #TODO: ASSIGN POINTERS
-        # home_builder_pointers.assign_pointer_to_assembly(wall,"Walls")
+
         if self.current_wall:
             self.previous_wall = self.current_wall
         self.current_wall = wall
@@ -207,6 +208,12 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
         driver.driver.expression = 'distance'
 
+    # def warp_cursor_to_bp(self,context):
+    #     region = context.region
+    #     co = location_3d_to_region_2d(region,context.region_data,obj_bp.matrix_world.translation)
+    #     region_offset = Vector((region.x,region.y))
+    #     context.window.cursor_warp(*(co + region_offset))    
+
     def modal(self, context, event):
         context.area.tag_redraw()
         self.set_type_value(event)
@@ -236,9 +243,15 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
         if self.event_is_place_first_point(event):
             self.starting_point = (selected_point[0],selected_point[1],0)
+            #ONLY CONNECT IF CURSOR IS NEAR END POINT
             if connected_wall_bp:
-                self.previous_wall = pc_types.Assembly(connected_wall_bp)
-                self.connect_walls()
+                previous_wall = pc_types.Assembly(connected_wall_bp)
+                select_point = (selected_point[0],selected_point[1],0)
+                end_point = (previous_wall.obj_x.matrix_world[0][3],previous_wall.obj_x.matrix_world[1][3],0)
+                dist = pc_utils.calc_distance(select_point,end_point)
+                if dist < self.distance_to_snap_to_end:
+                    self.previous_wall = previous_wall
+                    self.connect_walls()
                 self.typed_value = ""                
             return {'RUNNING_MODAL'}
             
