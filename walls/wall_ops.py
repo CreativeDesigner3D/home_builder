@@ -439,35 +439,52 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
     def execute(self, context):
         return {'FINISHED'}
 
+    def get_first_wall_bp(self,context,obj_bp):
+        if len(obj_bp.constraints) > 0:
+            bp = obj_bp.constraints[0].target.parent
+            return self.get_first_wall_bp(context,bp)
+        else:
+            return obj_bp   
+
     def check(self, context):
         prev_rot = 0
         next_rot = 0
         left_angle = self.current_wall.get_prompt("Left Angle")
         right_angle = self.current_wall.get_prompt("Right Angle")    
         rot = math.degrees(self.current_wall.obj_bp.rotation_euler.z)
+        previous_wall_bp = pc_utils.get_connected_left_wall_bp(self.current_wall)
+        next_wall_bp = pc_utils.get_connected_right_wall_bp(self.current_wall)
 
-        if self.previous_wall:
-            prev_left_angle = self.previous_wall.get_prompt("Left Angle")
-            prev_right_angle = self.previous_wall.get_prompt("Right Angle") 
-            prev_rot = math.degrees(self.previous_wall.obj_bp.rotation_euler.z)  
+        prev_wall = None
+        if previous_wall_bp:
+            prev_wall = pc_types.Assembly(previous_wall_bp)
+            prev_left_angle = prev_wall.get_prompt("Left Angle")
+            prev_right_angle = prev_wall.get_prompt("Right Angle") 
+            prev_rot = math.degrees(prev_wall.obj_bp.rotation_euler.z)
 
-        if self.next_wall:
-            next_left_angle = self.next_wall.get_prompt("Left Angle")
-            next_rot = math.degrees(self.next_wall.obj_bp.rotation_euler.z)  
+        next_wall = None
+        if next_wall_bp:
+            next_wall = pc_types.Assembly(next_wall_bp)
+            next_left_angle = next_wall.get_prompt("Left Angle")
+            next_rot = math.degrees(next_wall.obj_bp.rotation_euler.z) 
 
-        if self.next_wall:
+        if next_wall:
             right_angle.set_value((rot-next_rot)/2)
             next_left_angle.set_value((next_rot-rot)/2)
+        else:
+            right_angle.set_value(0)
 
-        if self.previous_wall:
+        if prev_wall:
             prev_right_angle.set_value((prev_rot-rot)/2)
             left_angle.set_value((rot-prev_rot)/2)
+        else:
+            left_angle.set_value(0)
 
         self.current_wall.obj_prompts.location = self.current_wall.obj_prompts.location
-        if self.previous_wall:
-            self.previous_wall.obj_prompts.location = self.previous_wall.obj_prompts.location
-        if self.next_wall:
-            self.next_wall.obj_prompts.location = self.next_wall.obj_prompts.location
+        if prev_wall:
+            prev_wall.obj_prompts.location = prev_wall.obj_prompts.location
+        if next_wall:
+            next_wall.obj_prompts.location = next_wall.obj_prompts.location
         return True
 
     def get_next_wall(self,context):
@@ -489,7 +506,7 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
         self.get_previous_wall(context)
         self.get_next_wall(context)
         wm = context.window_manager           
-        return wm.invoke_props_dialog(self, width=370)
+        return wm.invoke_props_dialog(self, width=400)
 
     def draw_product_size(self,layout,context):
         unit_system = context.scene.unit_settings.system
@@ -529,9 +546,17 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
             row1.prop(self.current_wall.obj_y,'hide_viewport',text="")
             
         if len(self.current_wall.obj_bp.constraints) > 0:
+            # col = row.column(align=True)
+            # col.label(text="Location:")
+            # col.operator('home_builder.disconnect_constraint',text='Disconnect Wall',icon='CONSTRAINT').obj_name = self.current_wall.obj_bp.name
+            first_wall = self.get_first_wall_bp(context,self.current_wall.obj_bp)
             col = row.column(align=True)
-            col.label(text="Location:")
-            col.operator('home_builder.disconnect_constraint',text='Disconnect Wall',icon='CONSTRAINT').obj_name = self.current_wall.obj_bp.name
+            col.label(text="Location X:")
+            col.label(text="Location Y:")
+            col.label(text="Location Z:")
+        
+            col = row.column(align=True)
+            col.prop(first_wall,'location',text="")            
         else:
             col = row.column(align=True)
             col.label(text="Location X:")
@@ -544,6 +569,11 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
         row = box.row()
         row.label(text='Rotation Z:')
         row.prop(self.current_wall.obj_bp,'rotation_euler',index=2,text="")  
+
+        if len(self.current_wall.obj_bp.constraints) > 0:        
+            col = row.column(align=True)
+            # col.label(text="Location:")
+            col.operator('home_builder.disconnect_wall_constraint',text='Disconnect Wall',icon='CONSTRAINT').obj_name = self.current_wall.obj_bp.name
 
     def draw_brick_wall_props(self,layout,context):
         brick_length = self.current_wall.get_prompt("Brick Length")
@@ -961,10 +991,19 @@ class home_builder_OT_delete_wall(bpy.types.Operator):
 
     wall_obj_bp_name: bpy.props.StringProperty(name="Wall Base Point Name")
 
+    def get_wall(self,obj,wall_list):
+        if 'IS_WALL_BP' in obj and obj not in wall_list:
+            wall_list.append(obj)
+        if obj.parent:
+            self.get_wall(obj.parent,wall_list)
+        return wall_list
+
     def execute(self,context):
-        if self.wall_obj_bp_name in bpy.data.objects:
-            obj_bp = bpy.data.objects[self.wall_obj_bp_name]
-            wall = pc_types.Assembly(obj_bp)
+        walls = []
+        for obj in context.selected_objects:
+            walls = self.get_wall(obj,walls)
+        for wall_bp in walls:
+            wall = pc_types.Assembly(wall_bp)
             prev_wall_bp = pc_utils.get_connected_left_wall_bp(wall)
             next_wall_bp = pc_utils.get_connected_right_wall_bp(wall)
             if prev_wall_bp:
@@ -976,7 +1015,7 @@ class home_builder_OT_delete_wall(bpy.types.Operator):
                 next_wall = pc_types.Assembly(next_wall_bp)
                 next_wall.get_prompt("Left Angle").set_value(0)
                 next_wall.obj_bp.matrix_world.translation = mat_world
-            pc_utils.delete_object_and_children(obj_bp)
+            pc_utils.delete_object_and_children(wall_bp)
         return {'FINISHED'}    
 
 

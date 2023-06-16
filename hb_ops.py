@@ -580,9 +580,34 @@ class home_builder_OT_disconnect_constraint(bpy.types.Operator):
 
     def execute(self, context):
         obj = bpy.data.objects[self.obj_name]
+        loc = obj.matrix_world.translation
         obj.constraints.clear()
+        obj.location = loc
+        obj.home_builder.connected_object
         return {'FINISHED'}
 
+
+class home_builder_OT_disconnect_wall_constraint(bpy.types.Operator):
+    bl_idname = "home_builder.disconnect_wall_constraint"
+    bl_label = "Disconnect Constraint"
+    bl_description = "This disconnects the constraint to allow you to move the object"
+    
+    obj_name: bpy.props.StringProperty(name="Base Point Name")
+
+    def execute(self, context):
+        obj = bpy.data.objects[self.obj_name]
+        wall = pc_types.Assembly(obj)
+        prev_wall_bp = pc_utils.get_connected_left_wall_bp(wall)
+        if prev_wall_bp:
+            prev_wall = pc_types.Assembly(prev_wall_bp)
+            r_angle = prev_wall.get_prompt("Right Angle")
+            r_angle.set_value(0)
+            prev_wall.obj_x.home_builder.connected_object = None
+        loc = obj.matrix_world.translation
+        obj.constraints.clear()
+        obj.location = loc
+        return {'FINISHED'}
+    
 
 class home_builder_OT_unit_settings(bpy.types.Operator):
     bl_idname = "home_builder.unit_settings"
@@ -1612,6 +1637,7 @@ classes = (
     home_builder_OT_assign_material_to_pointer,
     home_builder_OT_update_materials_for_pointer,
     home_builder_OT_disconnect_constraint,
+    home_builder_OT_disconnect_wall_constraint,
     home_builder_OT_unit_settings,
     home_builder_OT_delete_assembly,
     home_builder_OT_save_assembly_to_build_library,
