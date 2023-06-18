@@ -10,6 +10,46 @@ from . import wall_library
 from mathutils import Vector
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 
+def set_wall_angles(current_wall):
+    prev_rot = 0
+    next_rot = 0
+    left_angle = current_wall.get_prompt("Left Angle")
+    right_angle = current_wall.get_prompt("Right Angle")    
+    rot = math.degrees(current_wall.obj_bp.matrix_world.to_euler().z)
+    previous_wall_bp = pc_utils.get_connected_left_wall_bp(current_wall)
+    next_wall_bp = pc_utils.get_connected_right_wall_bp(current_wall)
+
+    prev_wall = None
+    if previous_wall_bp:
+        prev_wall = pc_types.Assembly(previous_wall_bp)
+        prev_left_angle = prev_wall.get_prompt("Left Angle")
+        prev_right_angle = prev_wall.get_prompt("Right Angle") 
+        prev_rot = math.degrees(prev_wall.obj_bp.matrix_world.to_euler().z)
+
+    next_wall = None
+    if next_wall_bp:
+        next_wall = pc_types.Assembly(next_wall_bp)
+        next_left_angle = next_wall.get_prompt("Left Angle")
+        next_rot = math.degrees(next_wall.obj_bp.matrix_world.to_euler().z) 
+
+    if next_wall:
+        right_angle.set_value((rot-next_rot)/2)
+        next_left_angle.set_value((next_rot-rot)/2)
+    else:
+        right_angle.set_value(0)
+
+    if prev_wall:
+        prev_right_angle.set_value((prev_rot-rot)/2)
+        left_angle.set_value((rot-prev_rot)/2)
+    else:
+        left_angle.set_value(0)
+
+    current_wall.obj_prompts.location = current_wall.obj_prompts.location
+    if prev_wall:
+        prev_wall.obj_prompts.location = prev_wall.obj_prompts.location
+    if next_wall:
+        next_wall.obj_prompts.location = next_wall.obj_prompts.location
+
 class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
     bl_idname = "home_builder.draw_multiple_walls"
     bl_label = "Draw Multiple Walls"
@@ -42,6 +82,17 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
     distance_to_snap_to_end = pc_unit.inch(10)
 
+    ht_start_command = "(LEFT CLICK = Set Start Point of Walls)"
+    ht_next_click_command = "(LEFT CLICK = Set Wall Length)"
+    ht_space = "                         "
+    ht_cancel_command = "(RIGHT CLICK or ESC = Exit Command)"
+    ht_close_room = "(C = Close Room)"
+    ht_type_numbers = "(Type numbers to set wall Length)"
+
+    ht_start = ht_start_command + ht_space + ht_cancel_command
+    ht_second_click = ht_next_click_command + ht_space + ht_type_numbers + ht_space + ht_cancel_command
+    ht_forth_click = ht_next_click_command + ht_space + ht_close_room + ht_space + ht_type_numbers + ht_space + ht_cancel_command
+
     def reset_properties(self):
         self.drawing_plane = None
         self.current_wall = None
@@ -58,6 +109,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.reset_properties()   
         self.create_drawing_plane(context)
         self.create_wall()
+        context.workspace.status_text_set(text=self.ht_start)
         context.window_manager.modal_handler_add(self)
         context.area.tag_redraw()
         return {'RUNNING_MODAL'}
@@ -194,6 +246,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             return counter
 
     def connect_to_first_wall(self,first_wall,current_wall):
+        self.current_wall.obj_bp.rotation_euler.z = 0
+
         constraint_obj = first_wall.obj_bp
         constraint = current_wall.obj_bp.constraints.new('LOCKED_TRACK')
         constraint.target = constraint_obj
@@ -210,6 +264,12 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         var.targets[1].id = first_wall.obj_bp
 
         driver.driver.expression = 'distance'
+
+        bpy.context.view_layer.update()
+
+        set_wall_angles(self.current_wall)
+        
+        # hb_utils.get_object_props(self.current_wall.obj_x).connected_object = first_wall.obj_bp
 
     def warp_cursor_to_bp(self,context):
         context.view_layer.update()
@@ -239,12 +299,25 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.set_end_angles()            
 
         number_of_walls = self.get_number_of_walls(self.current_wall,0)
+
+        if self.starting_point == ():
+            context.workspace.status_text_set(text=self.ht_start)
+        else:
+            if number_of_walls > 1:
+                context.workspace.status_text_set(text=self.ht_forth_click)
+            else:
+                context.workspace.status_text_set(text=self.ht_second_click)
+
         if self.event_close_room(event) and number_of_walls > 1:
             first_wall = self.get_first_wall(self.current_wall)
             self.connect_to_first_wall(first_wall,self.current_wall)
             self.set_placed_properties(self.current_wall.obj_bp)
             pc_utils.delete_object_and_children(self.dim.obj_bp)
+            #CREATE AND DELETE NEW WALL SO NAMING IS CONSISTENT
+            self.create_wall()
+            pc_utils.delete_object_and_children(self.current_wall.obj_bp)
             pc_utils.delete_object_and_children(self.drawing_plane)
+            context.workspace.status_text_set(text=None)
             return {'FINISHED'}
 
         if self.event_is_place_first_point(event):
@@ -262,6 +335,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             return {'RUNNING_MODAL'}
             
         if self.event_is_place_next_point(event):
+            context.workspace.status_text_set(text=self.ht_second_click)
             pc_utils.delete_object_and_children(self.dim.obj_bp)
             self.set_placed_properties(self.current_wall.obj_bp)
             self.create_wall()
@@ -328,8 +402,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             left_angle = self.current_wall.get_prompt("Left Angle")
             prev_right_angle = self.previous_wall.get_prompt("Right Angle") 
 
-            prev_rot = round(math.degrees(self.previous_wall.obj_bp.rotation_euler.z),0) 
-            rot = round(math.degrees(self.current_wall.obj_bp.rotation_euler.z),0)
+            prev_rot = round(math.degrees(self.previous_wall.obj_bp.matrix_world.to_euler().z),0) 
+            rot = round(math.degrees(self.current_wall.obj_bp.matrix_world.to_euler().z),0)
             diff = int(math.fabs(rot-prev_rot))
             if diff == 0 or diff == 180:
                 left_angle.set_value(0)
@@ -424,7 +498,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             obj_list.append(child)
         pc_utils.delete_obj_list(obj_list)
         # bpy.ops.view3d.view_all(center=False)
-
+        context.workspace.status_text_set(text=None)
         return {'FINISHED'}
 
 
@@ -435,9 +509,17 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
     current_wall = None
     previous_wall = None
     next_wall = None
+    all_walls = []
 
     def execute(self, context):
         return {'FINISHED'}
+
+    def get_all_walls(self,context,wall,all_walls):
+        all_walls.append(wall)
+        if wall.obj_x.home_builder.connected_object:
+            next_wall = pc_types.Assembly(wall.obj_x.home_builder.connected_object)
+            self.get_all_walls(context,next_wall,all_walls)
+        return all_walls
 
     def get_first_wall_bp(self,context,obj_bp):
         if len(obj_bp.constraints) > 0:
@@ -447,44 +529,8 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
             return obj_bp   
 
     def check(self, context):
-        prev_rot = 0
-        next_rot = 0
-        left_angle = self.current_wall.get_prompt("Left Angle")
-        right_angle = self.current_wall.get_prompt("Right Angle")    
-        rot = math.degrees(self.current_wall.obj_bp.rotation_euler.z)
-        previous_wall_bp = pc_utils.get_connected_left_wall_bp(self.current_wall)
-        next_wall_bp = pc_utils.get_connected_right_wall_bp(self.current_wall)
-
-        prev_wall = None
-        if previous_wall_bp:
-            prev_wall = pc_types.Assembly(previous_wall_bp)
-            prev_left_angle = prev_wall.get_prompt("Left Angle")
-            prev_right_angle = prev_wall.get_prompt("Right Angle") 
-            prev_rot = math.degrees(prev_wall.obj_bp.rotation_euler.z)
-
-        next_wall = None
-        if next_wall_bp:
-            next_wall = pc_types.Assembly(next_wall_bp)
-            next_left_angle = next_wall.get_prompt("Left Angle")
-            next_rot = math.degrees(next_wall.obj_bp.rotation_euler.z) 
-
-        if next_wall:
-            right_angle.set_value((rot-next_rot)/2)
-            next_left_angle.set_value((next_rot-rot)/2)
-        else:
-            right_angle.set_value(0)
-
-        if prev_wall:
-            prev_right_angle.set_value((prev_rot-rot)/2)
-            left_angle.set_value((rot-prev_rot)/2)
-        else:
-            left_angle.set_value(0)
-
-        self.current_wall.obj_prompts.location = self.current_wall.obj_prompts.location
-        if prev_wall:
-            prev_wall.obj_prompts.location = prev_wall.obj_prompts.location
-        if next_wall:
-            next_wall.obj_prompts.location = next_wall.obj_prompts.location
+        for wall in self.all_walls:
+            set_wall_angles(wall)
         return True
 
     def get_next_wall(self,context):
@@ -502,7 +548,12 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
         wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
         self.next_wall = None
         self.previous_wall = None
-        self.current_wall = pc_types.Assembly(wall_bp)   
+        self.current_wall = pc_types.Assembly(wall_bp)  
+        first_wall_bp = self.get_first_wall_bp(context,self.current_wall.obj_bp)
+        first_wall = pc_types.Assembly(first_wall_bp)
+        all_walls = []
+        self.all_walls = self.get_all_walls(context,first_wall,all_walls)
+        print('ALL WALLS',self.all_walls)
         self.get_previous_wall(context)
         self.get_next_wall(context)
         wm = context.window_manager           

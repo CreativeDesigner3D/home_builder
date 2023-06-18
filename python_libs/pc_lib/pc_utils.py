@@ -476,11 +476,18 @@ def get_connected_left_wall_bp(current_wall):
                 return wall_bp
 
 def get_connected_right_wall_bp(current_wall):
-    props = get_hb_object_props(current_wall.obj_x)
-    if props.connected_object:
-        wall_bp = get_bp_by_tag(props.connected_object,'IS_WALL_BP')
-        if wall_bp:
-            return wall_bp                
+    locked_track_obj = False
+    for con in current_wall.obj_bp.constraints:
+        if con.type == 'LOCKED_TRACK':
+            locked_track_obj = con.target
+    if locked_track_obj:
+        return locked_track_obj
+    else:
+        props = get_hb_object_props(current_wall.obj_x)
+        if props.connected_object:
+            wall_bp = get_bp_by_tag(props.connected_object,'IS_WALL_BP')
+            if wall_bp:
+                return wall_bp                
 
 def delete_driver_variables(drivers):
     for driver in drivers:

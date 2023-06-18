@@ -389,8 +389,8 @@ class HB_Cabinet_Object_Props(PropertyGroup):
     @classmethod
     def register(cls):
         bpy.types.Object.hb_cabinet = PointerProperty(
-            name="Home Builder Props",
-            description="Home Builder Props",
+            name="HB Cabinet Props",
+            description="HB Cabinet Props",
             type=cls,
         )
         
