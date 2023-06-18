@@ -281,6 +281,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         context.window.cursor_warp(x=int(x_y[0]),y=int(x_y[1]))    
 
     def modal(self, context, event):
+        bpy.ops.object.select_all(action='DESELECT')
+
         context.area.tag_redraw()
         self.set_type_value(event)
 
@@ -307,6 +309,16 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
                 context.workspace.status_text_set(text=self.ht_forth_click)
             else:
                 context.workspace.status_text_set(text=self.ht_second_click)
+
+        if self.starting_point == () and connected_wall_bp:
+            previous_wall = pc_types.Assembly(connected_wall_bp)
+            select_point = (selected_point[0],selected_point[1],0)
+            end_point = (previous_wall.obj_x.matrix_world[0][3],previous_wall.obj_x.matrix_world[1][3],0)
+            dist = pc_utils.calc_distance(select_point,end_point)
+            if dist < self.distance_to_snap_to_end:
+                for child in previous_wall.obj_bp.children:
+                    if child.type == 'MESH':
+                        child.select_set(True)        
 
         if self.event_close_room(event) and number_of_walls > 1:
             first_wall = self.get_first_wall(self.current_wall)
@@ -553,7 +565,6 @@ class home_builder_OT_wall_prompts(bpy.types.Operator):
         first_wall = pc_types.Assembly(first_wall_bp)
         all_walls = []
         self.all_walls = self.get_all_walls(context,first_wall,all_walls)
-        print('ALL WALLS',self.all_walls)
         self.get_previous_wall(context)
         self.get_next_wall(context)
         wm = context.window_manager           
