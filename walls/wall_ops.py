@@ -87,11 +87,11 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
     ht_space = "                         "
     ht_cancel_command = "(RIGHT CLICK or ESC = Exit Command)"
     ht_close_room = "(C = Close Room)"
+    ht_set_angle = "(HOLD CTRL = Set Angle)"
     ht_type_numbers = "(Type numbers to set wall Length)"
-
     ht_start = ht_start_command + ht_space + ht_cancel_command
-    ht_second_click = ht_next_click_command + ht_space + ht_type_numbers + ht_space + ht_cancel_command
-    ht_forth_click = ht_next_click_command + ht_space + ht_close_room + ht_space + ht_type_numbers + ht_space + ht_cancel_command
+    ht_second_click = ht_next_click_command + ht_space + ht_type_numbers + ht_space + ht_set_angle + ht_space + ht_cancel_command
+    ht_forth_click = ht_next_click_command + ht_space + ht_close_room + ht_space + ht_type_numbers + ht_space + ht_set_angle + ht_space + ht_cancel_command
 
     def reset_properties(self):
         self.drawing_plane = None
@@ -451,16 +451,14 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
                 dist = pc_utils.calc_distance(self.starting_point, selected_point)
                 self.set_wall_length(dist)
                 if dist != 0 and x != 0:
-                    as_angle = math.asin(y/dist)
-                    c_angle = math.acos(x/dist)
-
+                    as_angle = math.radians(int(math.degrees(math.asin(y/dist))))
+                    ac_angle = math.radians(int(math.degrees(math.acos(x/dist))))
                     if x > 0:
                         self.current_wall.obj_bp.rotation_euler.z = as_angle
                     elif y > 0:
-                        self.current_wall.obj_bp.rotation_euler.z = c_angle
+                        self.current_wall.obj_bp.rotation_euler.z = ac_angle
                     else:
                         self.current_wall.obj_bp.rotation_euler.z = math.fabs(as_angle) + math.radians(180)
-                
             else:
                 if math.fabs(x) > math.fabs(y):
                     if x > 0:
