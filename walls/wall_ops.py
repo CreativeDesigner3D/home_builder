@@ -297,8 +297,8 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             if wall_bp and self.previous_wall == None:
                 connected_wall_bp = wall_bp
 
-        self.position_object(selected_point,selected_obj)
-        self.set_end_angles()            
+        self.position_object(selected_point,selected_obj,event.ctrl)
+        self.set_end_angles() 
 
         number_of_walls = self.get_number_of_walls(self.current_wall,0)
 
@@ -437,7 +437,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             else:
                 self.current_wall.obj_x.location.x = pc_unit.inch(float(value))     
 
-    def position_object(self,selected_point,selected_obj):
+    def position_object(self,selected_point,selected_obj,set_angle):
         if self.starting_point == ():
             self.current_wall.obj_bp.location.x = selected_point[0]
             self.current_wall.obj_bp.location.y = selected_point[1]
@@ -446,19 +446,35 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             x = selected_point[0] - self.starting_point[0]
             y = selected_point[1] - self.starting_point[1]
             parent_rot = self.current_wall.obj_bp.parent.rotation_euler.z if self.current_wall.obj_bp.parent else 0
-            if math.fabs(x) > math.fabs(y):
-                if x > 0:
-                    self.current_wall.obj_bp.rotation_euler.z = math.radians(0) + parent_rot
-                else:
-                    self.current_wall.obj_bp.rotation_euler.z = math.radians(180) + parent_rot
-                self.set_wall_length(x)
-           
-            if math.fabs(y) > math.fabs(x):
-                if y > 0:
-                    self.current_wall.obj_bp.rotation_euler.z = math.radians(90) + parent_rot
-                else:
-                    self.current_wall.obj_bp.rotation_euler.z = math.radians(-90) + parent_rot
-                self.set_wall_length(y)
+
+            if set_angle:
+                dist = pc_utils.calc_distance(self.starting_point, selected_point)
+                self.set_wall_length(dist)
+                if dist != 0 and x != 0:
+                    as_angle = math.asin(y/dist)
+                    c_angle = math.acos(x/dist)
+
+                    if x > 0:
+                        self.current_wall.obj_bp.rotation_euler.z = as_angle
+                    elif y > 0:
+                        self.current_wall.obj_bp.rotation_euler.z = c_angle
+                    else:
+                        self.current_wall.obj_bp.rotation_euler.z = math.fabs(as_angle) + math.radians(180)
+                
+            else:
+                if math.fabs(x) > math.fabs(y):
+                    if x > 0:
+                        self.current_wall.obj_bp.rotation_euler.z = math.radians(0) + parent_rot
+                    else:
+                        self.current_wall.obj_bp.rotation_euler.z = math.radians(180) + parent_rot
+                    self.set_wall_length(x)
+            
+                if math.fabs(y) > math.fabs(x):
+                    if y > 0:
+                        self.current_wall.obj_bp.rotation_euler.z = math.radians(90) + parent_rot
+                    else:
+                        self.current_wall.obj_bp.rotation_euler.z = math.radians(-90) + parent_rot
+                    self.set_wall_length(y)
             
             self.dim.obj_x.location.x = self.current_wall.obj_x.location.x
             
