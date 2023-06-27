@@ -7,6 +7,9 @@ import sys
 import codecs
 import subprocess
 import shutil
+import mathutils
+import bgl
+from bpy_extras.view3d_utils import region_2d_to_location_3d, region_2d_to_vector_3d
 from bpy_extras.io_utils import ImportHelper
 from pc_lib import pc_utils, pc_unit, pc_types
 from . import addon_updater_ops
@@ -606,6 +609,70 @@ class home_builder_OT_disconnect_wall_constraint(bpy.types.Operator):
         loc = obj.matrix_world.translation
         obj.constraints.clear()
         obj.location = loc
+        return {'FINISHED'}
+    
+class home_builder_OT_add_geo_node_dimension(bpy.types.Operator):
+    bl_idname = "home_builder.add_geo_node_dimension"
+    bl_label = "Add Dimension"
+    bl_description = "This adds a geometry node dimension object"
+    
+    obj_name: bpy.props.StringProperty(name="Base Point Name")
+    dim = None
+    region = None
+    exclude_objects = []
+    is_place_first_point = True
+    first_point = (0,0,0)
+
+    def modal(self, context, event):
+        context.area.tag_redraw()
+        self.mouse_x = event.mouse_x
+        self.mouse_y = event.mouse_y
+
+        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
+        
+        if self.is_place_first_point:
+            # self.dim.location = selected_point
+            self.dim.data.splines[0].bezier_points[0].co = selected_point
+            self.dim.data.splines[0].bezier_points[1].co = selected_point
+        else:
+            self.dim.data.splines[0].bezier_points[0].co = self.first_point
+            self.dim.data.splines[0].bezier_points[1].co = selected_point
+
+        if event.type == 'LEFTMOUSE':
+            self.is_place_first_point = False
+            self.first_point = selected_point
+            # v0 = (event.mouse_region_x, event.mouse_region_y)
+            # vec =  region_2d_to_vector_3d(region, rv3d, v0)
+            # loc0 = region_2d_to_location_3d(region, rv3d, v0, vec)
+            # loc1 = self.findAll( loc0 )
+            # self.mouse_path.append(loc1)
+
+        elif event.type in {'ESC', 'RIGHTMOUSE'}:
+            # bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+            return {'CANCELLED'}
+
+        return {'PASS_THROUGH'}
+    
+    def invoke(self, context, event):
+        self.region = pc_utils.get_3d_view_region(context)
+        dim = pc_types.GeoNodeDim()
+        self.dim = dim.create_dimension()        
+
+        if context.area.type == 'VIEW_3D':
+            # args = (self, context)
+            # the arguments we pass the the callback
+            # Add the region OpenGL drawing callback
+            # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
+            # self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_VIEW')
+            # self.mouse_path = []
+
+            context.window_manager.modal_handler_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            self.report({'WARNING'}, "View3D not found, cannot run operator")
+            return {'CANCELLED'}
+                
+    def execute(self, context):
         return {'FINISHED'}
     
 
@@ -1659,6 +1726,7 @@ classes = (
     home_builder_OT_edit_part,
     home_builder_OT_save_library_settings,
     home_builder_OT_set_scale_with_two_points,
+    home_builder_OT_add_geo_node_dimension,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)        

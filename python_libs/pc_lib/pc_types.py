@@ -838,6 +838,28 @@ class Annotation(Assembly):
         row.prop(self.obj_text.pyclone,'flip_x',text="X")            
         row.prop(self.obj_text.pyclone,'flip_y',text="Y")     
         
+
+class GeoNodeDim():
+
+    def __init__(self,obj=None):
+        pass
+    
+    def create_dimension(self,layout_view=None):
+        PATH = os.path.join(os.path.dirname(__file__),'assets',"GeoNodeDim.blend")
+
+        with bpy.data.libraries.load(PATH) as (data_from, data_to):
+            data_to.objects = data_from.objects
+
+        if layout_view:
+            collection = layout_view.dimension_collection
+        else:
+            collection = bpy.context.view_layer.active_layer_collection.collection
+        
+        for obj in data_to.objects:
+            collection.objects.link(obj)
+            return obj
+
+
 class Dimension(Assembly):
 
     obj_text = None
