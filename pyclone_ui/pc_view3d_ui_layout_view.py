@@ -43,9 +43,16 @@ class VIEW3D_PT_pc_layout_view(Panel):
         view = context.space_data
         wm_props = context.window_manager.pyclone
         scene_props = pyclone_utils.get_scene_props(scene)
+
+        box = layout.box()
+        box.label(text="Layout View Tools")
+        box.operator('home_builder.add_geo_node_dimension',text="Add Dimension")
+        
         box = layout.box()
 
-        box.label(text="Layout View List")
+        row = box.row()
+        row.label(text="Layout View List")
+        row.menu('VIEW3D_MT_layout_view_creation',text="Add View",icon='ADD')
         box.template_list("PC_UL_scenes"," ", bpy.data, "scenes", wm_props, "scene_index",rows=5,type='DEFAULT')
 
         if scene_props.is_view_scene:
@@ -122,9 +129,9 @@ class VIEW3D_PT_pc_layout_view(Panel):
             box.label(text='Camera Properties',icon='CAMERA_DATA')
             box.prop(view, "lock_camera")
 
-        else:
-            box = layout.box()
-            box.menu('VIEW3D_MT_layout_view_creation')
+        # else:
+        #     box = layout.box()
+        #     box.menu('VIEW3D_MT_layout_view_creation')
 
             # box.operator('pc_assembly.create_render_view',text="Add Render View",icon='MENU_PANEL')
 

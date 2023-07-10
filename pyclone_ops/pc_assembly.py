@@ -344,9 +344,12 @@ class pc_assembly_OT_select_parent_assembly(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        obj_bp = pc_utils.get_assembly_bp(context.object)
-        if obj_bp and obj_bp.parent:    
-            return True
+        if context.object:
+            obj_bp = pc_utils.get_assembly_bp(context.object)
+            if obj_bp and obj_bp.parent:    
+                return True
+            else:
+                return False
         else:
             return False
 
