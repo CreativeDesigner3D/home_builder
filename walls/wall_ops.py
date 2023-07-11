@@ -433,9 +433,17 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         else:
             value = eval(self.typed_value)
             if bpy.context.scene.unit_settings.system == 'METRIC':
-                self.current_wall.obj_x.location.x = pc_unit.millimeter(float(value))
+                if bpy.context.scene.unit_settings.length_unit == 'METERS':
+                    self.current_wall.obj_x.location.x = float(value)
+                elif bpy.context.scene.unit_settings.length_unit == 'CENTIMETERS':
+                    self.current_wall.obj_x.location.x = pc_unit.centimeter(float(value))                    
+                else:
+                    self.current_wall.obj_x.location.x = pc_unit.millimeter(float(value))
             else:
-                self.current_wall.obj_x.location.x = pc_unit.inch(float(value))     
+                if bpy.context.scene.unit_settings.length_unit == 'FEET':
+                    self.current_wall.obj_x.location.x = pc_unit.feet(float(value))   
+                else:
+                    self.current_wall.obj_x.location.x = pc_unit.inch(float(value))
 
     def position_object(self,selected_point,selected_obj,set_angle):
         if self.starting_point == ():

@@ -7,12 +7,22 @@ from decimal import *
 def inch(inch):
     """ Converts inch to meter
     """
-    return round(inch / 39.3700787,6) #METERS
+    return round(inch / 39.3700787,6)
+
+def feet(inch):
+    """ Converts feet to meter
+    """
+    return round(inch / 3.28084,6)
 
 def millimeter(millimeter):
     """ Converts millimeter to meter
     """
-    return millimeter * .001 #METERS
+    return millimeter * .001
+
+def centimeter(millimeter):
+    """ Converts centimeter to meter
+    """
+    return millimeter * .01
 
 def meter_to_feet(meter):
     """ Converts meter to feet
@@ -28,6 +38,11 @@ def meter_to_millimeter(meter):
     """ Converts meter to millimeter
     """
     return meter * 1000
+
+def meter_to_centimeter(meter):
+    """ Converts meter to centimeter
+    """
+    return meter * 100
 
 def meter_to_active_unit(meter):
     """ Converts meter to active unit

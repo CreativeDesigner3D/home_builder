@@ -913,13 +913,26 @@ class Dimension(Assembly):
         self.get_prompt("Arrow Length").set_value(.03)
 
     def update_dim_text(self):
-        #TODO: Setup all unit types
         if bpy.context.scene.unit_settings.system == 'METRIC':
-            text = str(round(pc_unit.meter_to_millimeter(self.obj_x.location.x),2))
-            self.obj_text.data.body = text + 'mm'
+            if bpy.context.scene.unit_settings.length_unit == 'METERS':
+                text = str(round(self.obj_x.location.x,2))
+                self.obj_text.data.body = text + 'm'
+            elif bpy.context.scene.unit_settings.length_unit == 'CENTIMETERS':
+                text = str(round(pc_unit.meter_to_centimeter(self.obj_x.location.x),2))
+                self.obj_text.data.body = text + 'cm'
+            else:
+                text = str(round(pc_unit.meter_to_millimeter(self.obj_x.location.x),2))
+                self.obj_text.data.body = text + 'mm'
         else:
-            text = str(round(pc_unit.meter_to_inch(self.obj_x.location.x),2))
-            self.obj_text.data.body = text + '"'
+            if bpy.context.scene.unit_settings.length_unit == 'FEET':
+                feet_decimal = round(pc_unit.meter_to_feet(self.obj_x.location.x),2)
+                feet = int(feet_decimal)
+                inches = round((feet_decimal - feet) * 12,2)
+                text = str(round(pc_unit.meter_to_feet(self.obj_x.location.x),2))
+                self.obj_text.data.body = str(feet) + "'" + " " + str(int(inches)) + '"'
+            else:
+                text = str(round(pc_unit.meter_to_inch(self.obj_x.location.x),2))
+                self.obj_text.data.body = text + '"'
         bpy.context.view_layer.update()
 
         div_factor = 1
