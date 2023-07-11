@@ -1666,7 +1666,7 @@ class home_builder_OT_set_scale_with_two_points(bpy.types.Operator):
                     self.second_point = selected_point
                     
                     distance = pc_utils.calc_distance(self.first_point,self.second_point)
-                    diff = pc_unit.inch(98) / distance
+                    diff = self.known_distance / distance
 
                     self.empty_image.empty_display_size = self.empty_image.empty_display_size*diff
 
