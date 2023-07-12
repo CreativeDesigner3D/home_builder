@@ -177,7 +177,9 @@ class home_builder_OT_about_home_builder(bpy.types.Operator):
 
         if self.tabs == 'TRAINING':
             main_box = layout.box()
-            main_box.label(text="TODO: Training Videos Comming Soon")
+            row = main_box.row()
+            row.scale_y = 2
+            row.operator('wm.url_open',text="Home Builder Online Documentation",icon='HELP').url = "https://creativedesigner3d.github.io/home_builder_3_docs/"
 
 
 class home_builder_OT_update_library_xml(bpy.types.Operator):

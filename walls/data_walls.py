@@ -85,6 +85,8 @@ class Mesh_Wall(pc_types.Assembly):
         pointer.name = "Wall"
         pointer.pointer_name = "Walls"
 
+        # obj_mesh.lock_location = (True,True,True)
+        # obj_mesh.lock_rotation = (True,True,True)
         pc_utils.assign_materials_to_object(obj_mesh)
 
 # class Wall_Framed(pc_types.Assembly):
