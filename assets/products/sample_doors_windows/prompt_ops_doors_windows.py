@@ -23,6 +23,11 @@ class hb_sample_door_windows_OT_door_prompts(bpy.types.Operator):
     door_frame_changed: bpy.props.BoolProperty(name="Door Frame Changed")
     door_handle_changed: bpy.props.BoolProperty(name="Door Handle Changed")
 
+    anchor_type: bpy.props.EnumProperty(name="Anchor Type",
+                                   items=[('LEFT',"Left","Anchor Left"),
+                                          ('CENTER',"Center","Anchor Center"),
+                                          ('RIGHT',"Right","Anchor Right")])
+
     entry_door_tabs: bpy.props.EnumProperty(name="Entry Door Tabs",
                                          items=[('PANEL',"Panel","Panel Options"),
                                                 ('FRAME',"Frame","Frame Options"),
@@ -36,6 +41,9 @@ class hb_sample_door_windows_OT_door_prompts(bpy.types.Operator):
     width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+    x_location_left: bpy.props.FloatProperty(name="X Location Left",unit='LENGTH',precision=4)
+    x_location_center: bpy.props.FloatProperty(name="X Location Center",unit='LENGTH',precision=4)
+    x_location_right: bpy.props.FloatProperty(name="X Location Right",unit='LENGTH',precision=4)
 
     entry_door_panel_category: bpy.props.EnumProperty(name="Entry Door Panel Category",
         items=enum_doors_windows.enum_entry_door_panel_categories,
@@ -59,25 +67,22 @@ class hb_sample_door_windows_OT_door_prompts(bpy.types.Operator):
         update=update_door_handle)
 
     assembly = None
+    wall = None
     door_panels = []
     door_frames = []
     door_handles = []
 
     def update_product_size(self):
-        if 'IS_MIRROR' in self.assembly.obj_x and self.assembly.obj_x['IS_MIRROR']:
-            self.assembly.obj_x.location.x = -self.width
-        else:
-            self.assembly.obj_x.location.x = self.width
-
-        if 'IS_MIRROR' in self.assembly.obj_y and self.assembly.obj_y['IS_MIRROR']:
-            self.assembly.obj_y.location.y = -self.depth
-        else:
-            self.assembly.obj_y.location.y = self.depth
-        
-        if 'IS_MIRROR' in self.assembly.obj_z and self.assembly.obj_z['IS_MIRROR']:
-            self.assembly.obj_z.location.z = -self.height
-        else:
-            self.assembly.obj_z.location.z = self.height
+        self.assembly.obj_x.location.x = self.width
+        self.assembly.obj_y.location.y = self.depth
+        self.assembly.obj_z.location.z = self.height        
+        if self.wall:
+            if self.anchor_type == 'LEFT':
+                self.assembly.obj_bp.location.x = self.x_location_left
+            if self.anchor_type == 'CENTER':
+                self.assembly.obj_bp.location.x = self.x_location_center - (self.width/2)
+            if self.anchor_type == 'RIGHT':
+                self.assembly.obj_bp.location.x = self.wall.obj_x.location.x - (self.x_location_right + self.width)
 
     def update_door_panel(self,context):
         if self.door_panel_changed:
@@ -165,6 +170,11 @@ class hb_sample_door_windows_OT_door_prompts(bpy.types.Operator):
             if "IS_ENTRY_DOOR_FRAME" in child:
                 self.door_frames.append(child)
 
+        if self.assembly.obj_bp.parent and 'IS_WALL_BP' in self.assembly.obj_bp.parent:
+            self.wall = pc_types.Assembly(self.assembly.obj_bp.parent)
+        else:
+            self.wall = None
+
         entry_door_swing = self.assembly.get_prompt("Entry Door Swing")
         if entry_door_swing:
             if entry_door_swing.get_value() == 0:
@@ -179,6 +189,10 @@ class hb_sample_door_windows_OT_door_prompts(bpy.types.Operator):
         self.depth = math.fabs(self.assembly.obj_y.location.y)
         self.height = math.fabs(self.assembly.obj_z.location.z)
         self.width = math.fabs(self.assembly.obj_x.location.x)
+        if self.wall:
+            self.x_location_left = self.assembly.obj_bp.location.x
+            self.x_location_center = self.assembly.obj_bp.location.x + (self.width/2)
+            self.x_location_right = self.wall.obj_x.location.x - (self.assembly.obj_bp.location.x  + self.width)
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=400)
 
@@ -220,8 +234,20 @@ class hb_sample_door_windows_OT_door_prompts(bpy.types.Operator):
             row1.prop(self.assembly.obj_y,'hide_viewport',text="")
 
         row = box.row()    
+        row.label(text="Anchor Type:")
+        row.prop(self,'anchor_type',expand=True)
+
+        row = box.row()    
         row.label(text="Location:")
-        row.prop(self.assembly.obj_bp,'location',index=0,text="X")
+        if self.wall:
+            if self.anchor_type == 'LEFT':
+                row.prop(self,'x_location_left',text="Left")
+            if self.anchor_type == 'CENTER':
+                row.prop(self,'x_location_center',text="Center")
+            if self.anchor_type == 'RIGHT':
+                row.prop(self,'x_location_right',text="Right")       
+        else:                 
+            row.prop(self.assembly.obj_bp,'location',index=0,text="X")
         row.prop(self.assembly.obj_bp,'location',index=2,text="Z")
 
     def draw_prompts(self,layout,context):
@@ -302,9 +328,17 @@ class hb_sample_door_windows_OT_window_prompts(bpy.types.Operator):
                                         items=[('FRAME',"Frame","Frame Options"),
                                                ('INSERT',"Insert","Insert Options")])
 
+    anchor_type: bpy.props.EnumProperty(name="Anchor Type",
+                                   items=[('LEFT',"Left","Anchor Left"),
+                                          ('CENTER',"Center","Anchor Center"),
+                                          ('RIGHT',"Right","Anchor Right")])
+    
     width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+    x_location_left: bpy.props.FloatProperty(name="X Location Left",unit='LENGTH',precision=4)
+    x_location_center: bpy.props.FloatProperty(name="X Location Center",unit='LENGTH',precision=4)
+    x_location_right: bpy.props.FloatProperty(name="X Location Right",unit='LENGTH',precision=4)
 
     window_frame_category: bpy.props.EnumProperty(name="Window Frame Category",
         items=enum_doors_windows.enum_window_frame_categories,
@@ -320,25 +354,22 @@ class hb_sample_door_windows_OT_window_prompts(bpy.types.Operator):
         items=enum_doors_windows.enum_window_insert_names,
         update=update_window_insert)
 
+    wall = None
     assembly = None
     window_frame_bp = None
     window_insert_bp = None
 
     def update_product_size(self):
-        if 'IS_MIRROR' in self.assembly.obj_x and self.assembly.obj_x['IS_MIRROR']:
-            self.assembly.obj_x.location.x = -self.width
-        else:
-            self.assembly.obj_x.location.x = self.width
-
-        if 'IS_MIRROR' in self.assembly.obj_y and self.assembly.obj_y['IS_MIRROR']:
-            self.assembly.obj_y.location.y = -self.depth
-        else:
-            self.assembly.obj_y.location.y = self.depth
-        
-        if 'IS_MIRROR' in self.assembly.obj_z and self.assembly.obj_z['IS_MIRROR']:
-            self.assembly.obj_z.location.z = -self.height
-        else:
-            self.assembly.obj_z.location.z = self.height
+        self.assembly.obj_x.location.x = self.width
+        self.assembly.obj_y.location.y = self.depth
+        self.assembly.obj_z.location.z = self.height
+        if self.wall:
+            if self.anchor_type == 'LEFT':
+                self.assembly.obj_bp.location.x = self.x_location_left
+            if self.anchor_type == 'CENTER':
+                self.assembly.obj_bp.location.x = self.x_location_center - (self.width/2)
+            if self.anchor_type == 'RIGHT':
+                self.assembly.obj_bp.location.x = self.wall.obj_x.location.x - (self.x_location_right + self.width)
 
     def update_window_frame(self,context):
         if self.window_frame_changed:
@@ -385,6 +416,11 @@ class hb_sample_door_windows_OT_window_prompts(bpy.types.Operator):
         if bp_window:
             self.assembly = types_doors_windows.Standard_Window(bp_window)
 
+        if self.assembly.obj_bp.parent and 'IS_WALL_BP' in self.assembly.obj_bp.parent:
+            self.wall = pc_types.Assembly(self.assembly.obj_bp.parent)
+        else:
+            self.wall = None
+
         for child in self.assembly.obj_bp.children:
             if "IS_WINDOW_FRAME" in child:
                 self.window_frame_bp = child
@@ -397,8 +433,12 @@ class hb_sample_door_windows_OT_window_prompts(bpy.types.Operator):
         self.depth = math.fabs(self.assembly.obj_y.location.y)
         self.height = math.fabs(self.assembly.obj_z.location.z)
         self.width = math.fabs(self.assembly.obj_x.location.x)
+        if self.wall:
+            self.x_location_left = self.assembly.obj_bp.location.x
+            self.x_location_center = self.assembly.obj_bp.location.x + (self.width/2)
+            self.x_location_right = self.wall.obj_x.location.x - (self.assembly.obj_bp.location.x  + self.width)        
         wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=300)
+        return wm.invoke_props_dialog(self, width=350)
 
     def draw_product_size(self,layout,context):
         unit_system = context.scene.unit_settings.system
@@ -438,8 +478,20 @@ class hb_sample_door_windows_OT_window_prompts(bpy.types.Operator):
             row1.prop(self.assembly.obj_y,'hide_viewport',text="")
 
         row = box.row()    
+        row.label(text="Anchor Type:")
+        row.prop(self,'anchor_type',expand=True)
+
+        row = box.row()    
         row.label(text="Location:")
-        row.prop(self.assembly.obj_bp,'location',index=0,text="X")
+        if self.wall:
+            if self.anchor_type == 'LEFT':
+                row.prop(self,'x_location_left',text="Left")
+            if self.anchor_type == 'CENTER':
+                row.prop(self,'x_location_center',text="Center")
+            if self.anchor_type == 'RIGHT':
+                row.prop(self,'x_location_right',text="Right")       
+        else:                 
+            row.prop(self.assembly.obj_bp,'location',index=0,text="X")        
         row.prop(self.assembly.obj_bp,'location',index=2,text="Z")
 
     def draw_prompts(self,layout,context):
