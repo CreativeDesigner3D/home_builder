@@ -129,6 +129,8 @@ def register():
     bpy.app.handlers.load_post.append(load_library)
 
 def unregister():
+    bpy.utils.unregister_class(Home_Builder_AddonPreferences)
+    addon_updater_ops.unregister()
     pyclone_props.unregister()
     pc_assembly.unregister()
     pc_driver.unregister()
