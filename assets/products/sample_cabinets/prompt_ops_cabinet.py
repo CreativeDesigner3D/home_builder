@@ -161,6 +161,7 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
     width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
     height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
     depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
+    start_width: bpy.props.FloatProperty(name="Start Width",unit='LENGTH',precision=4)
 
     product_tabs: bpy.props.EnumProperty(name="Product Tabs",
                                          items=[('MAIN',"Main","Main Options"),
@@ -175,8 +176,27 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
                                             ('RIGHT',"Right","Bump Right"),
                                             ('FILL',"Fill","Fill Area")])
 
+    anchor_z: bpy.props.EnumProperty(name="Anchor Z",
+                                     items=[('BOTTOM',"Bottom","Bottom"),
+                                            ('TOP',"Top","Top")])
+    
+    anchor_x: bpy.props.EnumProperty(name="Anchor X",
+                                     items=[('LEFT',"Left","Left"),
+                                            ('CENTER',"Center","Center"),
+                                            ('RIGHT',"Right","Bump Right")])
+    
+    x_loc_left: bpy.props.FloatProperty(name="X Location Left",unit='LENGTH',precision=4)
+    x_loc_center: bpy.props.FloatProperty(name="X Location Center",unit='LENGTH',precision=4)
+    x_loc_right: bpy.props.FloatProperty(name="X Location Right",unit='LENGTH',precision=4)
+
+    z_loc_top: bpy.props.FloatProperty(name="Z Location Top",unit='LENGTH',precision=4)
+    z_loc_bottom: bpy.props.FloatProperty(name="Z Location Bottom",unit='LENGTH',precision=4)
+
     default_width = 0
     cabinet = None
+    first_connected_cabinet = None
+    first_connected_cabinet_x = 0
+    wall = None
     calculators = []
 
     sink_changed: bpy.props.BoolProperty(name="Sink Changed",default=False)
@@ -218,19 +238,43 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
         self.cabinet = None
         self.calculators = []
 
+    def get_first_connected_cabinet(self,obj_bp):
+        if len(obj_bp.constraints):
+            for con in obj_bp.constraints:
+                if con.type == 'COPY_LOCATION':
+                    target = con.target
+                    cabinet_bp = target.parent
+                    return self.get_first_connected_cabinet(cabinet_bp)
+        else:
+            return obj_bp
+
     def update_product_size(self):
         self.cabinet.obj_x.location.x = self.width
+        self.cabinet.obj_y.location.y = -self.depth
+        self.cabinet.obj_z.location.z = self.height
+        if self.wall:
+            if self.anchor_x == 'LEFT':
+                self.cabinet.obj_bp.location.x = self.x_loc_left
+            if self.anchor_x == 'CENTER':
+                self.cabinet.obj_bp.location.x = self.x_loc_center - (self.width/2)
+            if self.anchor_x == 'RIGHT':
+                if self.wall:
+                    self.cabinet.obj_bp.location.x = self.wall.obj_x.location.x - (self.x_loc_right + self.width)
+                else:
+                    self.cabinet.obj_bp.location.x = self.x_loc_right
 
-        if 'IS_MIRROR' in self.cabinet.obj_y and self.cabinet.obj_y['IS_MIRROR']:
-            self.cabinet.obj_y.location.y = -self.depth
-        else:
-            self.cabinet.obj_y.location.y = self.depth
+            if self.anchor_z == 'TOP':
+                self.cabinet.obj_bp.location.z = self.z_loc_top - self.height
+            if self.anchor_z == 'BOTTOM':
+                self.cabinet.obj_bp.location.z = self.z_loc_bottom
+            
+            cab_bp = self.get_first_connected_cabinet(self.cabinet.obj_bp)
+            if cab_bp and cab_bp.name != self.cabinet.obj_bp.name:
+                if self.anchor_x == 'RIGHT':
+                    cab_bp.location.x = self.first_connected_cabinet_x - (self.width - self.start_width)
+                if self.anchor_x == 'CENTER':
+                    cab_bp.location.x = self.first_connected_cabinet_x - (self.width - self.start_width)/2
         
-        if 'IS_MIRROR' in self.cabinet.obj_z and self.cabinet.obj_z['IS_MIRROR']:
-            self.cabinet.obj_z.location.z = -self.height
-        else:
-            self.cabinet.obj_z.location.z = self.height
-
     def update_materials(self,context):
         for carcass in self.cabinet.carcasses:
             left_finished_end = carcass.get_prompt("Left Finished End")
@@ -387,7 +431,21 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
         self.depth = math.fabs(self.cabinet.obj_y.location.y)
         self.height = math.fabs(self.cabinet.obj_z.location.z)
         self.width = math.fabs(self.cabinet.obj_x.location.x)
+        self.start_width = math.fabs(self.cabinet.obj_x.location.x)
+        self.x_loc_left = self.cabinet.obj_bp.location.x
+        self.x_loc_center = self.cabinet.obj_bp.location.x + (self.cabinet.obj_x.location.x/2)
+        if self.wall:
+            self.x_loc_right = self.wall.obj_x.location.x - (self.cabinet.obj_bp.location.x + self.cabinet.obj_x.location.x)
+        else:
+            self.x_loc_right = self.cabinet.obj_bp.location.x
+        self.z_loc_bottom = self.cabinet.obj_bp.location.z
+        self.z_loc_top = self.cabinet.obj_bp.location.z + self.cabinet.obj_z.location.z
         self.default_width = self.cabinet.obj_x.location.x
+        first_cab = self.get_first_connected_cabinet(self.cabinet.obj_bp)
+        if first_cab:
+            self.first_connected_cabinet_x = first_cab.location.x
+        # if len(self.cabinet.obj_bp.constraints) > 0:
+        #     self.anchor_x = 'LEFT'
         self.get_calculators(self.cabinet.obj_bp)
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=500)
@@ -395,6 +453,11 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
     def get_assemblies(self,context):
         bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_TAG)
         self.cabinet = types_cabinet.Cabinet(bp)
+
+        if self.cabinet.obj_bp.parent and 'IS_WALL_BP' in self.cabinet.obj_bp.parent:
+            self.wall = pc_types.Assembly(self.cabinet.obj_bp.parent)
+        else:
+            self.wall = None
 
     def draw_sink_prompts(self,layout,context):
         add_sink = self.cabinet.get_prompt("Add Sink")
@@ -485,7 +548,7 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
         if len(self.cabinet.obj_bp.constraints) > 0:
             col = row.column(align=True)
             col.label(text="Location:")
-            col.operator('home_builder.disconnect_constraint',text='Disconnect Constraint',icon='CONSTRAINT').obj_name = self.cabinet.obj_bp.name
+            col.operator('home_builder.disconnect_cabinet_constraint',text='Disconnect Constraint',icon='CONSTRAINT').obj_name = self.cabinet.obj_bp.name
         else:
             col = row.column(align=True)
             col.label(text="Location X:")
@@ -493,27 +556,35 @@ class hb_sample_cabinets_OT_cabinet_prompts(bpy.types.Operator):
             col.label(text="Location Z:")
             
             col = row.column(align=True)
-            col.prop(self.cabinet.obj_bp,'location',text="")
-        
+            if self.wall:
+                if self.anchor_x == 'LEFT':
+                    col.prop(self,'x_loc_left',text="Left")
+                if self.anchor_x == 'CENTER':
+                    col.prop(self,'x_loc_center',text="Center")
+                if self.anchor_x == 'RIGHT':                     
+                    col.prop(self,'x_loc_right',text="Right")
+                col.prop(self.cabinet.obj_bp,'location',index=1,text="")
+                if self.anchor_z == 'TOP':
+                    col.prop(self,'z_loc_top',text="Top")
+                if self.anchor_z == 'BOTTOM':
+                    col.prop(self,'z_loc_bottom',text="Bottom")                
+            else:
+                col.prop(self.cabinet.obj_bp,'location',text="")
+
+        if self.wall:
+            row = box.row()
+            row.label(text='Anchor X:')
+            row.prop(self,'anchor_x',expand=True)
+            row.label(text='Anchor Z:')
+            row.prop(self,'anchor_z',expand=True)
+
         row = box.row()
         row.label(text='Rotation Z:')
         row.prop(self.cabinet.obj_bp,'rotation_euler',index=2,text="")  
 
         row = box.row()
         row.label(text='Height from Floor:')
-        row.prop(self.cabinet.obj_bp,'location',index=2,text="")          
-
-        # props = home_builder_utils.get_scene_props(context.scene)
-        # row = box.row()
-        # row.alignment = 'LEFT'
-        # row.prop(props,'show_cabinet_placement_options',emboss=False,icon='TRIA_DOWN' if props.show_cabinet_placement_options else 'TRIA_RIGHT')
-        # if props.show_cabinet_placement_options:
-        #     row = box.row()
-        #     row.label(text="Anchor X:")
-        #     row.prop(self,'anchor_x',expand=True)
-        #     row = box.row()
-        #     row.label(text="Anchor Z:")
-        #     row.prop(self,'anchor_z',expand=True)            
+        row.prop(self.cabinet.obj_bp,'location',index=2,text="")                  
 
     def draw_carcass_prompts(self,layout,context):
         for carcass in self.cabinet.carcasses:

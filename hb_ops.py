@@ -596,8 +596,37 @@ class home_builder_OT_disconnect_constraint(bpy.types.Operator):
         loc = obj.matrix_world.translation
         obj.constraints.clear()
         obj.location = loc
-        obj.home_builder.connected_object
         return {'FINISHED'}
+
+
+class home_builder_OT_disconnect_cabinet_constraint(bpy.types.Operator):
+    bl_idname = "home_builder.disconnect_cabinet_constraint"
+    bl_label = "Disconnect Cabinet Constraint"
+    bl_description = "This disconnects the cabinet constraint to allow you to move the object"
+    
+    obj_name: bpy.props.StringProperty(name="Base Point Name")
+
+    def execute(self, context):
+        obj = bpy.data.objects[self.obj_name]
+        if obj.parent and 'IS_WALL_BP' in obj.parent:
+            wall_bp = obj.parent
+            loc = obj.matrix_world.translation
+            obj.constraints.clear()
+            obj.parent = None
+            obj.location = loc
+            bpy.ops.object.select_all(action='DESELECT')
+            wall_bp.hide_viewport = False
+            obj.hide_viewport = False
+            wall_bp.select_set(True)
+            obj.select_set(True)
+            context.view_layer.objects.active = wall_bp
+            bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+        else:
+            loc = obj.matrix_world.translation
+            obj.constraints.clear()
+            obj.location = loc
+        return {'FINISHED'}
+
 
 
 class home_builder_OT_disconnect_wall_constraint(bpy.types.Operator):
@@ -1707,6 +1736,7 @@ classes = (
     home_builder_OT_assign_material_to_pointer,
     home_builder_OT_update_materials_for_pointer,
     home_builder_OT_disconnect_constraint,
+    home_builder_OT_disconnect_cabinet_constraint,
     home_builder_OT_disconnect_wall_constraint,
     home_builder_OT_unit_settings,
     home_builder_OT_delete_assembly,
