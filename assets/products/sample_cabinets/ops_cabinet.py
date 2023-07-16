@@ -609,6 +609,9 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
     cabinet = None
     qty_cage = None
 
+    def __del__(self):
+        pc_utils.delete_object_and_children(self.qty_cage.obj_bp)  
+
     @classmethod
     def poll(cls, context):
         if not context.object:
@@ -642,6 +645,13 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
             child.select_set(True)
             self.select_obj_and_children(child)
 
+    def unmute_drivers(self,obj):
+        for child in obj.children:
+            if child.animation_data:
+                for driver in child.animation_data.drivers:
+                    driver.mute = False
+            self.unmute_drivers(child)
+
     def hide_empties_and_boolean_meshes(self,obj):
         if 'IS_OPENING_MESH' in obj:
             pass
@@ -656,7 +666,8 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         self.select_obj_and_children(cabinet.obj_bp)
         bpy.ops.object.duplicate_move()
         obj = context.active_object
-        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)     
+        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)  
+        self.unmute_drivers(cabinet_bp)   
         return pc_types.Assembly(cabinet_bp)
 
     def check(self, context):
@@ -721,7 +732,6 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         new_products = []  
         previous_product = None
         width = self.cabinet.obj_x.location.x 
-        pc_utils.delete_object_and_children(self.qty_cage.obj_bp)  
         if self.quantity > 1:
             for i in range(self.quantity - 1):
                 if previous_product:
@@ -734,6 +744,7 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
                     new_product.obj_bp.location.x += width
                 new_products.append(new_product)
                 previous_product = new_product
+        self.unmute_drivers(self.cabinet.obj_bp)
 
         for new_p in new_products:
             self.hide_empties_and_boolean_meshes(new_p.obj_bp)
