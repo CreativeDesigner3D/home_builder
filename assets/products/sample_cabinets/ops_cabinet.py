@@ -480,6 +480,9 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
         obj.select_set(True)
         for child in obj.children:
             obj.hide_viewport = False
+            if child.animation_data:
+                for driver in child.animation_data.drivers:
+                    driver.mute = True            
             child.select_set(True)
             self.select_obj_and_children(child)
 
@@ -487,6 +490,13 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
         if obj.animation_data:
             for driver in obj.animation_data.drivers:
                 obj.driver_remove(driver.data_path)
+
+    def unmute_drivers(self,obj):
+        for child in obj.children:
+            if child.animation_data:
+                for driver in child.animation_data.drivers:
+                    driver.mute = False
+            self.unmute_drivers(child)
 
     def execute(self, context):
         obj_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
@@ -496,6 +506,7 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
         bpy.ops.object.duplicate_move()
         pc_utils.hide_empties(cabinet.obj_bp)
 
+        self.unmute_drivers(cabinet.obj_bp)
         new_obj_bp = pc_utils.get_bp_by_tag(context.object,const.INSERT_TAG)
         new_cabinet = pc_types.Assembly(new_obj_bp)
         new_cabinet.obj_bp.parent = None
@@ -503,6 +514,8 @@ class hb_sample_cabinets_OT_duplicate_closet_insert(bpy.types.Operator):
         self.delete_drivers(new_cabinet.obj_x)
         self.delete_drivers(new_cabinet.obj_y)
         self.delete_drivers(new_cabinet.obj_z)
+
+        self.unmute_drivers(new_cabinet.obj_bp)
 
         pc_utils.hide_empties(new_cabinet.obj_bp)
 
