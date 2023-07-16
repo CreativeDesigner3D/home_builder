@@ -81,21 +81,70 @@ def update_corner_closet_height(self,context):
 
 class Appliance_Prompts(bpy.types.Operator):
 
-    def update_product_size(self,assembly):
-        if 'IS_MIRROR' in assembly.obj_x and assembly.obj_x['IS_MIRROR']:
-            assembly.obj_x.location.x = -self.width
-        else:
-            assembly.obj_x.location.x = self.width
+    anchor_x: bpy.props.EnumProperty(name="Anchor X",
+                                     items=[('LEFT',"Left","Left"),
+                                            ('CENTER',"Center","Center"),
+                                            ('RIGHT',"Right","Bump Right")])
+    
+    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
+    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
+    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
 
-        if 'IS_MIRROR' in assembly.obj_y and assembly.obj_y['IS_MIRROR']:
-            assembly.obj_y.location.y = -self.depth
+    x_loc_left: bpy.props.FloatProperty(name="X Location Left",unit='LENGTH',precision=4)
+    x_loc_center: bpy.props.FloatProperty(name="X Location Center",unit='LENGTH',precision=4)
+    x_loc_right: bpy.props.FloatProperty(name="X Location Right",unit='LENGTH',precision=4)    
+    start_width: bpy.props.FloatProperty(name="Start Width",unit='LENGTH',precision=4)
+
+    wall = None
+    first_connected_cabinet = None
+    first_connected_cabinet_x = 0
+
+    def set_default_properties(self,assembly):
+        self.depth = math.fabs(assembly.obj_y.location.y)
+        self.height = math.fabs(assembly.obj_z.location.z)
+        self.width = math.fabs(assembly.obj_x.location.x)           
+        self.x_loc_left = assembly.obj_bp.location.x
+        self.x_loc_center = assembly.obj_bp.location.x + (assembly.obj_x.location.x/2)
+        if self.wall:
+            self.x_loc_right = self.wall.obj_x.location.x - (assembly.obj_bp.location.x + assembly.obj_x.location.x)
         else:
-            assembly.obj_y.location.y = self.depth
+            self.x_loc_right = assembly.obj_bp.location.x  
+        self.start_width = assembly.obj_x.location.x
+        first_cab = self.get_first_connected_cabinet(assembly.obj_bp)
+        if first_cab:
+            self.first_connected_cabinet_x = first_cab.location.x
+
+    def get_first_connected_cabinet(self,obj_bp):
+        if len(obj_bp.constraints):
+            for con in obj_bp.constraints:
+                if con.type == 'COPY_LOCATION':
+                    target = con.target
+                    cabinet_bp = target.parent
+                    return self.get_first_connected_cabinet(cabinet_bp)
+        else:
+            return obj_bp
         
-        if 'IS_MIRROR' in assembly.obj_z and assembly.obj_z['IS_MIRROR']:
-            assembly.obj_z.location.z = -self.height
-        else:
-            assembly.obj_z.location.z = self.height
+    def update_product_size(self,assembly):
+        assembly.obj_x.location.x = self.width
+        assembly.obj_y.location.y = -self.depth
+        assembly.obj_z.location.z = self.height
+        if self.wall:
+            if self.anchor_x == 'LEFT':
+                assembly.obj_bp.location.x = self.x_loc_left
+            if self.anchor_x == 'CENTER':
+                assembly.obj_bp.location.x = self.x_loc_center - (self.width/2)
+            if self.anchor_x == 'RIGHT':
+                if self.wall:
+                    assembly.obj_bp.location.x = self.wall.obj_x.location.x - (self.x_loc_right + self.width)
+                else:
+                    assembly.obj_bp.location.x = self.x_loc_right
+
+            cab_bp = self.get_first_connected_cabinet(assembly.obj_bp)
+            if cab_bp and cab_bp.name != assembly.obj_bp.name:
+                if self.anchor_x == 'RIGHT':
+                    cab_bp.location.x = self.first_connected_cabinet_x - (self.width - self.start_width)
+                if self.anchor_x == 'CENTER':
+                    cab_bp.location.x = self.first_connected_cabinet_x - (self.width - self.start_width)/2
 
     def draw_product_size(self,assembly,layout,context):
         unit_system = context.scene.unit_settings.system
@@ -137,16 +186,31 @@ class Appliance_Prompts(bpy.types.Operator):
         if len(assembly.obj_bp.constraints) > 0:
             col = row.column(align=True)
             col.label(text="Location:")
-            col.operator('home_builder.disconnect_constraint',text='Disconnect Constraint',icon='CONSTRAINT').obj_name = assembly.obj_bp.name
+            col.operator('home_builder.disconnect_cabinet_constraint',text='Disconnect Constraint',icon='CONSTRAINT').obj_name = assembly.obj_bp.name
         else:
             col = row.column(align=True)
             col.label(text="Location X:")
             col.label(text="Location Y:")
             col.label(text="Location Z:")
+
+            if self.wall:
+                col = row.column(align=True) 
+                if self.anchor_x == 'LEFT':
+                    col.prop(self,'x_loc_left',text='Left')
+                if self.anchor_x == 'CENTER':
+                    col.prop(self,'x_loc_center',text='Center')
+                if self.anchor_x == 'RIGHT':
+                    col.prop(self,'x_loc_right',text='Right')
+                col.prop(assembly.obj_bp,'location',index=1,text="")
+                col.prop(assembly.obj_bp,'location',index=2,text="")
+            else:
+                col = row.column(align=True)    
+                col.prop(assembly.obj_bp,'location',text="")
         
-            col = row.column(align=True)
-            col.prop(assembly.obj_bp,'location',text="")
-        
+        row = box.row()
+        row.label(text="X Anchor")
+        row.prop(self,'anchor_x',expand=True)
+
         row = box.row()
         row.label(text='Rotation Z:')
         row.prop(assembly.obj_bp,'rotation_euler',index=2,text="") 
@@ -747,10 +811,6 @@ class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
     range_changed: bpy.props.BoolProperty(name="Range Changed",default=False)
     range_hood_changed: bpy.props.BoolProperty(name="Range Changed",default=False)
 
-    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
-    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
-    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
-
     range_category: bpy.props.EnumProperty(name="Range Category",
         items=enum_cabinets.enum_range_categories,
         update=enum_cabinets.update_range_category)
@@ -820,15 +880,17 @@ class hb_sample_cabinets_OT_range_prompts(Appliance_Prompts):
         bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
         self.product = types_appliances.Range(bp)
 
+        if self.product.obj_bp.parent and 'IS_WALL_BP' in self.product.obj_bp.parent:
+            self.wall = pc_types.Assembly(self.product.obj_bp.parent)
+        else:
+            self.wall = None
+
     def invoke(self,context,event):
         self.reset_variables(context)
         self.get_assemblies(context)
         add_range_hood = self.product.get_prompt("Add Range Hood")
-        self.add_range_hood = add_range_hood.get_value() 
-        print(self.add_range_hood)       
-        self.depth = math.fabs(self.product.obj_y.location.y)
-        self.height = math.fabs(self.product.obj_z.location.z)
-        self.width = math.fabs(self.product.obj_x.location.x)        
+        self.add_range_hood = add_range_hood.get_value()     
+        self.set_default_properties(self.product)
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=500)
 
@@ -862,10 +924,6 @@ class hb_sample_cabinets_OT_dishwasher_prompts(Appliance_Prompts):
 
     appliance_bp_name: bpy.props.StringProperty(name="Appliance BP Name",default="")
     dishwasher_changed: bpy.props.BoolProperty(name="Range Changed",default=False)
-
-    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
-    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
-    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
 
     dishwasher_category: bpy.props.EnumProperty(name="Dishwasher Category",
         items=enum_cabinets.enum_dishwasher_categories,
@@ -907,13 +965,15 @@ class hb_sample_cabinets_OT_dishwasher_prompts(Appliance_Prompts):
         bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
         self.product = types_appliances.Dishwasher(bp)
 
+        if self.product.obj_bp.parent and 'IS_WALL_BP' in self.product.obj_bp.parent:
+            self.wall = pc_types.Assembly(self.product.obj_bp.parent)
+        else:
+            self.wall = None
+
     def invoke(self,context,event):
         self.reset_variables(context)
         self.get_assemblies(context)
-     
-        self.depth = math.fabs(self.product.obj_y.location.y)
-        self.height = math.fabs(self.product.obj_z.location.z)
-        self.width = math.fabs(self.product.obj_x.location.x)        
+        self.set_default_properties(self.product)      
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=350)
 
@@ -969,10 +1029,6 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
                                               ('DOUBLE',"Double","Double Door"),
                                               ('TOP',"Top","Top Swing Door"),
                                               ('BOTTOM',"Bottom","Bottom Swing Door")])
-
-    width: bpy.props.FloatProperty(name="Width",unit='LENGTH',precision=4)
-    height: bpy.props.FloatProperty(name="Height",unit='LENGTH',precision=4)
-    depth: bpy.props.FloatProperty(name="Depth",unit='LENGTH',precision=4)
 
     refrigerator_category: bpy.props.EnumProperty(name="Refrigerator Category",
         items=enum_cabinets.enum_refrigerator_categories,
@@ -1038,14 +1094,16 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
         bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
         self.product = types_appliances.Refrigerator(bp)
 
+        if self.product.obj_bp.parent and 'IS_WALL_BP' in self.product.obj_bp.parent:
+            self.wall = pc_types.Assembly(self.product.obj_bp.parent)
+        else:
+            self.wall = None
+
     def invoke(self,context,event):
         self.reset_variables(context)
         self.get_assemblies(context)
         self.set_properties_from_prompts()
-     
-        self.depth = math.fabs(self.product.obj_y.location.y)
-        self.height = math.fabs(self.product.obj_z.location.z)
-        self.width = math.fabs(self.product.obj_x.location.x)        
+        self.set_default_properties(self.product)    
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=350)
 
