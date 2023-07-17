@@ -19,7 +19,7 @@ def get_drivers(obj):
         for driver in obj.animation_data.drivers:
             drivers.append(driver)
 
-    if obj.data and obj.data.animation_data:
+    if obj.data and hasattr(obj.data,'animation_data') and obj.data.animation_data:
         for driver in obj.data.animation_data.drivers:
             drivers.append(driver)
 
