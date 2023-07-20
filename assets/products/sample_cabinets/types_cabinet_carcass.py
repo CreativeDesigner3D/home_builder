@@ -88,6 +88,7 @@ class Design_Carcass(pc_types.Assembly):
 
         prompts_cabinet.add_thickness_prompts(self)
         prompts_cabinet.add_carcass_prompts(self)
+        prompts_cabinet.add_filler_prompts(self)
 
         width = self.obj_x.pyclone.get_var('location.x','width')
         height = self.obj_z.pyclone.get_var('location.z','height')
@@ -117,9 +118,13 @@ class Design_Carcass(pc_types.Assembly):
             carcass.dim_z('height-tkh',[height,tkh])
             carcass.loc_z('tkh',[tkh])
 
+            law = self.get_prompt("Left Adjustment Width").get_var('law')
+            raw = self.get_prompt("Right Adjustment Width").get_var('raw')
+
             base_assembly = assemblies_cabinet.add_base_assembly(self)
             base_assembly.set_name("Base Assembly")
-            base_assembly.dim_x('width',[width])
+            base_assembly.loc_x('-law',[law])
+            base_assembly.dim_x('width+law+raw',[width,law,raw])
             base_assembly.dim_y('depth+tk_setback',[depth,tk_setback])
             base_assembly.dim_z('tkh',[height,tkh])   
 

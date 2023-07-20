@@ -350,6 +350,10 @@ class Standard_Cabinet(Cabinet):
         carcass.dim_x('width-left_adjustment_width-right_adjustment_width',[width,left_adjustment_width,right_adjustment_width])
         carcass.dim_y('depth',[depth])
         carcass.dim_z('height',[height])
+        law = carcass.get_prompt("Left Adjustment Width")
+        law.set_formula('left_adjustment_width',[left_adjustment_width])
+        raw = carcass.get_prompt("Right Adjustment Width")
+        raw.set_formula('right_adjustment_width',[right_adjustment_width])        
         self.carcasses.append(carcass)
 
         cabinet_type.set_value(carcass.carcass_type)
