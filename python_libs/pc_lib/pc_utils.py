@@ -532,3 +532,14 @@ def replace_assembly(old_assembly,new_assembly):
     copy_drivers(old_assembly.obj_z,new_assembly.obj_z)
     copy_drivers(old_assembly.obj_prompts,new_assembly.obj_prompts)
     delete_object_and_children(old_assembly.obj_bp)                           
+
+def add_driver_variables(driver,variables):
+    for var in variables:
+        new_var = driver.driver.variables.new()
+        new_var.type = 'SINGLE_PROP'
+        new_var.name = var.name
+        new_var.targets[0].data_path = var.data_path
+        new_var.targets[0].id = var.obj
+        
+def get_geo_node_path():
+    return os.path.join(os.path.dirname(__file__),'assets','GeoNodeObjects','GeoPart.blend')

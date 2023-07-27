@@ -206,6 +206,7 @@ class pc_assembly_OT_add_object(Operator):
                                         items=[('MESH',"Mesh","Add an Mesh Object"),
                                                ('EMPTY',"Empty","Add an Empty Object"),
                                                ('CURVE',"Curve","Add an Curve Object"),
+                                               ('GEONODE_PART',"Geo Node Part","Add an Geo Node Object"),
                                                ('LIGHT',"Light","Add an Light Object")],
                                         default='MESH')
     @classmethod
@@ -245,6 +246,10 @@ class pc_assembly_OT_add_object(Operator):
             assembly.add_object(obj_curve)
         if self.object_type == 'LIGHT':
             assembly.add_light(self.object_name,'POINT')
+        if self.object_type == 'GEONODE_PART':
+            obj = assembly.create_geo_part(self.object_name)
+            # obj = self.add_object_from_file(geo_part_path)
+            # obj.name = "Left Side"
         return {'FINISHED'}
 
     def invoke(self,context,event):

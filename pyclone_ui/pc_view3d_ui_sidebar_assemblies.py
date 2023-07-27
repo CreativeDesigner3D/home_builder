@@ -5,35 +5,54 @@ from .. import pyclone_utils
 
 def draw_object_transform(context,layout,obj):
     if obj.type not in {'EMPTY','CAMERA','LIGHT'}:
-        if obj.scale.x != 1 or obj.scale.y != 1 or obj.scale.z != 1:
-            props = layout.operator('object.transform_apply',text="Apply Scale",icon='ERROR')
-            props.location = False
-            props.rotation = False
-            props.scale = True
+        if 'hb_geo_part' in obj:
+            for mod in obj.modifiers:
+                if mod.type == 'NODES':
+                    node = mod.node_group
+                    col = layout.column(align=True)
+                    col.label(text="Dimensions:")
+                    row = col.row(align=True)
+                    row.prop(mod,'["Input_2"]',text=node.inputs[1].name)
+                    row.prop(mod,'["Input_5"]',text="",icon='MOD_MIRROR')
 
-        col = layout.column(align=True)
-        col.label(text='Dimensions:')
-        #X
-        row = col.row(align=True)
-        row.prop(obj,"lock_scale",index=0,text="")
-        if obj.lock_scale[0]:
-            row.label(text="X: " + str(round(pc_unit.meter_to_active_unit(obj.dimensions.x),4)))
+                    row = col.row(align=True)
+                    row.prop(mod,'["Input_3"]',text=node.inputs[2].name)
+                    row.prop(mod,'["Input_6"]',text="",icon='MOD_MIRROR')
+
+                    row = col.row(align=True)
+                    row.prop(mod,'["Input_4"]',text=node.inputs[3].name)
+                    row.prop(mod,'["Input_7"]',text="",icon='MOD_MIRROR')
+
         else:
-            row.prop(obj,"dimensions",index=0,text="X")
-        #Y
-        row = col.row(align=True)
-        row.prop(obj,"lock_scale",index=1,text="")
-        if obj.lock_scale[1]:
-            row.label(text="Y: " + str(round(pc_unit.meter_to_active_unit(obj.dimensions.y),4)))
-        else:
-            row.prop(obj,"dimensions",index=1,text="Y")
-        #Z
-        row = col.row(align=True)
-        row.prop(obj,"lock_scale",index=2,text="")
-        if obj.lock_scale[2]:
-            row.label(text="Z: " + str(round(pc_unit.meter_to_active_unit(obj.dimensions.z),4)))
-        else:
-            row.prop(obj,"dimensions",index=2,text="Z")
+            if obj.scale.x != 1 or obj.scale.y != 1 or obj.scale.z != 1:
+                props = layout.operator('object.transform_apply',text="Apply Scale",icon='ERROR')
+                props.location = False
+                props.rotation = False
+                props.scale = True
+
+            col = layout.column(align=True)
+            col.label(text='Dimensions:')
+            #X
+            row = col.row(align=True)
+            row.prop(obj,"lock_scale",index=0,text="")
+            if obj.lock_scale[0]:
+                row.label(text="X: " + str(round(pc_unit.meter_to_active_unit(obj.dimensions.x),4)))
+            else:
+                row.prop(obj,"dimensions",index=0,text="X")
+            #Y
+            row = col.row(align=True)
+            row.prop(obj,"lock_scale",index=1,text="")
+            if obj.lock_scale[1]:
+                row.label(text="Y: " + str(round(pc_unit.meter_to_active_unit(obj.dimensions.y),4)))
+            else:
+                row.prop(obj,"dimensions",index=1,text="Y")
+            #Z
+            row = col.row(align=True)
+            row.prop(obj,"lock_scale",index=2,text="")
+            if obj.lock_scale[2]:
+                row.label(text="Z: " + str(round(pc_unit.meter_to_active_unit(obj.dimensions.z),4)))
+            else:
+                row.prop(obj,"dimensions",index=2,text="Z")
 
     if obj.type == 'CAMERA':
         cam = obj.data

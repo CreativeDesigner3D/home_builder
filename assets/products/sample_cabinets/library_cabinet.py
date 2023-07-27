@@ -22,6 +22,21 @@ class Base_1_Door(types_cabinet.Standard_Cabinet):
         self.splitter = None
         self.include_countertop = True
 
+# class Base_1_Door(types_cabinet.Geo_Cabinet):
+    
+#     def __init__(self):
+#         props = utils_cabinet.get_scene_props(bpy.context.scene)
+#         self.width = props.width_1_door
+#         self.height = props.base_cabinet_height 
+#         self.depth = props.base_cabinet_depth      
+#         self.carcass = types_cabinet_carcass.Base_Design_Carcass()
+#         if props.add_shelves_to_interior:
+#             self.carcass.interior = types_cabinet_interiors.Shelves()
+#         self.carcass.exterior = types_cabinet_exteriors.Doors()
+#         self.carcass.exterior.door_swing = 0
+#         self.carcass.exterior.door_type = "Base"
+#         self.splitter = None
+#         self.include_countertop = True
 
 class Base_2_Door(types_cabinet.Standard_Cabinet):
     

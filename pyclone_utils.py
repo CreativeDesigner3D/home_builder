@@ -36,6 +36,13 @@ def draw_driver(layout,obj,driver):
     box = col.box()
     row = box.row()
     driver_name = driver.data_path
+    #TODO: Figure out how to get geo node input name
+    if '"]["Input_2"]' in driver_name:
+        driver_name = "Length"
+    if '"]["Input_3"]' in driver_name:
+        driver_name = "Width"
+    if '"]["Input_4"]' in driver_name:
+        driver_name = "Thickness"                
     if driver_name in {"location","rotation_euler","dimensions" ,"lock_scale",'lock_location','lock_rotation'}:
         if driver.array_index == 0:
             driver_name = driver_name + " X"

@@ -67,17 +67,21 @@ class GeoPart:
     coll = None
     obj = None
     node_group = None
+    modifier = None
 
     def __init__(self,obj=None,filepath=""):
         if obj:
             self.obj = obj
+            for mod in self.obj.modifiers:
+                if mod.type == 'NODES':
+                    self.mod = mod              
 
         if filepath:
             self.coll = bpy.context.view_layer.active_layer_collection.collection
 
             self.obj = pc_utils.create_empty_mesh("Door")
             self.coll.objects.link(self.obj)
-
+            
             # with bpy.data.libraries.load(filepath) as (data_from, data_to):
             #     data_to.objects = data_from.objects
             ngroup = None
@@ -144,18 +148,52 @@ class GeoPart:
             self.obj.pyclone.rot_z(expression,variables)      
 
     def dim_x(self,expression="",variables=[],value=0):
-        part_length = self.get_prompt("Part Length")
-        if part_length and expression == "":
-            part_length.set_value(value)
-        else:
-            part_length.set_formula(expression,variables)  
+        if expression == "":
+            self.mod["Input_2"] = value
+            return
+        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_2"]')
+        pc_utils.add_driver_variables(driver,variables)
+        driver.driver.expression = expression
 
     def dim_y(self,expression="",variables=[],value=0):
-        part_width = self.get_prompt("Part Width")
-        if part_width and expression == "":
-            part_width.set_value(value)
-        else:
-            part_width.set_formula(expression,variables)  
+        if expression == "":
+            self.mod["Input_3"] = value
+            return
+        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_3"]')
+        pc_utils.add_driver_variables(driver,variables)
+        driver.driver.expression = expression
+
+    def dim_z(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.mod["Input_4"] = bpy.utils.units.to_value('METRIC','LENGTH',str(value)+"m")
+            return
+        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_4"]')
+        pc_utils.add_driver_variables(driver,variables)
+        driver.driver.expression = expression
+
+    def mirror_x(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.mod["Input_5"] = value
+            return
+        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_5"]')
+        pc_utils.add_driver_variables(driver,variables)
+        driver.driver.expression = expression
+
+    def mirror_y(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.mod["Input_6"] = value
+            return
+        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_6"]')
+        pc_utils.add_driver_variables(driver,variables)
+        driver.driver.expression = expression
+
+    def mirror_z(self,expression="",variables=[],value=0):
+        if expression == "":
+            self.mod["Input_7"] = value
+            return
+        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_7"]')
+        pc_utils.add_driver_variables(driver,variables)
+        driver.driver.expression = expression
 
     def hide(self,expression="",variables=[],value=0):
         hide = self.get_prompt("Hide")
@@ -317,10 +355,20 @@ class Assembly:
         return collection
 
     def create_geo_part(self,name):
-        obj = pc_utils.create_empty_mesh(name)
-        self.coll.objects.link(obj)
-        obj.parent = self.obj_bp
-        return obj
+        if 'HBGeoNodePart' in bpy.data.node_groups:
+            node = bpy.data.node_groups['HBGeoNodePart']
+            mesh = bpy.data.meshes.new(name)
+            obj = bpy.data.objects.new(name,mesh)
+            mod = obj.modifiers.new('HBPart','NODES')
+            mod.node_group = node
+            self.coll.objects.link(obj)
+            obj.parent = self.obj_bp
+            obj['hb_geo_part'] = True
+        else:
+            obj = self.add_object_from_file(pc_utils.get_geo_node_path())
+            obj.name = name
+            obj['hb_geo_part'] = True
+        return GeoPart(obj)
 
     def create_cube(self,name="Cube",size=(0,0,0)):
         """ This will create a cube mesh and assign mesh hooks

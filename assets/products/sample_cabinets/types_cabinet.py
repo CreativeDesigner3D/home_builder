@@ -239,6 +239,115 @@ class Cabinet(pc_types.Assembly):
         self.countertop.dim_y('depth-(ctop_overhang_front+ctop_overhang_back)',[depth,ctop_overhang_front,ctop_overhang_back])
 
 
+class Geo_Cabinet(Cabinet):
+    
+    width = pc_unit.inch(18)
+    height = pc_unit.inch(34)
+    depth = pc_unit.inch(21)
+
+    carcass = None
+
+    def draw(self):
+        self.create_assembly("Cabinet")
+        self.obj_bp[const.CABINET_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.cabinet_prompts" 
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_cabinet_commands"
+
+        self.obj_x.location.x = self.width
+        self.obj_y.location.y = -self.depth
+        self.obj_z.location.z = self.height
+
+        prompts_cabinet.add_cabinet_prompts(self)
+        prompts_cabinet.add_base_assembly_prompts(self)
+        prompts_cabinet.add_filler_prompts(self)  
+        prompts_cabinet.add_thickness_prompts(self) 
+
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        height = self.obj_z.pyclone.get_var('location.z','height')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        t = self.get_prompt("Material Thickness").get_var('t')
+        tkh = self.get_prompt("Toe Kick Height").get_var('tkh')
+        tks = self.get_prompt("Toe Kick Setback").get_var('tks')
+
+        left_side = self.create_geo_part("Left Side")
+        left_side.dim_x('height-tkh',[height,tkh])
+        left_side.dim_y('fabs(depth)',[depth])
+        left_side.mirror_y(value = True)
+        left_side.mirror_z(value = True)
+        left_side.dim_z('t',[t])
+        left_side.loc_x(value = 0)
+        left_side.loc_y(value = 0)
+        left_side.loc_z('tkh',[tkh])
+        left_side.rot_x(value = 0)
+        left_side.rot_y(value = math.radians(-90))
+        left_side.rot_z(value = 0)
+
+        right_side = self.create_geo_part("Right Side")
+        right_side.dim_x('height-tkh',[height,tkh])
+        right_side.dim_y('fabs(depth)',[depth])
+        right_side.mirror_y(value = True)
+        right_side.mirror_z(value = False)
+        right_side.dim_z('t',[t])
+        right_side.loc_x('width',[width])
+        right_side.loc_y(value = 0)
+        right_side.loc_z('tkh',[tkh])
+        right_side.rot_x(value = 0)
+        right_side.rot_y(value = math.radians(-90))
+        right_side.rot_z(value = 0)
+
+        top = self.create_geo_part("Top")
+        top.dim_x('width-(t*2)',[width,t])
+        top.dim_y('fabs(depth)',[depth])
+        top.mirror_y(value = True)
+        top.mirror_z(value = True)
+        top.dim_z('t',[t])
+        top.loc_x('t',[t])
+        top.loc_y(value = 0)
+        top.loc_z('height',[height])
+        top.rot_x(value = 0)
+        top.rot_y(value = 0)
+        top.rot_z(value = 0)
+
+        bottom = self.create_geo_part("Bottom")
+        bottom.dim_x('width-(t*2)',[width,t])
+        bottom.dim_y('fabs(depth)',[depth])
+        bottom.mirror_y(value = True)
+        bottom.mirror_z(value = False)
+        bottom.dim_z('t',[t])
+        bottom.loc_x('t',[t])
+        bottom.loc_y(value = 0)
+        bottom.loc_z('tkh',[tkh])
+        bottom.rot_x(value = 0)
+        bottom.rot_y(value = 0)
+        bottom.rot_z(value = 0)
+
+        back = self.create_geo_part("Back")
+        back.dim_x('height-(t*2)-tkh',[height,t,tkh])
+        back.dim_y('width-(t*2)',[width,t])
+        back.mirror_y(value = False)
+        back.mirror_z(value = True)
+        back.dim_z('t',[t])
+        back.loc_x('t',[t])
+        back.loc_y(value = 0)
+        back.loc_z('tkh+t',[tkh,t])
+        back.rot_x(value = math.radians(-90))
+        back.rot_y(value = math.radians(-90))
+        back.rot_z(value = 0)
+
+        base_assembly = self.create_geo_part("Base Assembly")
+        base_assembly.dim_x('width',[width])
+        base_assembly.dim_y('fabs(depth)-tks',[depth,tks])
+        base_assembly.mirror_y(value = True)
+        base_assembly.mirror_z(value = False)
+        base_assembly.dim_z('tkh',[tkh])
+        base_assembly.loc_x(value = 0)
+        base_assembly.loc_y(value = 0)
+        base_assembly.loc_z(value = 0)
+        base_assembly.rot_x(value = 0)
+        base_assembly.rot_y(value = 0)
+        base_assembly.rot_z(value = 0)
+
+
 class Standard_Cabinet(Cabinet):
 
     width = pc_unit.inch(18)
