@@ -50,6 +50,21 @@ class HB_Cabinet_Scene_Props(PropertyGroup):
                                     description="This will show the door library", 
                                     default=False)
 
+    asset_tabs: EnumProperty(name="Asset Tabs",
+                             items=[('BUILT_IN_OVENS',"Built in Ovens","Show the Built in Oven Appliances"),
+                                    ('BUILT_IN_MICROWAVE',"Built in Microwave","Show the Built in Microwave Appliances"),
+                                    ('CABINET_DOORS',"Cabinet Doors","Show the Cabinet Doors"),
+                                    ('CABINET_PULLS',"Cabinet Pulls","Show the Cabinet Pulls"),
+                                    ('COOKTOPS',"Cooktops","Show the Cooktops"),
+                                    ('DISHWASHERS',"Dishwashers","Show the Dishwashers"),
+                                    ('FAUCETS',"Faucets","Show the Faucets"),
+                                    ('MOLDINGS',"Moldings","Show the Moldings"),
+                                    ('RANGE_HOODS',"Range Hoods","Show the Range Hoods"),
+                                    ('RANGES',"Ranges","Show the Ranges"),
+                                    ('REFRIGERATORS',"Refrigerators","Show the Refrigerators"),
+                                    ('SINKS',"Sinks","Show the Sinks")],
+                             default='BUILT_IN_OVENS')
+    
     #CABINET SIZES
     base_cabinet_depth: FloatProperty(name="Base Cabinet Depth",
                                                  description="Default depth for base cabinets",

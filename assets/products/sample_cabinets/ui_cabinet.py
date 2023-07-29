@@ -13,6 +13,8 @@ class HOME_BUILDER_MT_cabinet_settings(bpy.types.Menu):
         layout.popover(panel="HOME_BUILDER_PT_cabinet_material_thickness",text="Cabinet Material Thickness",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_hardware",text="Cabinet Hardware",icon='MATERIAL_DATA')
         layout.popover(panel="HOME_BUILDER_PT_cabinet_fronts",text="Cabinet Fronts",icon='SNAP_FACE')
+        layout.separator()
+        layout.popover(panel="HOME_BUILDER_PT_asset_management",text="Asset Management",icon='ASSET_MANAGER')
         # layout.separator()
         # layout.operator('hb_sample_cabinets.build_library',text="Build Cabinet Library")
 
@@ -305,6 +307,41 @@ class HOME_BUILDER_PT_cabinet_fronts(bpy.types.Panel):
         row.template_icon_view(props,"cabinet_door",show_labels=True)     
 
 
+class HOME_BUILDER_PT_asset_management(bpy.types.Panel):
+    bl_space_type = 'FILE_BROWSER'
+    bl_label = "Asset Management"
+    bl_region_type = 'HEADER'
+    bl_ui_units_x = 25
+
+    def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+
+        layout = self.layout
+        layout.label(text="Cabinet Library Asset Management")
+        split = layout.split(factor=.25)
+        col = split.column(align=True)
+        col.prop(props,'asset_tabs',expand=True)
+
+        box = split.box()
+        row = box.row()
+        row.menu('HOME_BUILDER_MT_asset_management_commands_menu',text="_Sample",icon='FILEBROWSER')
+        row.menu('HOME_BUILDER_MT_asset_management_commands_menu',text="",icon='DOWNARROW_HLT')
+        # box.label(text="ASSET LIST")
+
+
+class HOME_BUILDER_MT_asset_management_commands_menu(bpy.types.Menu):
+    bl_label = "Asset Management Commands"
+
+    def draw(self, context):
+        props = utils_cabinet.get_scene_props(context.scene)
+        # path = props.get_active_category_path()
+        layout = self.layout
+        layout.operator_context = 'INVOKE_DEFAULT'
+        layout.operator('hb_sample_cabinets.save_asset_to_library',text="Save Asset to Library",icon='BACK')
+        layout.operator('hb_sample_cabinets.save_asset_to_library',text="Create Thumbnail for Selected Assets",icon='FILE_IMAGE')
+        layout.operator('hb_sample_cabinets.save_asset_to_library',text="Open Browser Window",icon='FILEBROWSER')
+        layout.operator('hb_sample_cabinets.save_asset_to_library',text="Create New Asset",icon='ADD')
+
 classes = (
     HOME_BUILDER_MT_cabinet_settings,
     HOME_BUILDER_MT_cabinet_commands,
@@ -317,6 +354,8 @@ classes = (
     HOME_BUILDER_PT_cabinet_material_thickness,
     HOME_BUILDER_PT_cabinet_hardware,
     HOME_BUILDER_PT_cabinet_fronts,
+    HOME_BUILDER_PT_asset_management,
+    HOME_BUILDER_MT_asset_management_commands_menu,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)          

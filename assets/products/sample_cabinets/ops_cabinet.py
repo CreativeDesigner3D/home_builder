@@ -1129,6 +1129,16 @@ class hb_sample_cabinets_OT_build_library(bpy.types.Operator):
                 box.prop(item,'is_checked',text=item.name)
 
 
+class hb_sample_cabinets_OT_save_asset_to_library(bpy.types.Operator):
+    bl_idname = "hb_sample_cabinets.save_asset_to_library"
+    bl_label = "Save Asset to Library"
+
+    asset_name: StringProperty(name="Asset Name")
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+
 classes = (
     Cabinet_Library_Item,
     hb_sample_cabinets_OT_active_cabinet_library,
@@ -1146,6 +1156,7 @@ classes = (
     hb_sample_cabinets_OT_update_selected_fronts_in_room,
     hb_sample_cabinets_OT_show_hide_opening,
     hb_sample_cabinets_OT_build_library,
+    hb_sample_cabinets_OT_save_asset_to_library,
 )
 
 register, unregister = bpy.utils.register_classes_factory(classes)
