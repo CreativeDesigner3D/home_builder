@@ -27,6 +27,8 @@ def get_range(category,assembly_name):
 
 class Dishwasher(pc_types.Assembly):
 
+    is_built_in_appliance = False
+
     def __init__(self,obj_bp=None):
         super().__init__(obj_bp=obj_bp)  
         if obj_bp:
@@ -99,6 +101,7 @@ class Range(pc_types.Assembly):
 
     range_appliance = None
     range_hood_appliance = None
+    is_built_in_appliance = False
     
     def __init__(self,obj_bp=None):
         super().__init__(obj_bp=obj_bp)  
@@ -187,6 +190,7 @@ class Range(pc_types.Assembly):
 class Refrigerator(pc_types.Assembly):
 
     refrigerator = None
+    is_built_in_appliance = False
     doors = None
 
     def __init__(self,obj_bp=None):
@@ -344,3 +348,130 @@ class Refrigerator(pc_types.Assembly):
         hide = insert.get_prompt('Hide')
         hide.set_formula('remove_carcass',[remove_carcass])        
 
+
+class Built_In_Oven(pc_types.Assembly):
+
+    oven = None
+    is_built_in_appliance = True
+
+    def __init__(self,obj_bp=None):
+        super().__init__(obj_bp=obj_bp)  
+        if obj_bp:
+            for child in obj_bp.children:
+                if const.BUILT_IN_OVEN_TAG in child:
+                    self.oven = pc_types.Assembly(child)
+
+    def draw(self):
+        self.create_assembly("Built In Oven")
+        self.obj_bp[const.APPLIANCE_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.built_in_oven_prompts"    
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_appliance_commands"  
+        self.obj_y['IS_MIRROR'] = True
+
+        self.add_prompt("Material Thickness",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Remove Filler",'CHECKBOX',False)
+        self.add_prompt("Appliance Left Offset",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Appliance Right Offset",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Appliance Top Offset",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Appliance Bottom Offset",'DISTANCE',pc_unit.inch(.75))
+
+        path = os.path.join(paths_cabinet.get_built_in_oven_paths(),'_Sample','Built In Oven.blend')
+
+        self.oven = pc_types.Assembly(self.add_assembly_from_file(path))
+        self.oven.obj_bp[const.BUILT_IN_OVEN_TAG] = True
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')
+        t = self.get_prompt("Material Thickness").get_var('t')
+        remove_filler = self.get_prompt("Remove Filler").get_var('remove_filler')
+        lo = self.get_prompt("Appliance Left Offset").get_var('lo')
+        ro = self.get_prompt("Appliance Right Offset").get_var('ro')
+        to = self.get_prompt("Appliance Top Offset").get_var('to')
+        bo = self.get_prompt("Appliance Bottom Offset").get_var('bo')
+
+        self.oven.loc_x('lo',[lo])
+        self.oven.loc_y(value = 0)
+        self.oven.loc_z('bo',[bo])
+        self.oven.dim_x('x-lo-ro',[x,lo,ro])
+        self.oven.dim_y('y',[y])
+        self.oven.dim_z('z-to-bo',[z,to,bo])
+
+        filler = assemblies_cabinet.add_exposed_shelves_part(self)
+        filler.set_name('Filler')
+        filler.loc_x(value=0)
+        filler.loc_y(value=0)
+        filler.loc_z(value=0)
+        filler.rot_x(value=math.radians(-90))
+        filler.rot_y(value=math.radians(-90))
+        filler.dim_x('z',[z])
+        filler.dim_y('x',[x])
+        filler.dim_z('t',[t])
+        hide = filler.get_prompt("Hide")
+        hide.set_formula('remove_filler',[remove_filler])
+
+        pc_utils.update_assembly_id_props(self.oven,self)        
+
+
+class Built_In_Microwave(pc_types.Assembly):
+
+    microwave = None
+    is_built_in_appliance = True
+
+    def __init__(self,obj_bp=None):
+        super().__init__(obj_bp=obj_bp)  
+        if obj_bp:
+            for child in obj_bp.children:
+                if const.BUILT_IN_MICROWAVE_TAG in child:
+                    self.oven = pc_types.Assembly(child)
+
+    def draw(self):
+        self.create_assembly("Built In Microwave")
+        self.obj_bp[const.APPLIANCE_TAG] = True
+        self.obj_bp["PROMPT_ID"] = "hb_sample_cabinets.built_in_microwave_prompts"    
+        self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_appliance_commands"  
+        self.obj_y['IS_MIRROR'] = True
+
+        self.add_prompt("Material Thickness",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Remove Filler",'CHECKBOX',False)
+        self.add_prompt("Appliance Left Offset",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Appliance Right Offset",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Appliance Top Offset",'DISTANCE',pc_unit.inch(.75))
+        self.add_prompt("Appliance Bottom Offset",'DISTANCE',pc_unit.inch(.75))
+
+        path = os.path.join(paths_cabinet.get_built_in_microwave_paths(),'_Sample','Built In Microwave.blend')
+
+        self.microwave = pc_types.Assembly(self.add_assembly_from_file(path))
+        self.microwave.obj_bp[const.BUILT_IN_MICROWAVE_TAG] = True
+
+        x = self.obj_x.pyclone.get_var('location.x','x')
+        y = self.obj_y.pyclone.get_var('location.y','y')
+        z = self.obj_z.pyclone.get_var('location.z','z')
+        t = self.get_prompt("Material Thickness").get_var('t')
+        remove_filler = self.get_prompt("Remove Filler").get_var('remove_filler')
+        lo = self.get_prompt("Appliance Left Offset").get_var('lo')
+        ro = self.get_prompt("Appliance Right Offset").get_var('ro')
+        to = self.get_prompt("Appliance Top Offset").get_var('to')
+        bo = self.get_prompt("Appliance Bottom Offset").get_var('bo')
+
+        self.microwave.loc_x('lo',[lo])
+        self.microwave.loc_y(value = 0)
+        self.microwave.loc_z('bo',[bo])
+        self.microwave.dim_x('x-lo-ro',[x,lo,ro])
+        self.microwave.dim_y('y',[y])
+        self.microwave.dim_z('z-to-bo',[z,to,bo])
+
+        filler = assemblies_cabinet.add_exposed_shelves_part(self)
+        filler.set_name('Filler')
+        filler.loc_x(value=0)
+        filler.loc_y(value=0)
+        filler.loc_z(value=0)
+        filler.rot_x(value=math.radians(-90))
+        filler.rot_y(value=math.radians(-90))
+        filler.dim_x('z',[z])
+        filler.dim_y('x',[x])
+        filler.dim_z('t',[t])
+        hide = filler.get_prompt("Hide")
+        hide.set_formula('remove_filler',[remove_filler])
+
+        pc_utils.update_assembly_id_props(self.oven,self)        

@@ -35,6 +35,12 @@ def get_dishwasher_paths():
 def get_refrigerator_paths():
     return os.path.join(os.path.dirname(__file__),'cabinet_assets','Refrigerators')
 
+def get_built_in_oven_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Built In Ovens')
+
+def get_built_in_microwave_paths():
+    return os.path.join(os.path.dirname(__file__),'cabinet_assets','Built In Microwaves')
+
 def get_geo_parts_paths():
     return os.path.join(os.path.dirname(__file__),'geo_objects')
 

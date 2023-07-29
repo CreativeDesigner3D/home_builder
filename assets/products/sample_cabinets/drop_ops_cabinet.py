@@ -375,6 +375,8 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
     placement = ''
     placement_obj = None
 
+    is_built_in_appliance = False
+
     assembly = None
     obj = None
     exclude_objects = []
@@ -421,6 +423,45 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         context.area.tag_redraw()
         return {'RUNNING_MODAL'}
 
+    def position_built_in_appliance(self,mouse_location,selected_obj,event,cursor_z,selected_normal):
+        opening_bp = pc_utils.get_bp_by_tag(selected_obj,const.OPENING_TAG)
+        wall_bp = pc_utils.get_bp_by_tag(selected_obj,const.WALL_TAG)
+        if opening_bp:
+            if "IS_FILLED" not in opening_bp:
+                opening = pc_types.Assembly(opening_bp)
+                for child in opening.obj_bp.children:
+                    if child.type == 'MESH':
+                        child.select_set(True)
+                self.cabinet.obj_bp.parent = opening.obj_bp
+                self.cabinet.obj_bp.location = (0,0,0)
+                self.cabinet.obj_bp.rotation_euler = (0,0,0)
+                self.cabinet.obj_x.location.x = opening.obj_x.location.x
+                self.cabinet.obj_y.location.y = opening.obj_y.location.y
+                self.cabinet.obj_z.location.z = opening.obj_z.location.z
+                return opening
+        elif wall_bp:
+            # self.cabinet.obj_bp.parent = wall_bp
+            self.cabinet.obj_bp.matrix_world[0][3] = mouse_location[0]
+            self.cabinet.obj_bp.matrix_world[1][3] = mouse_location[1]
+            self.cabinet.obj_bp.matrix_world[2][3] = mouse_location[2]
+            self.cabinet.obj_bp.rotation_euler.z = wall_bp.rotation_euler.z
+            self.cabinet.obj_x.location.x = pc_unit.inch(30)
+            self.cabinet.obj_y.location.y = 0
+            self.cabinet.obj_z.location.z = pc_unit.inch(35)           
+            # placement_obj.parent = wall.obj_bp
+            # placement_obj.matrix_world[0][3] = mouse_location[0]
+            # placement_obj.matrix_world[1][3] = mouse_location[1] 
+            # cabinet.obj_bp.location.y = 0               
+            # self.cabinet.obj_bp.parent = wall_bp
+            # self.cabinet.obj_bp.location.x
+        else:
+            self.cabinet.obj_bp.matrix_world[0][3] = mouse_location[0]
+            self.cabinet.obj_bp.matrix_world[1][3] = mouse_location[1]
+            self.cabinet.obj_bp.matrix_world[2][3] = mouse_location[2]         
+            self.cabinet.obj_x.location.x = pc_unit.inch(30)
+            self.cabinet.obj_y.location.y = 0
+            self.cabinet.obj_z.location.z = pc_unit.inch(35)  
+            
     def get_appliance(self,context):
         asset_file_handle = context.asset_file_handle     
         self.cabinet = eval("library_appliance." + asset_file_handle.name.replace(" ","_") + "()")
@@ -453,24 +494,33 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
         self.drawing_plane.display_type = 'WIRE'
         self.drawing_plane.dimensions = (100,100,1)
 
-    def confirm_placement(self,context):
-        if self.placement == 'LEFT':
-            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
-            constraint_obj = self.cabinet.obj_x
-            constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
-            constraint.target = constraint_obj
-            constraint.use_x = True
-            constraint.use_y = True
-            constraint.use_z = False
+    def confirm_placement(self,context,opening):
+        if self.cabinet.is_built_in_appliance:
+            if opening:
+                opening.obj_bp["IS_FILLED"] = True
+                # home_builder_utils.copy_drivers(opening.obj_bp,self.insert.obj_bp)
+                pc_utils.copy_drivers(opening.obj_x,self.cabinet.obj_x)
+                pc_utils.copy_drivers(opening.obj_y,self.cabinet.obj_y)
+                pc_utils.copy_drivers(opening.obj_z,self.cabinet.obj_z)
+                pc_utils.copy_drivers(opening.obj_prompts,self.cabinet.obj_prompts)
+        else:
+            if self.placement == 'LEFT':
+                self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+                constraint_obj = self.cabinet.obj_x
+                constraint = self.selected_cabinet.obj_bp.constraints.new('COPY_LOCATION')
+                constraint.target = constraint_obj
+                constraint.use_x = True
+                constraint.use_y = True
+                constraint.use_z = False
 
-        if self.placement == 'RIGHT':
-            self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
-            constraint_obj = self.selected_cabinet.obj_x
-            constraint = self.cabinet.obj_bp.constraints.new('COPY_LOCATION')
-            constraint.target = constraint_obj
-            constraint.use_x = True
-            constraint.use_y = True
-            constraint.use_z = False
+            if self.placement == 'RIGHT':
+                self.cabinet.obj_bp.parent = self.selected_cabinet.obj_bp.parent
+                constraint_obj = self.selected_cabinet.obj_x
+                constraint = self.cabinet.obj_bp.constraints.new('COPY_LOCATION')
+                constraint.target = constraint_obj
+                constraint.use_x = True
+                constraint.use_y = True
+                constraint.use_z = False
 
         if hasattr(self.cabinet,'pre_draw'):
             self.cabinet.draw()
@@ -500,14 +550,17 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
 
         ## cursor_z added to allow for multi level placement
         cursor_z = context.scene.cursor.location.z
-
-        self.placement, self.selected_cabinet, self.current_wall = utils_placement.position_cabinet(self.cabinet,
-                                                                                                    selected_point,
-                                                                                                    selected_obj,
-                                                                                                    cursor_z,
-                                                                                                    selected_normal,
-                                                                                                    self.placement_obj,
-                                                                                                    self.height_above_floor)
+        opening = None
+        if self.cabinet.is_built_in_appliance:
+            opening = self.position_built_in_appliance(selected_point,selected_obj,event,cursor_z,selected_normal)
+        else:
+            self.placement, self.selected_cabinet, self.current_wall = utils_placement.position_cabinet(self.cabinet,
+                                                                                                        selected_point,
+                                                                                                        selected_obj,
+                                                                                                        cursor_z,
+                                                                                                        selected_normal,
+                                                                                                        self.placement_obj,
+                                                                                                        self.height_above_floor)
 
         if event.type == 'LEFT_ARROW' and event.value == 'PRESS':
             self.cabinet.obj_bp.rotation_euler.z -= math.radians(90)
@@ -515,7 +568,7 @@ class hb_sample_cabinets_OT_drop_appliance(bpy.types.Operator):
             self.cabinet.obj_bp.rotation_euler.z += math.radians(90)   
 
         if pc_placement_utils.event_is_place_asset(event):
-            self.confirm_placement(context)
+            self.confirm_placement(context,opening)
             return self.finish(context,event.shift)
             
         if pc_placement_utils.event_is_cancel_command(event):
@@ -987,11 +1040,6 @@ class hb_sample_cabinets_OT_drop_cabinet_insert(bpy.types.Operator):
                     if child.type == 'MESH':
                         child.select_set(True)
                 self.insert.obj_bp.parent = opening.obj_bp
-                # loc_pos = opening.obj_bp.matrix_world
-                # self.insert.obj_bp.location.x = opening.obj_bp.matrix_world[0][3]
-                # self.insert.obj_bp.location.y = opening.obj_bp.matrix_world[1][3]
-                # self.insert.obj_bp.location.z = opening.obj_bp.matrix_world[2][3]
-                # self.insert.obj_bp.rotation_euler.z = loc_pos.to_euler()[2]
                 self.insert.obj_x.location.x = opening.obj_x.location.x
                 self.insert.obj_y.location.y = opening.obj_y.location.y
                 self.insert.obj_z.location.z = opening.obj_z.location.z

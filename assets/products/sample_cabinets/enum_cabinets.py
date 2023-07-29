@@ -24,6 +24,10 @@ preview_collections["refrigerator_categories"] = pc_pointer_utils.create_image_p
 preview_collections["refrigerator_items"] = pc_pointer_utils.create_image_preview_collection()
 preview_collections["cooktop_categories"] = pc_pointer_utils.create_image_preview_collection()
 preview_collections["cooktop_items"] = pc_pointer_utils.create_image_preview_collection()
+preview_collections["built_in_oven_categories"] = pc_pointer_utils.create_image_preview_collection()
+preview_collections["built_in_oven_items"] = pc_pointer_utils.create_image_preview_collection()
+preview_collections["built_in_microwave_categories"] = pc_pointer_utils.create_image_preview_collection()
+preview_collections["built_in_microwave_items"] = pc_pointer_utils.create_image_preview_collection()
 
 #CABINET HANDLES  
 def enum_cabinet_handle_categories(self,context):
@@ -264,3 +268,51 @@ def update_refrigerator_category(self,context):
         preview_collections["refrigerator_items"] = pc_pointer_utils.create_image_preview_collection()     
         
     enum_refrigerator_names(self,context)       
+
+#BUILT_IN_OVENS    
+def enum_built_in_oven_categories(self,context):
+    if context is None:
+        return []
+    
+    icon_dir = paths_cabinet.get_built_in_oven_paths()
+    pcoll = preview_collections["built_in_oven_categories"]
+    return pc_pointer_utils.get_folder_enum_previews(icon_dir,pcoll)
+
+def enum_built_in_oven_names(self,context):
+    if context is None:
+        return []
+    
+    icon_dir = os.path.join(paths_cabinet.get_built_in_oven_paths(),self.built_in_oven_category)
+    pcoll = preview_collections["built_in_oven_items"]
+    return pc_pointer_utils.get_image_enum_previews(icon_dir,pcoll)
+
+def update_built_in_oven_category(self,context):
+    if preview_collections["built_in_oven_items"]:
+        bpy.utils.previews.remove(preview_collections["built_in_oven_items"])
+        preview_collections["built_in_oven_items"] = pc_pointer_utils.create_image_preview_collection()     
+        
+    enum_built_in_oven_names(self,context)       
+
+#BUILT_IN_MICROWAVES    
+def enum_built_in_microwave_categories(self,context):
+    if context is None:
+        return []
+    
+    icon_dir = paths_cabinet.get_built_in_microwave_paths()
+    pcoll = preview_collections["built_in_microwave_categories"]
+    return pc_pointer_utils.get_folder_enum_previews(icon_dir,pcoll)
+
+def enum_built_in_microwave_names(self,context):
+    if context is None:
+        return []
+    
+    icon_dir = os.path.join(paths_cabinet.get_built_in_microwave_paths(),self.built_in_microwave_category)
+    pcoll = preview_collections["built_in_microwave_items"]
+    return pc_pointer_utils.get_image_enum_previews(icon_dir,pcoll)
+
+def update_built_in_microwave_category(self,context):
+    if preview_collections["built_in_microwave_items"]:
+        bpy.utils.previews.remove(preview_collections["built_in_microwave_items"])
+        preview_collections["built_in_microwave_items"] = pc_pointer_utils.create_image_preview_collection()     
+        
+    enum_built_in_microwave_names(self,context)           
