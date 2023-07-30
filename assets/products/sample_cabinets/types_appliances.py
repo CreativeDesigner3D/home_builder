@@ -474,4 +474,4 @@ class Built_In_Microwave(pc_types.Assembly):
         hide = filler.get_prompt("Hide")
         hide.set_formula('remove_filler',[remove_filler])
 
-        pc_utils.update_assembly_id_props(self.oven,self)        
+        pc_utils.update_assembly_id_props(self.microwave,self)        

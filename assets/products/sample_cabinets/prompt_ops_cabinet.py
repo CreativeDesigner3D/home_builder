@@ -1111,6 +1111,95 @@ class hb_sample_cabinets_OT_built_in_oven_prompts(Appliance_Prompts):
         box.template_icon_view(self,"built_in_oven_name",show_labels=True)     
 
 
+class hb_sample_cabinets_OT_built_in_microwave_prompts(Appliance_Prompts):
+    bl_idname = "hb_sample_cabinets.built_in_microwave_prompts"
+    bl_label = "Built In Microwave Prompts"
+
+    appliance_bp_name: bpy.props.StringProperty(name="Appliance BP Name",default="")
+    built_in_microwave_changed: bpy.props.BoolProperty(name="Built In Microwave Changed",default=False)
+
+    built_in_microwave_category: bpy.props.EnumProperty(name="Built In Microwave Category",
+        items=enum_cabinets.enum_built_in_microwave_categories,
+        update=enum_cabinets.update_built_in_microwave_category)
+    built_in_microwave_name: bpy.props.EnumProperty(name="Built In Microwave Name",
+        items=enum_cabinets.enum_built_in_microwave_names,
+        update=update_built_in_microwave)
+
+    product = None
+
+    def reset_variables(self,context):
+        self.product = None
+        # enum_cabinets.update_refrigerator_category(self,context)
+
+    def check(self, context):
+        # self.update_product_size(self.product)
+        # self.update_dishwasher(context)
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self,context,event):
+        self.reset_variables(context)
+        self.get_assemblies(context)
+        # self.set_default_properties(self.product)      
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=425)
+
+    def get_assemblies(self,context):
+        bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        self.product = types_appliances.Built_In_Microwave(bp)
+
+    def draw(self, context):
+        unit_system = context.scene.unit_settings.system
+
+        layout = self.layout
+
+        remove_filler = self.product.get_prompt("Remove Filler")
+        lo = self.product.get_prompt("Appliance Left Offset")
+        ro = self.product.get_prompt("Appliance Right Offset")
+        to = self.product.get_prompt("Appliance Top Offset")
+        bo = self.product.get_prompt("Appliance Bottom Offset")
+
+        box = layout.box()
+        split = box.split()
+        col = split.column(align=True)
+        col.label(text="Dimensions")
+        if pc_utils.object_has_driver(self.product.obj_x):
+            x = self.product.obj_x.location.x
+            col.label(text="Width: " + str(bpy.utils.units.to_string(unit_system,'LENGTH',x)))
+        else:
+            col.prop(self.product.obj_x,'location',index=0,text="Width")
+
+        if pc_utils.object_has_driver(self.product.obj_z):
+            z = self.product.obj_z.location.z
+            col.label(text="Height: " + str(bpy.utils.units.to_string(unit_system,'LENGTH',z)))
+        else:
+            col.prop(self.product.obj_z,'location',index=2,text="Height")
+
+        if pc_utils.object_has_driver(self.product.obj_x):
+            y = self.product.obj_y.location.y
+            col.label(text="Depth: " + str(bpy.utils.units.to_string(unit_system,'LENGTH',y)))
+        else:
+            col.prop(self.product.obj_y,'location',index=1,text="Depth")
+
+        split.prop(self.product.obj_bp,'location')
+
+        box.prop(remove_filler,'checkbox_value',text="Remove Filler")
+
+        row = box.row()
+        row.label(text="Offset")
+        row = box.row(align=True)
+        row.prop(lo,'distance_value',text="Left")
+        row.prop(ro,'distance_value',text="Right")
+        row.prop(to,'distance_value',text="Top")
+        row.prop(bo,'distance_value',text="Bottom")
+
+        box = layout.box()
+        box.prop(self,'built_in_microwave_category',text="",icon='FILE_FOLDER')  
+        box.template_icon_view(self,"built_in_microwave_name",show_labels=True)  
+
+
 class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
     bl_idname = "hb_sample_cabinets.refrigerator_prompts"
     bl_label = "Refrigerator Prompts"
@@ -1785,6 +1874,7 @@ classes = (
     hb_sample_cabinets_OT_range_prompts,
     hb_sample_cabinets_OT_dishwasher_prompts,
     hb_sample_cabinets_OT_built_in_oven_prompts,
+    hb_sample_cabinets_OT_built_in_microwave_prompts,
     hb_sample_cabinets_OT_refrigerator_prompts,
     hb_sample_cabinets_OT_opening_cabinet_prompts,
     hb_sample_cabinets_OT_inside_corner_cabinet_prompts,
