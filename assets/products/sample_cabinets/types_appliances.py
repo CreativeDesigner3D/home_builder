@@ -11,20 +11,6 @@ from . import types_cabinet_exteriors
 from . import paths_cabinet
 from . import const_cabinets as const
 
-def get_range_hood(category,assembly_name):
-    ASSET_DIR = paths_cabinet.get_range_hood_paths()
-    if assembly_name == "":
-        return os.path.join(ASSET_DIR,"_Sample","Generic Range Hood.blend")  
-    else:
-        return os.path.join(ASSET_DIR, category, assembly_name + ".blend")   
-
-def get_range(category,assembly_name):
-    ASSET_DIR = paths_cabinet.get_range_paths()
-    if assembly_name == "":
-        return os.path.join(ASSET_DIR,"_Sample","Range.blend")  
-    else:
-        return os.path.join(ASSET_DIR, category, assembly_name + ".blend")   
-
 class Dishwasher(pc_types.Assembly):
 
     is_built_in_appliance = False
@@ -56,16 +42,65 @@ class Dishwasher(pc_types.Assembly):
         self.countertop.dim_x('width+ctop_overhang_left+ctop_overhang_right',[width,ctop_overhang_left,ctop_overhang_right])
         self.countertop.dim_y('depth-(ctop_overhang_front+ctop_overhang_back)',[depth,ctop_overhang_front,ctop_overhang_back])
 
-    def add_dishwasher(self):
-        path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Dishwasher.blend')
+    def add_fillers(self):
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        height = self.obj_z.pyclone.get_var('location.z','height')  
+        lfa = self.get_prompt("Left Filler Amount").get_var('lfa')
+        rfa = self.get_prompt("Right Filler Amount").get_var('rfa')
+
+        left_filler = assemblies_cabinet.add_carcass_part(self)
+        left_filler.obj_bp["IS_LEFT_FILLER_BP"] = True
+        left_filler.set_name('Left Filler')
+        left_filler.loc_x('lfa',[lfa])
+        left_filler.loc_y(value=0)
+        left_filler.loc_z(value=0)
+        left_filler.rot_x(value=0)
+        left_filler.rot_y(value=math.radians(-90))
+        left_filler.rot_z(value=0)        
+        left_filler.dim_x('height',[height])
+        left_filler.dim_y('depth',[depth])
+        left_filler.dim_z('lfa',[lfa])
+        hide = left_filler.get_prompt("Hide")
+        hide.set_formula("IF(lfa>0,False,True)",[lfa])
+        # pc_utils.flip_normals(left_filler)
+        material_pointers_cabinet.assign_pointer_to_assembly(left_filler,"Cabinet Exposed Surfaces")
+    
+        right_filler = assemblies_cabinet.add_carcass_part(self)
+        right_filler.obj_bp["IS_RIGHT_FILLER_BP"] = True
+        right_filler.set_name('Right Filler')
+        right_filler.loc_x('width',[width])
+        right_filler.loc_y(value=0)
+        right_filler.loc_z(value=0)
+        right_filler.rot_x(value=0)
+        right_filler.rot_y(value=math.radians(-90))
+        right_filler.rot_z(value=0)        
+        right_filler.dim_x('height',[height])
+        right_filler.dim_y('depth',[depth])
+        right_filler.dim_z('rfa',[rfa])
+        hide = right_filler.get_prompt("Hide")
+        hide.set_formula("IF(rfa>0,False,True)",[rfa])
+        material_pointers_cabinet.assign_pointer_to_assembly(right_filler,"Cabinet Exposed Surfaces")
+
+    def add_dishwasher(self,category="",name=""):
+        if name == "" and category == "":
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Dishwashers','_Sample','Dishwasher.blend')
+        else:
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Dishwashers',category, name + '.blend')
         self.dishwasher = pc_types.Assembly(self.add_assembly_from_file(path))
         self.dishwasher.obj_bp[const.DISHWASHER_TAG] = True
-        
+        lfa = self.get_prompt("Left Filler Amount")
+        rfa = self.get_prompt("Right Filler Amount")
+        lfa_var = lfa.get_var('lfa_var')
+        rfa_var = rfa.get_var('rfa_var')        
+
+        self.dishwasher.loc_x('lfa_var',[lfa_var])
+
         if self.dishwasher.obj_x.lock_location[0]:
-            self.obj_x.location.x = self.dishwasher.obj_x.location.x
+            self.obj_x.location.x = self.dishwasher.obj_x.location.x + lfa.get_value() + rfa.get_value()
         else:
             width = self.obj_x.pyclone.get_var('location.x','width')
-            self.dishwasher.dim_x('width',[width])
+            self.dishwasher.dim_x('width-lfa_var-rfa_var',[width,lfa_var,rfa_var])
         
         if self.dishwasher.obj_y.lock_location[1]:
             self.obj_y.location.y = self.dishwasher.obj_y.location.y
@@ -90,8 +125,12 @@ class Dishwasher(pc_types.Assembly):
         self.obj_bp["MENU_ID"] = "HOME_BUILDER_MT_appliance_commands"    
         self.obj_y['IS_MIRROR'] = True
 
+        self.add_prompt("Left Filler Amount",'DISTANCE',0)
+        self.add_prompt("Right Filler Amount",'DISTANCE',0)
+
         self.add_dishwasher()
-        self.add_countertop()      
+        self.add_countertop()   
+        self.add_fillers()   
 
         self.obj_x.location.x = pc_unit.inch(24)
         self.obj_y.location.y = -props.base_cabinet_depth
@@ -118,7 +157,11 @@ class Range(pc_types.Assembly):
             self.range_hood_appliance.obj_bp.location.z = pc_unit.inch(70)
 
     def add_range_hood(self,category="",assembly_name=""):
-        self.range_hood_appliance = pc_types.Assembly(self.add_assembly_from_file(get_range_hood(category,assembly_name)))
+        if category == "" and assembly_name == "":
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Range Hoods','_Sample','Generic Range Hood.blend')
+        else:
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Range Hoods',category, assembly_name + '.blend')
+        self.range_hood_appliance = pc_types.Assembly(self.add_assembly_from_file(path))
         self.range_hood_appliance.obj_bp["IS_RANGE_HOOD_BP"] = True
         self.range_hood_appliance.obj_x.empty_display_size = pc_unit.inch(.5)
         self.range_hood_appliance.obj_y.empty_display_size = pc_unit.inch(.5)
@@ -139,8 +182,11 @@ class Range(pc_types.Assembly):
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')
 
-        # path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Range.blend')
-        self.range_appliance = pc_types.Assembly(self.add_assembly_from_file(get_range(category,assembly_name)))
+        if category == "" and assembly_name == "":
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Ranges','_Sample','Range.blend')
+        else:
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Ranges',category, assembly_name + '.blend')
+        self.range_appliance = pc_types.Assembly(self.add_assembly_from_file(path))
         self.range_appliance.obj_bp[const.RANGE_TAG] = True
         self.range_appliance.obj_x.empty_display_size = pc_unit.inch(.5)
         self.range_appliance.obj_y.empty_display_size = pc_unit.inch(.5)
@@ -202,23 +248,31 @@ class Refrigerator(pc_types.Assembly):
                 if const.DOOR_INSERT_TAG in child:
                     self.doors = pc_types.Assembly(child)
 
-    def add_refrigerator(self,assembly_name=""):
+    def add_refrigerator(self,category_name="",assembly_name=""):
         props = utils_cabinet.get_scene_props(bpy.context.scene)
         material_thickness = self.get_prompt("Material Thickness")
         m_thickness = material_thickness.get_var('m_thickness')
         carcass_height = self.get_prompt("Carcass Height")
+        lfa = self.get_prompt("Left Filler Amount")
+        rfa = self.get_prompt("Right Filler Amount")
         c_height = carcass_height.get_var('c_height')
+        lfa_var = lfa.get_var('lfa_var')
+        rfa_var = rfa.get_var('rfa_var')
 
-        path = os.path.join(os.path.dirname(__file__),'library','Appliances','assets','Refrigerator.blend')
+        if category_name == "" and assembly_name == "":
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Refrigerators','_Sample','Refrigerator.blend')
+        else:
+            path = os.path.join(os.path.dirname(__file__),'cabinet_assets','Refrigerators',category_name, assembly_name + '.blend')
         self.refrigerator = pc_types.Assembly(self.add_assembly_from_file(path))
         self.refrigerator.obj_bp[const.REFRIGERATOR_TAG] = True
 
         if self.refrigerator.obj_x.lock_location[0]:
-            self.obj_x.location.x = self.refrigerator.obj_x.location.x + material_thickness.get_value()*2
+            self.obj_x.location.x = self.refrigerator.obj_x.location.x + material_thickness.get_value()*2 + lfa.get_value() + rfa.get_value()
         else:
-            self.obj_x.location.x = pc_unit.inch(36) + material_thickness.get_value()*2
+            self.obj_x.location.x = pc_unit.inch(36) + material_thickness.get_value()*2 + lfa.get_value() + rfa.get_value()
             width = self.obj_x.pyclone.get_var('location.x','width')
-            self.refrigerator.dim_x('width-m_thickness*2',[width,m_thickness])
+
+            self.refrigerator.dim_x('width-m_thickness*2-lfa_var-rfa_var',[width,m_thickness,lfa_var,rfa_var])
         
         if self.refrigerator.obj_y.lock_location[1]:
             self.obj_y.location.y = self.refrigerator.obj_y.location.y
@@ -237,8 +291,48 @@ class Refrigerator(pc_types.Assembly):
         y_loc = self.get_prompt("Refrigerator Y Location").get_var('y_loc')
 
         self.refrigerator.loc_y('-y_loc',[y_loc])   
-        self.refrigerator.loc_x('m_thickness',[m_thickness])   
+        self.refrigerator.loc_x('m_thickness+lfa_var',[m_thickness,lfa_var])   
         pc_utils.update_assembly_id_props(self.refrigerator,self)
+
+    def add_fillers(self):
+        width = self.obj_x.pyclone.get_var('location.x','width')
+        depth = self.obj_y.pyclone.get_var('location.y','depth')
+        height = self.obj_z.pyclone.get_var('location.z','height')  
+        lfa = self.get_prompt("Left Filler Amount").get_var('lfa')
+        rfa = self.get_prompt("Right Filler Amount").get_var('rfa')
+
+        left_filler = assemblies_cabinet.add_carcass_part(self)
+        # left_filler.obj_bp["IS_LEFT_FILLER_BP"] = True
+        left_filler.set_name('Left Filler')
+        left_filler.loc_x('lfa',[lfa])
+        left_filler.loc_y(value=0)
+        left_filler.loc_z(value=0)
+        left_filler.rot_x(value=0)
+        left_filler.rot_y(value=math.radians(-90))
+        left_filler.rot_z(value=0)        
+        left_filler.dim_x('height',[height])
+        left_filler.dim_y('depth',[depth])
+        left_filler.dim_z('lfa',[lfa])
+        hide = left_filler.get_prompt("Hide")
+        hide.set_formula("IF(lfa>0,False,True)",[lfa])
+        # pc_utils.flip_normals(left_filler)
+        material_pointers_cabinet.assign_pointer_to_assembly(left_filler,"Cabinet Exposed Surfaces")
+    
+        right_filler = assemblies_cabinet.add_carcass_part(self)
+        right_filler.obj_bp["IS_RIGHT_FILLER_BP"] = True
+        right_filler.set_name('Right Filler')
+        right_filler.loc_x('width',[width])
+        right_filler.loc_y(value=0)
+        right_filler.loc_z(value=0)
+        right_filler.rot_x(value=0)
+        right_filler.rot_y(value=math.radians(-90))
+        right_filler.rot_z(value=0)        
+        right_filler.dim_x('height',[height])
+        right_filler.dim_y('depth',[depth])
+        right_filler.dim_z('rfa',[rfa])
+        hide = right_filler.get_prompt("Hide")
+        hide.set_formula("IF(rfa>0,False,True)",[rfa])
+        material_pointers_cabinet.assign_pointer_to_assembly(right_filler,"Cabinet Exposed Surfaces")
 
     def add_carcass(self):
         height = self.obj_z.pyclone.get_var('location.z','height')
@@ -252,11 +346,13 @@ class Refrigerator(pc_types.Assembly):
         material_thickness = self.get_prompt("Material Thickness").get_var('material_thickness')
         carcass_height = self.get_prompt("Carcass Height").get_var('carcass_height')
         remove_carcass = self.get_prompt("Remove Cabinet Carcass").get_var('remove_carcass')
+        lfa = self.get_prompt("Left Filler Amount").get_var('lfa')
+        rfa = self.get_prompt("Right Filler Amount").get_var('rfa')
 
         left_side = assemblies_cabinet.add_carcass_part_assembly(self)
         left_side.obj_bp["IS_LEFT_SIDE_BP"] = True
         left_side.set_name('Left Side')
-        left_side.loc_x(value=0)
+        left_side.loc_x('lfa',[lfa])
         left_side.loc_y(value=0)
         left_side.loc_z(value=0)
         left_side.rot_y(value=math.radians(-90))
@@ -269,7 +365,7 @@ class Refrigerator(pc_types.Assembly):
         right_side = assemblies_cabinet.add_carcass_part_assembly(self)
         right_side.obj_bp["IS_RIGHT_SIDE_BP"] = True
         right_side.set_name('Right Side')
-        right_side.loc_x('width',[width])
+        right_side.loc_x('width-rfa',[width,rfa])
         right_side.loc_y(value=0)
         right_side.loc_z(value=0)
         right_side.rot_y(value=math.radians(-90))
@@ -285,11 +381,11 @@ class Refrigerator(pc_types.Assembly):
         top = assemblies_cabinet.add_carcass_part_assembly(self)
         top.obj_bp["IS_TOP_BP"] = True
         top.set_name('Top')
-        top.loc_x('material_thickness',[material_thickness])
+        top.loc_x('material_thickness+lfa',[material_thickness,lfa])
         top.loc_y(value = 0)
         top.loc_z('height',[height])
         top.rot_y(value = 0)
-        top.dim_x('width-(material_thickness*2)',[width,material_thickness])
+        top.dim_x('width-(material_thickness*2)-lfa-rfa',[width,material_thickness,lfa,rfa])
         top.dim_y('depth',[depth])
         top.dim_z('-material_thickness',[material_thickness])
         hide = top.get_prompt("Hide")
@@ -300,11 +396,11 @@ class Refrigerator(pc_types.Assembly):
         bottom = assemblies_cabinet.add_carcass_part_assembly(self)
         bottom.obj_bp["IS_BOTTOM_BP"] = True
         bottom.set_name('Bottom')
-        bottom.loc_x('material_thickness',[material_thickness])
+        bottom.loc_x('material_thickness+lfa',[material_thickness,lfa])
         bottom.loc_y(value = 0)
         bottom.loc_z('height-carcass_height',[height,carcass_height])
         bottom.rot_y(value = 0)
-        bottom.dim_x('width-(material_thickness*2)',[width,material_thickness])
+        bottom.dim_x('width-(material_thickness*2)-lfa-rfa',[width,material_thickness,lfa,rfa])
         bottom.dim_y('depth',[depth])
         bottom.dim_z('material_thickness',[material_thickness])
         hide = bottom.get_prompt("Hide")
@@ -323,9 +419,12 @@ class Refrigerator(pc_types.Assembly):
         self.add_prompt("Carcass Height",'DISTANCE',pc_unit.inch(15))        
         prompts_cabinet.add_carcass_prompts(self)
         prompts_cabinet.add_thickness_prompts(self)
+        self.add_prompt("Left Filler Amount",'DISTANCE',0)
+        self.add_prompt("Right Filler Amount",'DISTANCE',0)
 
         self.add_refrigerator()
         self.add_carcass()
+        self.add_fillers()
 
         height = self.obj_z.pyclone.get_var('location.z','height')
         depth = self.obj_y.pyclone.get_var('location.y','depth')
@@ -333,16 +432,18 @@ class Refrigerator(pc_types.Assembly):
         material_thickness = self.get_prompt("Material Thickness").get_var('material_thickness')
         carcass_height = self.get_prompt("Carcass Height").get_var('carcass_height')
         remove_carcass = self.get_prompt("Remove Cabinet Carcass").get_var('remove_carcass')
+        lfa = self.get_prompt("Left Filler Amount").get_var('lfa')
+        rfa = self.get_prompt("Right Filler Amount").get_var('rfa')
 
         doors = types_cabinet_exteriors.Doors()
         doors.carcass_type = 'Upper'
         doors.door_type = 'Upper'
         doors.door_swing = 2
         insert = self.add_assembly(doors)
-        insert.loc_x('material_thickness',[material_thickness])
+        insert.loc_x('material_thickness+lfa',[material_thickness,lfa])
         insert.loc_y('depth',[depth])
         insert.loc_z('height-carcass_height+material_thickness',[height,carcass_height,material_thickness])
-        insert.dim_x('width-(material_thickness*2)',[width,material_thickness])
+        insert.dim_x('width-(material_thickness*2)-lfa-rfa',[width,material_thickness,lfa,rfa])
         insert.dim_y('fabs(depth)-material_thickness',[depth,material_thickness])
         insert.dim_z('carcass_height-material_thickness*2',[carcass_height,material_thickness])
         hide = insert.get_prompt('Hide')

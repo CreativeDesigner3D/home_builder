@@ -984,7 +984,6 @@ class hb_sample_cabinets_OT_dishwasher_prompts(Appliance_Prompts):
         return wm.invoke_props_dialog(self, width=350)
 
     def draw_dishwasher_prompts(self,layout,context):
-        layout.label(text="")
         box = layout.box()
         box.prop(self,'dishwasher_category',text="",icon='FILE_FOLDER')  
         box.template_icon_view(self,"dishwasher_name",show_labels=True)  
@@ -1014,12 +1013,23 @@ class hb_sample_cabinets_OT_dishwasher_prompts(Appliance_Prompts):
             row.prop(ctop_left,'distance_value',text="Left")  
             row.prop(ctop_right,'distance_value',text="Right")            
     
+    def draw_filler_prompts(self,layout,context):
+        left_filler_amount = self.product.get_prompt("Left Filler Amount")
+        right_filler_amount = self.product.get_prompt("Right Filler Amount")
+
+        if left_filler_amount and right_filler_amount:
+            box = layout.box()
+            row = box.row()
+            row.label(text="Fillers")
+            row.prop(left_filler_amount,'distance_value',text="Left")
+            row.prop(right_filler_amount,'distance_value',text="Right")
+
     def draw(self, context):
         layout = self.layout
         self.draw_product_size(self.product,layout,context)
+        self.draw_filler_prompts(layout,context)
         self.draw_countertop_prompts(layout,context)
-        split = layout.split()
-        self.draw_dishwasher_prompts(split.column(),context)
+        self.draw_dishwasher_prompts(layout,context)
 
 
 class hb_sample_cabinets_OT_built_in_oven_prompts(Appliance_Prompts):
@@ -1298,12 +1308,20 @@ class hb_sample_cabinets_OT_refrigerator_prompts(Appliance_Prompts):
 
     def draw_refrigerator_prompts(self,layout,context):
         box = layout.box()
+        left_filler = self.product.get_prompt("Left Filler Amount")
+        right_filler = self.product.get_prompt("Right Filler Amount")
+
         y_loc = self.product.get_prompt("Refrigerator Y Location")
         y_loc.draw(box,allow_edit=False)
         remove_carcass = self.product.get_prompt("Remove Cabinet Carcass")
         remove_carcass.draw(box,allow_edit=False)
         carcass_height = self.product.get_prompt("Carcass Height")
         carcass_height.draw(box,allow_edit=False)
+        if left_filler and right_filler:
+            row = box.row()
+            row.label(text="Filler")
+            row.prop(left_filler,'distance_value',text="Left")
+            row.prop(right_filler,'distance_value',text="Right")
         if remove_carcass.get_value() == False and self.product.doors:
             open_door = self.product.doors.get_prompt("Open Door")
             row = box.row()
