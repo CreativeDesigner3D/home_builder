@@ -1187,6 +1187,48 @@ class home_builder_OT_show_wall_front_view(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class home_builder_OT_snap_line_prompts(bpy.types.Operator):
+    bl_idname = "home_builder.snap_line_prompts"
+    bl_label = "Snap Line Prompts"
+
+    x_loc_left: bpy.props.FloatProperty(name="X Location Left",unit='LENGTH',precision=4)
+    x_loc_right: bpy.props.FloatProperty(name="X Location Right",unit='LENGTH',precision=4)
+
+    anchor_x: bpy.props.EnumProperty(name="Anchor X",
+                                     items=[('LEFT',"Left","Left"),
+                                            ('RIGHT',"Right","Right")])
+
+    wall = None
+    snap_line = None
+
+    def check(self, context):
+        if self.anchor_x == 'LEFT':
+            self.snap_line.location.x = self.x_loc_left
+        if self.anchor_x == 'RIGHT':
+            self.snap_line.location.x = self.wall.obj_x.location.x - self.x_loc_right
+        return True
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+    def invoke(self,context,event):
+        self.snap_line = context.object
+        wall_bp = pc_utils.get_bp_by_tag(self.snap_line,'IS_WALL_BP')
+        self.wall = pc_types.Assembly(wall_bp)
+        self.x_loc_left = self.snap_line.location.x
+        self.x_loc_right = self.wall.obj_x.location.x - self.snap_line.location.x
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=200)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self,'anchor_x',expand=True)
+        if self.anchor_x == 'LEFT':
+            layout.prop(self,'x_loc_left',text="Dim from Left")
+        if self.anchor_x == 'RIGHT':
+            layout.prop(self,'x_loc_right',text="Dim from Right")
+
+
 class home_builder_OT_add_wall_snap_line(bpy.types.Operator):
     bl_idname = "home_builder.add_wall_snap_line"
     bl_label = "Add Wall Snap Line"
@@ -1727,6 +1769,7 @@ classes = (
     home_builder_OT_hide_wall,
     home_builder_OT_show_wall,
     home_builder_OT_show_wall_front_view,
+    home_builder_OT_snap_line_prompts,
     home_builder_OT_add_wall_snap_line,
     home_builder_OT_add_wall_elevation_dim,
     HOMEBUILDER_UL_walls,
