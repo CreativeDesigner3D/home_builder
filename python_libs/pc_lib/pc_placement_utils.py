@@ -211,6 +211,78 @@ def position_assembly_next_to_cabinet(cabinet,selected_cabinet,mouse_location):
 
     return placement    
 
+def get_left_right_snap_points(wall,x_loc):
+    list_objs = []
+    for child in wall.obj_bp.children:
+        if 'IS_WALL_SNAP_POINT' in child:
+            list_objs.append(child)
+    list_objs.sort(key=lambda obj: obj.location.x, reverse=False)
+    for index, obj in enumerate(list_objs):
+        if obj.location.x > x_loc:
+            if index == 0 :
+                return None, list_objs[0]
+            else:
+                return list_objs[index-1], list_objs[index]
+    #IF REACHED END RETURN LAST ITEM AS LEFT SNAP
+    if len(list_objs) > 0:
+        return list_objs[len(list_objs)-1], None
+    
+    return None, None
+
+def get_left_snap_point(snap_points,snap_line):
+    for index, sp in enumerate(snap_points):
+        if sp.name == snap_line.name and index != 0:
+            return snap_points[index-1]
+    return None
+
+def get_right_snap_point(snap_points,snap_line):
+    for index, sp in enumerate(snap_points):
+        if sp.name == snap_line.name and index != len(snap_points)-1:
+            return snap_points[index+1]
+    return None
+
+def get_left_right_collision_location_from_point(wall,search_point,snap_line,ignore_assembly=None):
+    left_assembly = get_left_wall_collision_assembly_from_selected_point(wall,search_point,ignore_assembly=ignore_assembly)
+    right_assembly = get_right_wall_collision_assembly_from_selected_point(wall,search_point,ignore_assembly=ignore_assembly)
+    if snap_line:
+        snap_points = get_snap_points(wall)
+        left_sp = get_left_snap_point(snap_points,snap_line)
+        right_sp = get_right_snap_point(snap_points,snap_line)
+    else:
+        left_sp, right_sp = get_left_right_snap_points(wall,search_point[0])
+
+    #GET LEFT SNAP LOCATION
+    cal_left_x_snap = 0
+    if left_assembly and left_sp:
+        left_assembly_x_snap = left_assembly.obj_bp.location.x + left_assembly.obj_x.location.x
+        left_snap_location = left_sp.location.x
+        if left_assembly_x_snap > left_snap_location:
+            cal_left_x_snap = left_assembly_x_snap
+        else:
+            cal_left_x_snap = left_snap_location
+    elif left_assembly:
+        cal_left_x_snap = left_assembly.obj_bp.location.x + left_assembly.obj_x.location.x
+    elif left_sp:
+        cal_left_x_snap = left_sp.location.x
+    else:
+        cal_left_x_snap = 0
+
+    #GET RIGHT SNAP LOCATION
+    cal_right_x_snap = 0
+    if right_assembly and right_sp:
+        if right_assembly.obj_bp.location.x < right_sp.location.x:
+            cal_right_x_snap = right_assembly.obj_bp.location.x
+        else:
+            cal_right_x_snap = right_sp.location.x
+    elif right_assembly:
+        cal_right_x_snap = right_assembly.obj_bp.location.x
+    elif right_sp:
+        cal_right_x_snap = right_sp.location.x
+    else:
+        cal_right_x_snap = wall.obj_x.location.x
+
+    return cal_left_x_snap,cal_right_x_snap
+
 def get_snap_points(wall):
     list_objs = []
     for child in wall.obj_bp.children:

@@ -14,7 +14,7 @@ from bpy.props import (
         CollectionProperty,
         EnumProperty,
         )
-from pc_lib import pc_types, pc_unit, pc_utils
+from pc_lib import pc_types, pc_unit, pc_utils, pc_placement_utils
 from . import library_cabinet
 from . import utils_cabinet
 from . import utils_placement
@@ -588,10 +588,21 @@ class hb_sample_cabinets_OT_clear_cabinet_carcass(bpy.types.Operator):
         self.carcass.add_insert(opening)
         return {'FINISHED'}
 
+def update_left_right_x(self,context):
+    obj = bpy.data.objects[self.cabinet_bp_name]           
+    cabinet = types_cabinet.Cabinet(obj)
+    wall_bp = pc_utils.get_bp_by_tag(obj,const.WALL_TAG)
+    if wall_bp:
+        wall = pc_types.Assembly(wall_bp)
+
+    search_point = (self.x_search_loc,0,self.z_search_loc)
+    self.left_x, self.right_x = pc_placement_utils.get_left_right_collision_location_from_point(wall,search_point,None,cabinet)
 
 class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
     bl_idname = "hb_sample_cabinets.place_cabinet_on_wall"
-    bl_label = "Place Cabinet On Wall"
+    bl_label = "Place Wall Cabinet"
+
+    cabinet_bp_name: bpy.props.StringProperty(name="Cabinet Name",default="")
 
     cabinet_name: bpy.props.StringProperty(name="Cabinet Name",default="")
     
@@ -613,17 +624,36 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
                                      default='SELECTED_POINT')
 
     quantity: bpy.props.IntProperty(name="Quantity",default=1)
-    left_offset: bpy.props.FloatProperty(name="Left Offset", default=0,subtype='DISTANCE')
-    right_offset: bpy.props.FloatProperty(name="Right Offset", default=0,subtype='DISTANCE')
+    left_offset: bpy.props.FloatProperty(name="Left Offset", default=0,precision=4,subtype='DISTANCE')
+    right_offset: bpy.props.FloatProperty(name="Right Offset", default=0,precision=4,subtype='DISTANCE')
+    x_search_loc: bpy.props.FloatProperty(name="X Search Location", default=0,precision=4,subtype='DISTANCE')
+    z_search_loc: bpy.props.FloatProperty(name="Z Search Location", default=0,precision=4,subtype='DISTANCE',update=update_left_right_x)
+
+    left_x: bpy.props.FloatProperty(name="Left X Hit Location", default=0,precision=4,subtype='DISTANCE')
+    right_x: bpy.props.FloatProperty(name="Right X Hit Location", default=0,precision=4,subtype='DISTANCE')
 
     default_width = 0
     selected_location = 0
 
     cabinet = None
     qty_cage = None
+    wall = None
 
+    width_dim = None
+    left_dim = None
+    center_left_dim = None
+    center_right_dim = None
+    right_dim = None
+    
     def __del__(self):
-        pc_utils.delete_object_and_children(self.qty_cage.obj_bp)  
+        if self.qty_cage and self.qty_cage.obj_bp:
+            pc_utils.delete_object_and_children(self.qty_cage.obj_bp)  
+        pc_utils.delete_object_and_children(self.width_dim.obj) 
+        pc_utils.delete_object_and_children(self.left_dim.obj) 
+        pc_utils.delete_object_and_children(self.center_left_dim.obj) 
+        pc_utils.delete_object_and_children(self.right_dim.obj) 
+        pc_utils.delete_object_and_children(self.center_right_dim.obj) 
+        pc_utils.delete_object_and_children(self.snap_line) 
 
     @classmethod
     def poll(cls, context):
@@ -637,11 +667,79 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
 
     def reset_variables(self):
         self.quantity = 1
-        self.left_offset = 0
-        self.right_offset = 0
         self.cabinet = None
         self.position = 'SELECTED_POINT'
         self.qty_cage = None
+        self.left_offset = 0
+        self.right_offset = 0
+
+    def create_dims(self,context):
+        self.width_dim = pc_types.GeoNodeDimension()
+        self.width_dim.create()
+        self.width_dim.obj.parent = self.wall.obj_bp
+        self.width_dim.set_input("Leader Length",pc_unit.inch(0))
+        self.width_dim.obj.rotation_euler.x = math.radians(90)
+
+        self.left_dim = pc_types.GeoNodeDimension()
+        self.left_dim.create()
+        self.left_dim.obj.parent = self.wall.obj_bp
+        self.left_dim.set_input("Leader Length",pc_unit.inch(0))
+        self.left_dim.obj.rotation_euler.x = math.radians(90)
+
+        self.right_dim = pc_types.GeoNodeDimension()
+        self.right_dim.create()
+        self.right_dim.obj.parent = self.wall.obj_bp
+        self.right_dim.set_input("Leader Length",pc_unit.inch(0))
+        self.right_dim.obj.rotation_euler.x = math.radians(90)
+
+        self.center_right_dim = pc_types.GeoNodeDimension()
+        self.center_right_dim.create()
+        self.center_right_dim.obj.parent = self.wall.obj_bp
+        self.center_right_dim.set_input("Leader Length",pc_unit.inch(0))
+        self.center_right_dim.obj.rotation_euler.x = math.radians(90)
+
+        self.center_left_dim = pc_types.GeoNodeDimension()
+        self.center_left_dim.create()
+        self.center_left_dim.obj.parent = self.wall.obj_bp
+        self.center_left_dim.set_input("Leader Length",pc_unit.inch(0))
+        self.center_left_dim.obj.rotation_euler.x = math.radians(90)
+
+    def update_dims(self):
+        self.width_dim.obj.location.z = self.z_search_loc
+        self.width_dim.obj.select_set(False)
+        self.width_dim.obj.color = (0,0,0,1)
+        self.width_dim.obj.show_in_front = True
+        self.width_dim.obj.data.splines[0].bezier_points[0].co = (self.cabinet.obj_bp.location.x,0,0)
+        self.width_dim.obj.data.splines[0].bezier_points[1].co = (self.cabinet.obj_bp.location.x+self.cabinet.obj_x.location.x,0,0)
+        self.width_dim.update()
+
+        self.left_dim.obj.location.z = self.z_search_loc
+        self.left_dim.obj.select_set(False)
+        self.left_dim.obj.show_in_front = True
+        self.left_dim.obj.data.splines[0].bezier_points[0].co = (0,0,0)
+        self.left_dim.obj.data.splines[0].bezier_points[1].co = (self.left_x,0,0)
+        self.left_dim.update()
+
+        self.center_left_dim.obj.location.z = self.z_search_loc
+        self.center_left_dim.obj.select_set(False)
+        self.center_left_dim.obj.show_in_front = True
+        self.center_left_dim.obj.data.splines[0].bezier_points[0].co = (self.left_x,0,0)
+        self.center_left_dim.obj.data.splines[0].bezier_points[1].co = (self.cabinet.obj_bp.location.x,0,0)
+        self.center_left_dim.update()
+
+        self.center_right_dim.obj.location.z = self.z_search_loc
+        self.center_right_dim.obj.select_set(False)
+        self.center_right_dim.obj.show_in_front = True
+        self.center_right_dim.obj.data.splines[0].bezier_points[0].co = (self.cabinet.obj_bp.location.x+self.cabinet.obj_x.location.x,0,0)
+        self.center_right_dim.obj.data.splines[0].bezier_points[1].co = (self.right_x,0,0)
+        self.center_right_dim.update()
+
+        self.right_dim.obj.location.z = self.z_search_loc
+        self.right_dim.obj.select_set(False)
+        self.right_dim.obj.show_in_front = True  
+        self.right_dim.obj.data.splines[0].bezier_points[0].co = (self.right_x,0,0)
+        self.right_dim.obj.data.splines[0].bezier_points[1].co = (self.wall.obj_x.location.x,0,0)
+        self.right_dim.update()
 
     def set_product_defaults(self):
         self.cabinet.obj_bp.location.x = self.selected_location + self.left_offset
@@ -651,24 +749,12 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         obj.hide_viewport = False
         obj.select_set(True)
         for child in obj.children:
-            if child.animation_data:
-                for driver in child.animation_data.drivers:
-                    driver.mute = True
             obj.hide_viewport = False
             child.select_set(True)
             self.select_obj_and_children(child)
 
-    def unmute_drivers(self,obj):
-        for child in obj.children:
-            if child.animation_data:
-                for driver in child.animation_data.drivers:
-                    driver.mute = False
-            self.unmute_drivers(child)
-
     def hide_empties_and_boolean_meshes(self,obj):
-        if 'IS_OPENING_MESH' in obj:
-            pass
-        else:
+        if 'IS_OPENING_MESH' not in obj:
             if obj.type == 'EMPTY' or obj.hide_render:
                 obj.hide_viewport = True
         for child in obj.children:
@@ -679,40 +765,38 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         self.select_obj_and_children(cabinet.obj_bp)
         bpy.ops.object.duplicate_move()
         obj = context.active_object
-        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)  
-        self.unmute_drivers(cabinet_bp)   
+        cabinet_bp = pc_utils.get_bp_by_tag(obj,const.CABINET_TAG)
         return pc_types.Assembly(cabinet_bp)
 
     def check(self, context):
-        # wall_bp = home_builder_utils.get_wall_bp(self.cabinet.obj_bp)
-        # if wall_bp:
-        left_x = utils_placement.get_left_collision_location(self.cabinet)
-        right_x = utils_placement.get_right_collision_location(self.cabinet)
         offsets = self.left_offset + self.right_offset
         self.set_product_defaults()
         if self.position == 'FILL':
-            self.cabinet.obj_bp.location.x = left_x + self.left_offset
-            self.cabinet.obj_x.location.x = (right_x - left_x - offsets) / self.quantity
+            self.cabinet.obj_bp.location.x = self.left_x + self.left_offset
+            self.cabinet.obj_x.location.x = (self.right_x - self.left_x - offsets) / self.quantity
         if self.position == 'FILL_LEFT':
-            self.cabinet.obj_bp.location.x = left_x + self.left_offset
-            self.cabinet.obj_x.location.x = (self.default_width + (self.selected_location - left_x) - offsets) / self.quantity
+            self.cabinet.obj_bp.location.x = self.left_x + self.left_offset
+            self.cabinet.obj_x.location.x = (self.default_width + (self.selected_location - self.left_x) - offsets) / self.quantity
         if self.position == 'LEFT':
             # if self.cabinet.obj_bp.mv.placement_type == 'Corner':
             #     self.cabinet.obj_bp.rotation_euler.z = math.radians(0)
-            self.cabinet.obj_bp.location.x = left_x + self.left_offset
+            self.cabinet.obj_bp.location.x = self.left_x + self.left_offset
             self.cabinet.obj_x.location.x = self.width
         if self.position == 'CENTER':
             self.cabinet.obj_x.location.x = self.width
-            self.cabinet.obj_bp.location.x = left_x + (right_x - left_x)/2 - ((self.cabinet.obj_x.location.x/2) * self.quantity)
+            self.cabinet.obj_bp.location.x = self.left_x + (self.right_x - self.left_x)/2 - ((self.cabinet.obj_x.location.x/2) * self.quantity) + self.left_offset
         if self.position == 'RIGHT':
             # if self.cabinet.obj_bp.mv.placement_type == 'Corner':
             #     self.cabinet.obj_bp.rotation_euler.z = math.radians(-90)
             self.cabinet.obj_x.location.x = self.width
-            self.cabinet.obj_bp.location.x = (right_x - self.cabinet.obj_x.location.x) - self.right_offset
+            self.cabinet.obj_bp.location.x = (self.right_x - self.cabinet.obj_x.location.x) - self.right_offset
         if self.position == 'FILL_RIGHT':
             self.cabinet.obj_bp.location.x = self.selected_location + self.left_offset
-            self.cabinet.obj_x.location.x = ((right_x - self.selected_location) - offsets) / self.quantity
+            self.cabinet.obj_x.location.x = ((self.right_x - self.selected_location) - offsets) / self.quantity
         self.update_quantity()
+
+        self.update_dims()
+
         return True
 
     def create_qty_cage(self):
@@ -745,6 +829,7 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         new_products = []  
         previous_product = None
         width = self.cabinet.obj_x.location.x 
+        pc_utils.delete_object_and_children(self.qty_cage.obj_bp)  
         if self.quantity > 1:
             for i in range(self.quantity - 1):
                 if previous_product:
@@ -757,7 +842,6 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
                     new_product.obj_bp.location.x += width
                 new_products.append(new_product)
                 previous_product = new_product
-        self.unmute_drivers(self.cabinet.obj_bp)
 
         for new_p in new_products:
             self.hide_empties_and_boolean_meshes(new_p.obj_bp)
@@ -766,11 +850,7 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
             new_p.obj_z.hide_viewport = False
             new_p.obj_x.empty_display_size = .001
             new_p.obj_y.empty_display_size = .001
-            new_p.obj_z.empty_display_size = .001          
-            for child in new_p.obj_bp.children_recursive:
-                if child.animation_data:
-                    for driver in child.animation_data.drivers:
-                        driver.mute = False                     
+            new_p.obj_z.empty_display_size = .001                
             # home_builder_utils.show_assembly_xyz(new_p)
 
         self.hide_empties_and_boolean_meshes(self.cabinet.obj_bp)
@@ -781,7 +861,12 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         self.cabinet.obj_y.empty_display_size = .001
         self.cabinet.obj_z.empty_display_size = .001            
         # home_builder_utils.show_assembly_xyz(self.cabinet)
-
+        pc_utils.delete_object_and_children(self.width_dim.obj) 
+        pc_utils.delete_object_and_children(self.left_dim.obj) 
+        pc_utils.delete_object_and_children(self.right_dim.obj) 
+        pc_utils.delete_object_and_children(self.center_right_dim.obj) 
+        pc_utils.delete_object_and_children(self.center_left_dim.obj) 
+        # pc_utils.delete_object_and_children(self.snap_line) 
         return {'FINISHED'}
 
     def get_calculators(self,obj):
@@ -800,6 +885,15 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         self.width = math.fabs(self.cabinet.obj_x.location.x)
         self.selected_location = self.cabinet.obj_bp.location.x
         self.default_width = self.cabinet.obj_x.location.x
+        self.x_search_loc = self.cabinet.obj_bp.location.x
+        self.create_dims(context)
+        # self.update_dims()
+
+        search_point = (self.x_search_loc,0,self.z_search_loc)
+        self.left_x, self.right_x = pc_placement_utils.get_left_right_collision_location_from_point(self.wall,search_point,None,self.cabinet)
+        self.z_search_loc = self.cabinet.obj_bp.location.z + self.cabinet.obj_z.location.z/2
+        self.update_dims()
+
         bpy.ops.object.select_all(action='DESELECT')
         for child in self.qty_cage.obj_bp.children:
             if child.type == 'MESH':
@@ -811,7 +905,15 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_TAG)
         if not bp:
             bp = pc_utils.get_bp_by_tag(context.object,const.APPLIANCE_TAG)
+        if not bp:
+            bp = pc_utils.get_bp_by_tag(context.object,const.CABINET_FF_STARTER_TAG)
+        if not bp:
+            bp = pc_utils.get_bp_by_tag(context.object,'IS_FLOATING_SHELVES_BP')  
+        self.cabinet_bp_name = bp.name          
         self.cabinet = types_cabinet.Cabinet(bp)
+        wall_bp = pc_utils.get_bp_by_tag(context.object,const.WALL_TAG)
+        if wall_bp:
+            self.wall = pc_types.Assembly(wall_bp)
 
     def draw(self, context):
         layout = self.layout
@@ -823,6 +925,7 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
         box = layout.box()
         row = box.row(align=True)
         row.label(text="Position Options:",icon='EMPTY_ARROWS')
+        row.prop(self,'z_search_loc',text="Search Location")
         row = box.row(align=False)
         row.prop_enum(self,'position', 'SELECTED_POINT',icon='RESTRICT_SELECT_OFF',text="Selected Point")
         if self.allow_fills:
@@ -850,8 +953,15 @@ class hb_sample_cabinets_OT_place_cabinet_on_wall(bpy.types.Operator):
 
         col = split.column(align=True)
         col.label(text="Offset:")
-        col.prop(self,"left_offset",text="Left")
-        col.prop(self,"right_offset",text="Right")
+        if self.position in {'SELECTED_POINT','FILL'}:
+            col.prop(self,"left_offset",text="Left")
+            col.prop(self,"right_offset",text="Right")
+        if self.position == 'CENTER':
+            col.prop(self,"left_offset",text="Horizontal")
+        if self.position in {'LEFT','FILL_LEFT'}:
+            col.prop(self,"left_offset",text="Horizontal")
+        if self.position in {'RIGHT','FILL_RIGHT'}:
+            col.prop(self,"right_offset",text="Horizontal")          
         col.prop(self.cabinet.obj_bp,"location",index=2,text="Height From Floor")
 
 
