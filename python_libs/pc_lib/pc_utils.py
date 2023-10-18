@@ -543,3 +543,7 @@ def add_driver_variables(driver,variables):
         
 def get_geo_node_path():
     return os.path.join(os.path.dirname(__file__),'assets','GeoNodeObjects','GeoPart.blend')
+
+def get_dimension_material():
+    path = os.path.join(os.path.dirname(__file__),'assets','Materials','library.blend')
+    return get_material(path,'Dimension')

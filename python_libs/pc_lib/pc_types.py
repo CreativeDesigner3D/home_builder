@@ -887,25 +887,97 @@ class Annotation(Assembly):
         row.prop(self.obj_text.pyclone,'flip_y',text="Y")     
         
 
-class GeoNodeDim():
+class GeoNodeObject():
 
-    def __init__(self,obj=None):
-        pass
-    
-    def create_dimension(self,layout_view=None):
-        PATH = os.path.join(os.path.dirname(__file__),'assets',"GeoNodeDim.blend")
+    obj = None
+    coll = None
 
-        with bpy.data.libraries.load(PATH) as (data_from, data_to):
-            data_to.objects = data_from.objects
-
+    def __init__(self,obj=None,layout_view = None):
+        if obj:
+            self.obj = obj
         if layout_view:
-            collection = layout_view.dimension_collection
+            self.coll = layout_view.dimension_collection
         else:
-            collection = bpy.context.view_layer.active_layer_collection.collection
-        
-        for obj in data_to.objects:
-            collection.objects.link(obj)
-            return obj
+            self.coll = bpy.context.view_layer.active_layer_collection.collection
+    
+    def set_curve_to_vector(self,context):
+        self.obj.select_set(True)
+        context.view_layer.objects.active = self.obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.curve.select_all(action='SELECT')
+        bpy.ops.curve.handle_type_set(type='VECTOR')
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    def set_input(self,name,value):
+        for mod in self.obj.modifiers:
+            if mod.type == 'NODES':
+                node = mod.node_group
+                break
+        for index, input in enumerate(node.inputs):
+            if node.inputs[index].name == name:
+                exec('mod["' + input.identifier + '"] = value')
+                self.obj.update_tag(refresh={'DATA'})
+                break
+
+    def get_input(self,name):
+        for mod in self.obj.modifiers:
+            if mod.type == 'NODES':
+                node = mod.node_group
+                break
+        for index, input in enumerate(node.inputs):
+            if node.inputs[index].name == name:
+                return eval('mod["' + input.identifier + '"]')
+            
+
+class GeoNodeDimension(GeoNodeObject):
+
+    geo_node_name = "GeoNodeDimension"
+
+    def create(self,layout_view=None):
+        mat = pc_utils.get_dimension_material()
+        props = bpy.context.scene.pyclone
+        if self.geo_node_name in bpy.data.node_groups:
+            node = bpy.data.node_groups[self.geo_node_name]
+            curve = bpy.data.curves.new('Dimension','CURVE')
+            spline = curve.splines.new('BEZIER')
+            spline.bezier_points.add(1)
+            self.obj = bpy.data.objects.new('Dimension',curve)
+            mod = self.obj.modifiers.new('HBDimension','NODES')
+            mod.node_group = node
+        else:
+            PATH = os.path.join(os.path.dirname(__file__),'assets','GeoNodeObjects',self.geo_node_name + ".blend")
+            with bpy.data.libraries.load(PATH) as (data_from, data_to):
+                data_to.objects = data_from.objects
+            for obj in data_to.objects:
+                self.obj = obj
+        self.obj[self.geo_node_name] = True
+        self.obj['PROMPT_ID'] = 'pc_layout_view.show_dimension_properties'
+        self.obj['MENU_ID'] = 'CWP_MT_dimension_commands'
+        if self.coll:
+            self.coll.objects.link(self.obj)
+        else:
+            bpy.context.view_layer.active_layer_collection.collection.objects.link(self.obj)
+        self.obj.display.show_shadows = False
+        self.obj.color = (0,0,0,1)
+        self.set_input('Text Size',props.text_size)
+        self.set_input('Arrow Height',props.arrow_height)
+        self.set_input('Arrow Length',props.arrow_length)
+        self.set_input('Line Thickness',props.line_thickness)
+        self.set_input('Material',mat)
+        self.set_curve_to_vector(bpy.context)
+
+    def set_dim_decimal(self):
+        p1 = self.obj.data.splines[0].bezier_points[0].co
+        p2 = self.obj.data.splines[0].bezier_points[1].co    
+
+        dist = pc_utils.calc_distance(p1,p2) 
+
+        text = str(round(pc_unit.meter_to_inch(math.fabs(dist)),3))
+        inch_value, decimal_value = text.split(".")
+        if decimal_value == "0":
+            self.set_input("Decimals",0)
+        else:
+            self.set_input("Decimals",len(decimal_value))
 
 
 class Dimension(Assembly):

@@ -46,7 +46,7 @@ class VIEW3D_PT_pc_layout_view(Panel):
 
         box = layout.box()
         box.label(text="Layout View Tools")
-        box.operator('home_builder.add_geo_node_dimension',text="Add Dimension")
+        box.operator('pc_layout_view.draw_geo_node_dimension',text="Add Dimension")
         
         box = layout.box()
 

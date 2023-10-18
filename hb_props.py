@@ -2,6 +2,7 @@ import bpy
 import os
 from pc_lib import pc_unit
 from . import hb_utils
+import math
 from bpy.types import (
         Operator,
         Panel,
@@ -135,6 +136,9 @@ class Home_Builder_Scene_Props(PropertyGroup):
 
     wall_height: FloatProperty(name="Wall Height",default=pc_unit.inch(96),subtype='DISTANCE')
     wall_thickness: FloatProperty(name="Wall Thickness",default=pc_unit.inch(6),subtype='DISTANCE')
+
+    wall_distance_snap_value: FloatProperty(name="Wall Distance Snap Value",default=pc_unit.inch(1),subtype='DISTANCE')
+    wall_angle_snap_value: FloatProperty(name="Wall Angle Snap Value",default=math.radians(45),subtype='ANGLE')
 
     @classmethod
     def register(cls):

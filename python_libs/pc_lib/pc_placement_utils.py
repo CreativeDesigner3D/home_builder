@@ -1,5 +1,16 @@
 import math
-from . import pc_types, pc_unit, pc_utils
+from . import pc_types, pc_unit, pc_utils, pc_const
+
+def get_wall_assemblies(wall):
+    """ This returns a sorted list of all of the assemblies base points
+        parented to the wall
+    """
+    list_obj_bp = []
+    for child in wall.obj_bp.children:
+        if pc_const.IS_ASSEMBLY_BP in child:
+            list_obj_bp.append(child)
+    list_obj_bp.sort(key=lambda obj: obj.location.x, reverse=False)
+    return list_obj_bp
 
 def event_is_place_asset(event):
     if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
@@ -199,3 +210,56 @@ def position_assembly_next_to_cabinet(cabinet,selected_cabinet,mouse_location):
             cabinet.obj_bp.location.x += (sel_cabinet_width/2)  - (cabinet_width/2)
 
     return placement    
+
+def get_snap_points(wall):
+    list_objs = []
+    for child in wall.obj_bp.children:
+        if 'IS_WALL_SNAP_POINT' in child:
+            list_objs.append(child)
+    list_objs.sort(key=lambda obj: obj.location.x, reverse=False)
+    return list_objs
+
+def get_left_wall_collision_assembly_from_selected_point(wall,selected_point,ignore_assembly=None):
+    list_obj_bp = get_wall_assemblies(wall)
+    assemblies = []
+    for bp in list_obj_bp:
+        assemblies.append(pc_types.Assembly(bp))
+    
+    #Collect all Assemblies to the left
+    list_left_assemblies = []
+    for index, assembly in enumerate(assemblies):
+        if ignore_assembly:
+            if assembly.obj_bp.name == ignore_assembly.obj_bp.name:
+                continue
+        if (assembly.obj_bp.location.x + assembly.obj_x.location.x) < selected_point[0]:
+            list_left_assemblies.append(assembly)
+            
+    #Search Backwards for First Height Collision Assembly
+    list_left_assemblies.reverse()
+    for left_assembly in list_left_assemblies:
+        if selected_point[2] > left_assembly.obj_bp.location.z and selected_point[2] < (left_assembly.obj_bp.location.z + left_assembly.obj_z.location.z):
+            return left_assembly
+    
+    return None
+
+def get_right_wall_collision_assembly_from_selected_point(wall,selected_point,ignore_assembly=None):
+    list_obj_bp = get_wall_assemblies(wall)
+    assemblies = []
+    for bp in list_obj_bp:
+        assemblies.append(pc_types.Assembly(bp))
+    
+    #Collect all Assemblies to the left
+    list_right_assemblies = []
+    for index, assembly in enumerate(assemblies):
+        if ignore_assembly:
+            if assembly.obj_bp.name == ignore_assembly.obj_bp.name:
+                continue        
+        if (assembly.obj_bp.location.x + assembly.obj_x.location.x) > selected_point[0]:
+            list_right_assemblies.append(assembly)
+            
+    #Search Forward for First Height Collision Assembly
+    for right_assembly in list_right_assemblies:
+        if selected_point[2] > right_assembly.obj_bp.location.z and selected_point[2] < (right_assembly.obj_bp.location.z + right_assembly.obj_z.location.z):
+            return right_assembly
+    
+    return None

@@ -19,6 +19,7 @@ from . import hb_drop_ops
 from .pyclone_ops import pc_assembly
 from .pyclone_ops import pc_driver
 from .pyclone_ops import pc_general
+from .pyclone_ops import pc_layout_view
 from .pyclone_ops import pc_library
 from .pyclone_ops import pc_material
 from .pyclone_ops import pc_object
@@ -107,6 +108,7 @@ def register():
     pc_assembly.register()
     pc_driver.register()
     pc_general.register()
+    pc_layout_view.register()
     pc_library.register()
     pc_material.register()
     pc_object.register()
@@ -135,6 +137,7 @@ def unregister():
     pc_assembly.unregister()
     pc_driver.unregister()
     pc_general.unregister()
+    pc_layout_view.unregister()
     pc_library.unregister()
     pc_material.unregister()
     pc_object.unregister()
