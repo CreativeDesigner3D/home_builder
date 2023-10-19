@@ -899,38 +899,7 @@ class GeoNodeObject():
             self.coll = layout_view.dimension_collection
         else:
             self.coll = bpy.context.view_layer.active_layer_collection.collection
-    
-    def set_curve_to_vector(self,context):
-        self.obj.select_set(True)
-        context.view_layer.objects.active = self.obj
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.curve.select_all(action='SELECT')
-        bpy.ops.curve.handle_type_set(type='VECTOR')
-        bpy.ops.object.mode_set(mode='OBJECT')
 
-    def update(self):
-        self.obj.hide_viewport = False
-        dim_length = pc_utils.calc_distance(self.obj.data.splines[0].bezier_points[0].co,self.obj.data.splines[0].bezier_points[1].co)
-        if dim_length == 0:
-            self.obj.hide_viewport = True
-        elif dim_length <= pc_unit.inch(7):
-            self.set_input("Offset Text From Line",True)
-        else:
-            self.set_input("Offset Text From Line",False)
-
-    def set_dim_decimal(self):
-        p1 = self.obj.data.splines[0].bezier_points[0].co
-        p2 = self.obj.data.splines[0].bezier_points[1].co    
-
-        dist = pc_utils.calc_distance(p1,p2) 
-
-        text = str(round(pc_unit.meter_to_inch(math.fabs(dist)),3))
-        inch_value, decimal_value = text.split(".")
-        if decimal_value == "0":
-            self.set_input("Decimals",0)
-        else:
-            self.set_input("Decimals",len(decimal_value))
-            
     def set_input(self,name,value):
         for mod in self.obj.modifiers:
             if mod.type == 'NODES':
@@ -988,6 +957,33 @@ class GeoNodeDimension(GeoNodeObject):
         self.set_input('Line Thickness',props.line_thickness)
         self.set_input('Material',mat)
         self.set_curve_to_vector(bpy.context)
+
+    def set_curve_to_vector(self,context):
+        self.obj.select_set(True)
+        context.view_layer.objects.active = self.obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.curve.select_all(action='SELECT')
+        bpy.ops.curve.handle_type_set(type='VECTOR')
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+    def update(self):
+        self.obj.hide_viewport = False
+        p1 = self.obj.data.splines[0].bezier_points[0].co
+        p2 = self.obj.data.splines[0].bezier_points[1].co   
+        dist = pc_utils.calc_distance(p1,p2)        
+        if dist == 0:
+            self.obj.hide_viewport = True
+        elif dist <= pc_unit.inch(7):
+            self.set_input("Offset Text From Line",True)
+        else:
+            self.set_input("Offset Text From Line",False)
+
+        text = str(round(pc_unit.meter_to_inch(math.fabs(dist)),3))
+        inch_value, decimal_value = text.split(".")
+        if decimal_value == "0":
+            self.set_input("Decimals",0)
+        else:
+            self.set_input("Decimals",len(decimal_value))
 
     def set_dim_decimal(self):
         p1 = self.obj.data.splines[0].bezier_points[0].co

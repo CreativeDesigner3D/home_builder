@@ -266,6 +266,20 @@ class Drop_Operator(bpy.types.Operator):
         args = (self, context)
         self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
 
+    def get_view_orientation_from_quaternion(self):
+        view_quat = self.region.data.view_rotation
+        r = lambda x: round(x, 3)
+        view_rot = view_quat.to_euler()
+
+        orientation_dict = {(0.0, 0.0, 0.0) : 'TOP',
+                            (r(math.pi), 0.0, 0.0) : 'BOTTOM',
+                            (r(math.pi/2), 0.0, 0.0) : 'FRONT',
+                            (r(math.pi/2), 0.0, r(math.pi)) : 'BACK',
+                            (r(math.pi/2), 0.0, r(-math.pi/2)) : 'LEFT',
+                            (r(math.pi/2), 0.0, r(math.pi/2)) : 'RIGHT'}
+
+        return orientation_dict.get(tuple(map(r, view_rot)), 'UNDEFINED')
+    
     def get_calculators(self,obj):
         for calculator in obj.pyclone.calculators:
             self.calculators.append(calculator)
