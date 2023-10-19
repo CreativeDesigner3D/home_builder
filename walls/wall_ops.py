@@ -50,7 +50,7 @@ def set_wall_angles(current_wall):
     if next_wall:
         next_wall.obj_prompts.location = next_wall.obj_prompts.location
 
-class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
+class home_builder_OT_draw_multiple_walls(pc_snap.Drop_Operator):
     bl_idname = "home_builder.draw_multiple_walls"
     bl_label = "Draw Multiple Walls"
     bl_options = {'UNDO'}
@@ -60,8 +60,6 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
     obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
     
     region = None
-
-    drawing_plane = None
 
     current_wall = None
     previous_wall = None
@@ -87,14 +85,13 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
     ht_space = "                         "
     ht_cancel_command = "(RIGHT CLICK or ESC = Exit Command)"
     ht_close_room = "(C = Close Room)"
-    ht_set_angle = "(HOLD CTRL = Set Angle)"
+    ht_set_angle = "(HOLD ALT = Set Angle)"
     ht_type_numbers = "(Type numbers to set wall Length)"
     ht_start = ht_start_command + ht_space + ht_cancel_command
     ht_second_click = ht_next_click_command + ht_space + ht_type_numbers + ht_space + ht_set_angle + ht_space + ht_cancel_command
     ht_forth_click = ht_next_click_command + ht_space + ht_close_room + ht_space + ht_type_numbers + ht_space + ht_set_angle + ht_space + ht_cancel_command
 
     def reset_properties(self):
-        self.drawing_plane = None
         self.current_wall = None
         self.previous_wall = None
         self.starting_point = ()
@@ -105,9 +102,9 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.obj_wall_meshes = []        
 
     def execute(self, context):
-        self.region = pc_utils.get_3d_view_region(context)
+        self.setup_drop_operator(context)
+        bpy.data.objects.remove(self.snap_line, do_unlink=True)
         self.reset_properties()   
-        self.create_drawing_plane(context)
         self.create_wall()
         context.workspace.status_text_set(text=self.ht_start)
         context.window_manager.modal_handler_add(self)
@@ -140,29 +137,25 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.current_wall.obj_prompts.hide_viewport = False
         self.set_child_properties(self.current_wall.obj_bp)
 
-        self.dim = pc_types.Dimension()
-        self.dim.create_dimension()
-        self.dim.obj_bp.rotation_euler.y = 0
-        self.dim.obj_y.location.y = pc_unit.inch(20)
-        self.dim.obj_bp.parent = self.current_wall.obj_bp
-        self.dim.obj_x.location.x = self.current_wall.obj_x.location.x
-        self.dim.obj_bp.location.z = self.current_wall.obj_z.location.z + .01
-        self.dim.obj_bp.hide_viewport = False
-        self.dim.obj_x.hide_viewport = False
-        self.dim.obj_y.hide_viewport = False
-        self.dim.obj_z.hide_viewport = False
-        self.dim.get_prompt("Font Size").set_value(0)
-        self.dim.get_prompt("Arrow Height").set_value(pc_unit.inch(4))
-        self.dim.get_prompt("Arrow Length").set_value(pc_unit.inch(5))
-        self.dim.get_prompt("Line Thickness").set_value(pc_unit.inch(.5))
-        self.dim.update_dim_text()        
+        self.dim = pc_types.GeoNodeDimension()
+        self.dim.create()
+        self.dim.obj.parent = self.current_wall.obj_bp
+        self.dim.set_input("Leader Length",pc_unit.inch(3))
+        self.dim.set_input("Offset Text Amount",pc_unit.inch(6))
+        self.dim.set_input("Text Size",.15)
+        self.dim.set_input("Arrow Height",.08)
+        self.dim.set_input("Arrow Length",.1)
+        self.dim.set_input("Line Thickness",.007)
+        self.dim.obj.location.z = self.current_wall.obj_z.location.z
+        self.dim.obj.select_set(False)
+        self.dim.obj.color = (0,0,0,1)
+        self.dim.obj.show_in_front = True
 
         for obj in self.current_wall.obj_bp.children:
             self.exclude_objects.append(obj)
 
-        for obj in self.dim.obj_bp.children:
-            self.exclude_objects.append(obj)
-            
+        self.exclude_objects.append(self.dim.obj)
+
     def connect_walls(self):
         self.current_wall.obj_bp.location = self.previous_wall.obj_x.matrix_world.translation
         constraint_obj = self.previous_wall.obj_x
@@ -179,9 +172,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         if obj.type == 'EMPTY':
             obj.hide_viewport = True    
         if obj.type == 'MESH':
-            obj.display_type = 'WIRE'            
-        if obj.name != self.drawing_plane.name:
-            self.exclude_objects.append(obj)    
+            obj.display_type = 'WIRE'              
         for child in obj.children:
             self.set_child_properties(child)
 
@@ -191,44 +182,6 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             self.obj_wall_meshes.append(obj)
         for child in obj.children:
             self.set_placed_properties(child) 
-
-    def create_drawing_plane(self,context):
-        bpy.ops.mesh.primitive_plane_add()
-        plane = context.active_object
-        plane.location = (0,0,0)
-        self.drawing_plane = context.active_object
-        self.drawing_plane.display_type = 'WIRE'
-        self.drawing_plane.dimensions = (100,100,1)
-
-    def set_type_value(self,event):
-        if event.value == 'PRESS':
-            if event.type == "ONE" or event.type == "NUMPAD_1":
-                self.typed_value += "1"
-            if event.type == "TWO" or event.type == "NUMPAD_2":
-                self.typed_value += "2"
-            if event.type == "THREE" or event.type == "NUMPAD_3":
-                self.typed_value += "3"
-            if event.type == "FOUR" or event.type == "NUMPAD_4":
-                self.typed_value += "4"
-            if event.type == "FIVE" or event.type == "NUMPAD_5":
-                self.typed_value += "5"
-            if event.type == "SIX" or event.type == "NUMPAD_6":
-                self.typed_value += "6"
-            if event.type == "SEVEN" or event.type == "NUMPAD_7":
-                self.typed_value += "7"
-            if event.type == "EIGHT" or event.type == "NUMPAD_8":
-                self.typed_value += "8"
-            if event.type == "NINE" or event.type == "NUMPAD_9":
-                self.typed_value += "9"
-            if event.type == "ZERO" or event.type == "NUMPAD_0":
-                self.typed_value += "0"
-            if event.type == "PERIOD" or event.type == "NUMPAD_PERIOD":
-                last_value = self.typed_value[-1:]
-                if last_value != ".":
-                    self.typed_value += "."
-            if event.type == 'BACK_SPACE':
-                if self.typed_value != "":
-                    self.typed_value = self.typed_value[:-1]
 
     def get_first_wall(self,wall):
         if len(wall.obj_bp.constraints) > 0:
@@ -280,6 +233,11 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         x_y = (co + region_offset)
         context.window.cursor_warp(x=int(x_y[0]),y=int(x_y[1]))    
 
+    def hide_objects(self,hide):
+        for obj in self.current_wall.obj_bp.children:
+            if obj.type == 'MESH':
+                obj.hide_viewport = hide
+
     def modal(self, context, event):
         bpy.ops.object.select_all(action='DESELECT')
 
@@ -289,22 +247,33 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         self.mouse_x = event.mouse_x
         self.mouse_y = event.mouse_y
 
-        selected_point, selected_obj, selected_normal = pc_utils.get_selection_point(context,self.region,event,exclude_objects=self.exclude_objects)
+        if event.ctrl:
+            selected_point = self.hit_location
+        else:
+            selected_point = self.get_snap_location(self.hit_location)
+
+        self.hide_objects(True)
+        self.mouse_pos = Vector((event.mouse_x - self.region.x, event.mouse_y - self.region.y))  
+        context.view_layer.update()          
+        pc_snap.main(self, event.ctrl, context)
+        self.hide_objects(False)
 
         connected_wall_bp = None
-        if selected_obj:
-            wall_bp = pc_utils.get_bp_by_tag(selected_obj,'IS_WALL_BP')
+        if self.hit_object:
+            wall_bp = pc_utils.get_bp_by_tag(self.hit_object,'IS_WALL_BP')
             if wall_bp and self.previous_wall == None:
                 connected_wall_bp = wall_bp
 
-        self.position_object(selected_point,selected_obj,event.ctrl)
+        self.position_object(selected_point,self.hit_object,event.alt,event.ctrl)
         self.set_end_angles() 
 
         number_of_walls = self.get_number_of_walls(self.current_wall,0)
 
         if self.starting_point == ():
+            self.dim.obj.hide_viewport = True
             context.workspace.status_text_set(text=self.ht_start)
         else:
+            self.dim.obj.hide_viewport = False
             if number_of_walls > 1:
                 context.workspace.status_text_set(text=self.ht_forth_click)
             else:
@@ -324,11 +293,10 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             first_wall = self.get_first_wall(self.current_wall)
             self.connect_to_first_wall(first_wall,self.current_wall)
             self.set_placed_properties(self.current_wall.obj_bp)
-            pc_utils.delete_object_and_children(self.dim.obj_bp)
+            pc_utils.delete_object_and_children(self.dim.obj)
             #CREATE AND DELETE NEW WALL SO NAMING IS CONSISTENT
             self.create_wall()
             pc_utils.delete_object_and_children(self.current_wall.obj_bp)
-            pc_utils.delete_object_and_children(self.drawing_plane)
             context.workspace.status_text_set(text=None)
             return {'FINISHED'}
 
@@ -348,7 +316,7 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             
         if self.event_is_place_next_point(event):
             context.workspace.status_text_set(text=self.ht_second_click)
-            pc_utils.delete_object_and_children(self.dim.obj_bp)
+            pc_utils.delete_object_and_children(self.dim.obj)
             self.set_placed_properties(self.current_wall.obj_bp)
             self.create_wall()
             self.connect_walls()
@@ -431,24 +399,29 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
         if self.typed_value == "":
             self.current_wall.obj_x.location.x = math.fabs(length)
         else:
-            value = eval(self.typed_value)
-            if bpy.context.scene.unit_settings.system == 'METRIC':
-                if bpy.context.scene.unit_settings.length_unit == 'METERS':
-                    self.current_wall.obj_x.location.x = float(value)
-                elif bpy.context.scene.unit_settings.length_unit == 'CENTIMETERS':
-                    self.current_wall.obj_x.location.x = pc_unit.centimeter(float(value))                    
-                else:
-                    self.current_wall.obj_x.location.x = pc_unit.millimeter(float(value))
+            if self.typed_value == ".":
+                value = 0
             else:
-                if bpy.context.scene.unit_settings.length_unit == 'FEET':
-                    self.current_wall.obj_x.location.x = pc_unit.feet(float(value))   
-                else:
-                    self.current_wall.obj_x.location.x = pc_unit.inch(float(value))
+                value = eval(self.typed_value)
+            if bpy.context.scene.unit_settings.system == 'METRIC':
+                self.current_wall.obj_x.location.x = pc_unit.millimeter(float(value))
+            else:
+                self.current_wall.obj_x.location.x = pc_unit.inch(float(value))     
 
-    def position_object(self,selected_point,selected_obj,set_angle):
+    def get_snap_location(self,selected_point):
+        sv = bpy.context.scene.home_builder.wall_distance_snap_value
+        x = math.ceil(selected_point[0]/sv)
+        y = math.ceil(selected_point[1]/sv)
+        return x*sv, y*sv
+
+    def get_snap_angle(self,angle):
+        sv = bpy.context.scene.home_builder.wall_angle_snap_value
+        return round(angle/sv)*sv
+    
+    def position_object(self,selected_point,selected_obj,set_angle,use_snap):
         if self.starting_point == ():
             self.current_wall.obj_bp.location.x = selected_point[0]
-            self.current_wall.obj_bp.location.y = selected_point[1]
+            self.current_wall.obj_bp.location.y = selected_point[1]           
             self.current_wall.obj_bp.location.z = 0
         else:
             x = selected_point[0] - self.starting_point[0]
@@ -456,56 +429,66 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
             parent_rot = self.current_wall.obj_bp.parent.rotation_euler.z if self.current_wall.obj_bp.parent else 0
 
             if set_angle:
-                dist = pc_utils.calc_distance(self.starting_point, selected_point)
+                dist = pc_utils.calc_distance(self.starting_point, (x,y,0))
                 self.set_wall_length(dist)
                 if dist != 0 and x != 0:
-                    as_angle = math.radians(int(math.degrees(math.asin(y/dist))))
-                    ac_angle = math.radians(int(math.degrees(math.acos(x/dist))))
+                    asin_value = y/dist
+                    acos_value = x/dist
+                    if asin_value < -1:
+                        asin_value = -1
+                    if asin_value > 1:
+                        asin_value = 1
+                    if acos_value > 1:
+                        acos_value = 1
+                    if acos_value < -1:
+                        acos_value = -1
+                    as_angle = math.radians(int(math.degrees(math.asin(asin_value))))
+                    ac_angle = math.radians(int(math.degrees(math.acos(acos_value))))
                     if x > 0:
-                        self.current_wall.obj_bp.rotation_euler.z = as_angle
+                        self.current_wall.obj_bp.rotation_euler.z = self.get_snap_angle(as_angle)
                     elif y > 0:
-                        self.current_wall.obj_bp.rotation_euler.z = ac_angle
+                        self.current_wall.obj_bp.rotation_euler.z = self.get_snap_angle(ac_angle)
                     else:
-                        self.current_wall.obj_bp.rotation_euler.z = math.fabs(as_angle) + math.radians(180)
+                        self.current_wall.obj_bp.rotation_euler.z = self.get_snap_angle(math.fabs(as_angle)) + math.radians(180)
             else:
-                if math.fabs(x) > math.fabs(y):
-                    if x > 0:
-                        self.current_wall.obj_bp.rotation_euler.z = math.radians(0) + parent_rot
-                    else:
-                        self.current_wall.obj_bp.rotation_euler.z = math.radians(180) + parent_rot
-                    self.set_wall_length(x)
+                if use_snap:
+                    if round(self.current_wall.obj_bp.rotation_euler.z,3) == round(math.radians(0) + parent_rot,3):
+                        self.set_wall_length(x)
+                    if round(self.current_wall.obj_bp.rotation_euler.z,3) == round(math.radians(180) + parent_rot,3):
+                        self.set_wall_length(x)
+                    if round(self.current_wall.obj_bp.rotation_euler.z,3) == round(math.radians(90) + parent_rot,3):
+                        self.set_wall_length(y)
+                    if round(self.current_wall.obj_bp.rotation_euler.z,3) == round(math.radians(-90) + parent_rot,3):
+                        self.set_wall_length(y)                                                            
+                else:
+                    if math.fabs(x) > math.fabs(y):
+                        if x > 0:
+                            self.current_wall.obj_bp.rotation_euler.z = math.radians(0) + parent_rot
+                        else:
+                            self.current_wall.obj_bp.rotation_euler.z = math.radians(180) + parent_rot
+                        self.set_wall_length(x)
+                
+                    if math.fabs(y) > math.fabs(x):
+                        if y > 0:
+                            self.current_wall.obj_bp.rotation_euler.z = math.radians(90) + parent_rot
+                        else:
+                            self.current_wall.obj_bp.rotation_euler.z = math.radians(-90) + parent_rot
+                        self.set_wall_length(y)
             
-                if math.fabs(y) > math.fabs(x):
-                    if y > 0:
-                        self.current_wall.obj_bp.rotation_euler.z = math.radians(90) + parent_rot
-                    else:
-                        self.current_wall.obj_bp.rotation_euler.z = math.radians(-90) + parent_rot
-                    self.set_wall_length(y)
-            
-            self.dim.obj_x.location.x = self.current_wall.obj_x.location.x
-            
+            self.dim.obj.data.splines[0].bezier_points[0].co = (0,0,0)
+            self.dim.obj.data.splines[0].bezier_points[1].co = (self.current_wall.obj_x.location.x,0,0)
+
+            if self.current_wall.obj_x.location.x < pc_unit.inch(20):
+                self.dim.set_input("Offset Text From Line",True)
+            else:
+                self.dim.set_input("Offset Text From Line",False)
+
             if self.current_wall.obj_bp.rotation_euler.z > math.radians(179):
-                self.dim.obj_text.scale.x = -1
-                self.dim.obj_text.scale.y = -1
+                self.dim.set_input("Flip Text",True)
             else:
-                self.dim.obj_text.scale.x = 1
-                self.dim.obj_text.scale.y = 1
-            font_size = self.dim.get_prompt("Font Size")
-            if self.dim.obj_x.location.x == 0:
-                font_size.set_value(0)  
-            elif self.dim.obj_x.location.x >= pc_unit.inch(30):
-                font_size.set_value(.2) 
-            elif self.dim.obj_x.location.x >= pc_unit.inch(20):
-                font_size.set_value(.1)                 
-            elif self.dim.obj_x.location.x >= pc_unit.inch(15):
-                font_size.set_value(.05)             
-            elif self.dim.obj_x.location.x >= pc_unit.inch(10):
-                font_size.set_value(.03)             
-            elif self.dim.obj_x.location.x >= pc_unit.inch(5):
-                font_size.set_value(.02)             
-            else:
-                font_size.set_value(0)              
-            self.dim.update_dim_text()
+                self.dim.set_input("Flip Text",False)
+
+            self.dim.set_dim_decimal()
 
     def hide_empties(self,obj):
         for child in obj.children:
@@ -519,22 +502,20 @@ class home_builder_OT_draw_multiple_walls(bpy.types.Operator):
 
         start_time = time.time()
         for obj in self.obj_wall_meshes:
-            if not obj.hide_viewport:
-                hb_utils.unwrap_obj(context,obj)
+            # if not obj.hide_viewport:
+            #     hb_utils.unwrap_obj(context,obj)
             self.hide_empties(obj.parent)
         print("Wall Unwrap: Draw Time --- %s seconds ---" % (time.time() - start_time))
 
-        pc_utils.delete_object_and_children(self.dim.obj_bp)
+        pc_utils.delete_object_and_children(self.dim.obj)
         obj_list = []
-        obj_list.append(self.drawing_plane)
         obj_list.append(self.current_wall.obj_bp)
         for child in self.current_wall.obj_bp.children:
             obj_list.append(child)
         pc_utils.delete_obj_list(obj_list)
-        # bpy.ops.view3d.view_all(center=False)
         context.workspace.status_text_set(text=None)
         return {'FINISHED'}
-
+    
 
 class home_builder_OT_wall_prompts(bpy.types.Operator):
     bl_idname = "home_builder.wall_prompts"
