@@ -3,7 +3,7 @@ import os
 import math
 import time
 import inspect
-from pc_lib import pc_utils, pc_types, pc_unit, pc_snap, pc_placement_utils
+from pc_lib import pc_utils, pc_types, pc_unit, pc_snap, pc_const, pc_placement_utils
 from .. import hb_utils
 # from .. import home_builder_pointers
 from . import wall_library
@@ -1227,13 +1227,12 @@ class home_builder_OT_snap_line_prompts(bpy.types.Operator):
             layout.prop(self,'x_loc_right',text="Dim from Right")
 
 
-class home_builder_OT_add_wall_snap_line(bpy.types.Operator):
+class home_builder_OT_add_wall_snap_line(pc_snap.Drop_Operator):
     bl_idname = "home_builder.add_wall_snap_line"
     bl_label = "Add Wall Snap Line"
 
     blf_text = ""
     region = None
-    number_of_clicks = 0
     first_point = (0,0,0)
     second_point = (0,0,0)
     hit_location = (0,0,0)
@@ -1244,236 +1243,125 @@ class home_builder_OT_add_wall_snap_line(bpy.types.Operator):
 
     blf_text = ""
 
-    def set_curve_to_vector(self,context):
-        self.snap_line.select_set(True)
-        context.view_layer.objects.active = self.snap_line
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.curve.select_all(action='SELECT')
-        bpy.ops.curve.handle_type_set(type='VECTOR')
-        bpy.ops.object.mode_set(mode='OBJECT')
+    def invoke(self, context, event):
+        self.setup_drop_operator(context)
+        self.create_snap_line(context)
+        self.snap_line.data.splines[0].bezier_points.add(1)
+        self.set_curve_to_vector(context,self.snap_line)
+        self.create_dims(context)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
 
-    def get_snap_location(self,selected_point):
-        sv = bpy.context.scene.home_builder.wall_distance_snap_value
-        x = math.ceil(selected_point[0]/sv)
-        y = math.ceil(selected_point[1]/sv)
-        z = math.ceil(selected_point[2]/sv)
-        return x*sv, y*sv, z*sv
-    
-    def get_snap_value(self,value):
-        sv = bpy.context.scene.home_builder.wall_distance_snap_value
-        return math.ceil(value/sv)*sv
-
-    def delete_dims(self):
-        bpy.data.objects.remove(self.left_dim.obj, do_unlink=True)
-        bpy.data.objects.remove(self.right_dim.obj, do_unlink=True)
-        bpy.data.objects.remove(self.center_dim.obj, do_unlink=True)
-
-    def create_dims(self):
-        self.left_dim = pc_types.GeoNodeDimension()
-        self.left_dim.create()
-        self.left_dim.set_input("Leader Length",pc_unit.inch(3))
-        self.left_dim.obj.rotation_euler.x = math.radians(90)
-        self.left_dim.obj.select_set(False)
-        self.left_dim.obj.show_in_front = True
-
-        self.right_dim = pc_types.GeoNodeDimension()
-        self.right_dim.create()
-        self.right_dim.set_input("Leader Length",pc_unit.inch(3))
-        self.right_dim.obj.rotation_euler.x = math.radians(90)
-        self.right_dim.obj.select_set(False)
-        self.right_dim.obj.show_in_front = True
-
-        self.center_dim = pc_types.GeoNodeDimension()
-        self.center_dim.create()
-        self.center_dim.set_input("Leader Length",pc_unit.inch(0))
-        self.center_dim.obj.rotation_euler.x = math.radians(90)
-        self.center_dim.obj.select_set(False)
-        self.center_dim.obj.color = (0,0,0,1)
-        self.center_dim.obj.show_in_front = True
-
-    def get_left_snap_point(self,snap_points):
-        for index, sp in enumerate(snap_points):
-            if sp.name == self.snap_line.name and index != 0:
-                return snap_points[index-1]
-        return None
-
-    def get_right_snap_point(self,snap_points):
-        for index, sp in enumerate(snap_points):
-            if sp.name == self.snap_line.name and index != len(snap_points)-1:
-                return snap_points[index+1]
-        return None
-
-    def update_dims(self,wall_bp):
-        
-        if wall_bp:
-            self.left_dim.obj.hide_viewport = False
-            self.right_dim.obj.hide_viewport = False
-            self.center_dim.obj.hide_viewport = False
-            self.left_dim.obj.parent = wall_bp        
-            self.right_dim.obj.parent = wall_bp    
-            self.center_dim.obj.parent = wall_bp
-            wall = pc_types.Assembly(wall_bp)
-            self.left_dim.obj.location.z = wall.obj_z.location.z
-            self.right_dim.obj.location.z = wall.obj_z.location.z
-            self.center_dim.obj.location.z = self.hit_location[2]
-
-            wall_length = wall.obj_x.location.x
-            snap_x = self.snap_line.location.x
-            
-            search_point = (self.snap_line.location.x,0,self.hit_location[2])
-            left_assembly = pc_placement_utils.get_left_wall_collision_assembly_from_selected_point(wall,search_point)
-            right_assembly = pc_placement_utils.get_right_wall_collision_assembly_from_selected_point(wall,search_point)
-            snap_points = pc_placement_utils.get_snap_points(wall)
-            left_sp = self.get_left_snap_point(snap_points)
-            right_sp = self.get_right_snap_point(snap_points)
-
-            #GET LEFT SNAP LOCATION
-            cal_left_x_snap = 0
-            if left_assembly and left_sp:
-                left_assembly_x_snap = left_assembly.obj_bp.location.x + left_assembly.obj_x.location.x
-                left_snap_location = left_sp.location.x
-                if left_assembly_x_snap > left_snap_location:
-                    cal_left_x_snap = left_assembly_x_snap
-                else:
-                    cal_left_x_snap = left_snap_location
-            elif left_assembly:
-                cal_left_x_snap = left_assembly.obj_bp.location.x + left_assembly.obj_x.location.x
-            elif left_sp:
-                cal_left_x_snap = left_sp.location.x
-            else:
-                cal_left_x_snap = 0
-            self.left_dim.obj.data.splines[0].bezier_points[0].co = (cal_left_x_snap,0,0)
-            self.left_dim.obj.data.splines[0].bezier_points[1].co = (snap_x,0,0)   
-
-            #GET RIGHT SNAP LOCATION
-            cal_right_x_snap = 0
-            if right_assembly and right_sp:
-                if right_assembly.obj_bp.location.x < right_sp.location.x:
-                    cal_right_x_snap = right_assembly.obj_bp.location.x
-                else:
-                    cal_right_x_snap = right_sp.location.x
-            elif right_assembly:
-                cal_right_x_snap = right_assembly.obj_bp.location.x
-            elif right_sp:
-                cal_right_x_snap = right_sp.location.x
-            else:
-                cal_right_x_snap = wall_length
-            self.right_dim.obj.data.splines[0].bezier_points[0].co = (snap_x,0,0)
-            self.right_dim.obj.data.splines[0].bezier_points[1].co = (cal_right_x_snap,0,0)  
-
-            left_x = self.left_dim.obj.data.splines[0].bezier_points[0].co[0]
-            right_x = self.right_dim.obj.data.splines[0].bezier_points[1].co[0]
-            self.center_dim.obj.data.splines[0].bezier_points[0].co = (left_x,0,0)
-            self.center_dim.obj.data.splines[0].bezier_points[1].co = (right_x,0,0)   
-
-            #MOVE TEXT IF SMALL DIMENSION
-            left_dim_length = pc_utils.calc_distance(self.left_dim.obj.data.splines[0].bezier_points[0].co,self.left_dim.obj.data.splines[0].bezier_points[1].co)
-            right_dim_length = pc_utils.calc_distance(self.right_dim.obj.data.splines[0].bezier_points[0].co,self.right_dim.obj.data.splines[0].bezier_points[1].co)
-            if left_dim_length <= pc_unit.inch(7):
-                self.left_dim.set_input("Offset Text From Line",True)
-            else:
-                self.left_dim.set_input("Offset Text From Line",False)
-            if right_dim_length <= pc_unit.inch(7):
-                self.right_dim.set_input("Offset Text From Line",True)  
-            else:
-                self.right_dim.set_input("Offset Text From Line",False)                          
-        else:
-            self.center_dim.obj.hide_viewport = True
-            self.left_dim.obj.hide_viewport = True
-            self.right_dim.obj.hide_viewport = True
+    def hide_objects(self,hide):
+        self.snap_line.hide_viewport = hide
+        self.left_dim.obj.hide_viewport = hide
+        self.right_dim.obj.hide_viewport = hide
+        self.center_dim.obj.hide_viewport = hide
 
     def modal(self, context, event):
-        
         bpy.context.workspace.status_text_set(text="COMMAND: Add Snap Line to Wall   [Move Cursor to Wall]   [RIGHT CLICK: Cancel Command]")
         context.area.tag_redraw()
 
         wall_bp = None
 
-        if self.number_of_clicks == 0:
-            snap_point = self.get_snap_location(self.hit_location)
-            self.snap_line.location = snap_point
-            self.snap_line.data.splines[0].bezier_points[0].co = (0,0,0)
-            self.snap_line.data.splines[0].bezier_points[1].co = (0,0,0)  
-            if self.hit_object:
-                wall_bp = pc_utils.get_bp_by_tag(self.hit_object,'IS_WALL_BP')
-                if wall_bp:
-                    bpy.context.workspace.status_text_set(text="COMMAND: Add Snap Line to Wall   [LEFT CLICK: Add Snap Line]   [RIGHT CLICK: Cancel Command]")
-                    wall = pc_types.Assembly(wall_bp)
-                    self.snap_line.location = self.hit_location
-                    self.snap_line.location.z = wall_bp.location.z
-                    self.snap_line.parent = wall_bp
-                    self.snap_line.matrix_world[0][3] = self.hit_location[0]
-                    self.snap_line.matrix_world[1][3] = self.hit_location[1]
-                    self.snap_line.location.x = self.get_snap_value(self.snap_line.location.x)
-                    self.snap_line.location.y = 0
-                    self.snap_line.location.z = 0
-                    self.snap_line.rotation_euler = (0,math.radians(-90),0)
-                    self.snap_line.data.splines[0].bezier_points[0].co = (0,0,0)
-                    self.snap_line.data.splines[0].bezier_points[1].co = (wall.obj_z.location.z,0,0)
-                    self.snap_line.data.splines[0].bezier_points[2].co = (wall.obj_z.location.z,wall.obj_y.location.y,0)
-                else:
-                    self.snap_line.parent = None
-            else:
-                self.snap_line.parent = None
-            self.update_dims(wall_bp)
+        self.hide_objects(True)
+        self.mouse_pos = Vector((event.mouse_region_x, event.mouse_region_y))
+        self.snap_line.hide_viewport = True
+        pc_snap.main(self, event.ctrl, context)
+        self.snap_line.hide_viewport = False      
+        self.hide_objects(False)
 
-        if event.type == 'MOUSEMOVE' or event.type in {"LEFT_CTRL", "RIGHT_CTRL"}:
-            self.mouse_pos = Vector((event.mouse_region_x, event.mouse_region_y))
-            self.snap_line.hide_viewport = True
-            pc_snap.main(self, event.ctrl, context)
-            self.snap_line.hide_viewport = False            
-            
-        elif event.type == 'LEFTMOUSE' and event.value == 'PRESS' and wall_bp:
+        if self.hit_object:
+            wall_bp = pc_utils.get_bp_by_tag(self.hit_object,pc_const.IS_WALL_BP)
+            if wall_bp:
+                wall = pc_types.Assembly(wall_bp)
+                self.update_dims(wall)
+            else:
+                self.hide_objects(True)
+        else:
+            self.hide_objects(True)
+
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS' and wall_bp:
             self.snap_line.hide_viewport = False
             self.delete_dims()
-            
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'FINISHED'}
 
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
-            
             self.delete_dims()
             bpy.data.objects.remove(self.snap_line, do_unlink=True)
             bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
             return {'CANCELLED'}
         
         return {'PASS_THROUGH'}
+    
+    def set_curve_to_vector(self,context,obj):
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.curve.select_all(action='SELECT')
+        bpy.ops.curve.handle_type_set(type='VECTOR')
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-    def invoke(self, context, event):
-        self.region = pc_utils.get_3d_view_region(context)
-        if context.area.type == 'VIEW_3D':
-            self.mouse_pos = Vector()
-            self.hit_object = None
-            self.number_of_clicks = 0
+    def delete_dims(self):
+        bpy.data.objects.remove(self.left_dim.obj, do_unlink=True)
+        bpy.data.objects.remove(self.right_dim.obj, do_unlink=True)
+        bpy.data.objects.remove(self.center_dim.obj, do_unlink=True)
 
-            self.create_dims()
-            curve = bpy.data.curves.new('SNAPLINE','CURVE')
-            spline = curve.splines.new('BEZIER')
-            spline.bezier_points.add(2)
-            self.snap_line = bpy.data.objects.new('SNAPLINE',curve)
-            self.snap_line.rotation_euler.y = math.radians(-90)
-            self.snap_line.data.bevel_depth = pc_unit.inch(.25)
-            self.snap_line.color = (0,0,0,1)
-            self.snap_line['IS_WALL_SNAP_POINT'] = True
-            self.snap_line['PROMPT_ID'] = 'home_builder.snap_line_prompts'
-            context.view_layer.active_layer_collection.collection.objects.link(self.snap_line)
-            self.set_curve_to_vector(context)
-            #ADD Array Modifier and show in plan and elevation view
-            #snap to wall
-            #Assign tag
-            #Use tag in collisions
+    def create_dims(self,context):
+        self.left_dim = self.create_dimension(context)
+        self.left_dim.set_input("Leader Length",pc_unit.inch(3))
 
-            # the arguments we pass the the callback
-            args = (self, context)
-            # Add the region OpenGL drawing callback
-            # draw in view space with 'POST_VIEW' and 'PRE_VIEW'
-            self._handle = bpy.types.SpaceView3D.draw_handler_add(pc_snap.draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
+        self.right_dim = self.create_dimension(context)
+        self.right_dim.set_input("Leader Length",pc_unit.inch(3))
 
-            context.window_manager.modal_handler_add(self)
-            return {'RUNNING_MODAL'}
-        else:
-            self.report({'WARNING'}, "View3D not found, cannot run operator")
-            return {'CANCELLED'}
+        self.center_dim = self.create_dimension(context)
+        self.center_dim.set_input("Leader Length",pc_unit.inch(0))
+
+    def update_dims(self,wall):
+        bpy.context.workspace.status_text_set(text="COMMAND: Add Snap Line to Wall   [LEFT CLICK: Add Snap Line]   [RIGHT CLICK: Cancel Command]")
+
+        snap_point = self.get_snap_location(self.hit_location)
+        self.snap_line.location = snap_point
+        self.snap_line.data.splines[0].bezier_points[0].co = (0,0,0)
+        self.snap_line.data.splines[0].bezier_points[1].co = (0,0,0) 
+
+        self.snap_line.location = self.hit_location
+        self.snap_line.location.z = wall.obj_bp.location.z
+        self.snap_line.parent = wall.obj_bp
+        self.snap_line.matrix_world[0][3] = self.hit_location[0]
+        self.snap_line.matrix_world[1][3] = self.hit_location[1]
+        self.snap_line.location.x = self.get_snap_value(self.snap_line.location.x)
+        self.snap_line.location.y = 0
+        self.snap_line.location.z = 0
+        self.snap_line.rotation_euler = (0,math.radians(-90),0)
+        self.snap_line.data.splines[0].bezier_points[0].co = (0,0,0)
+        self.snap_line.data.splines[0].bezier_points[1].co = (wall.obj_z.location.z,0,0)
+        self.snap_line.data.splines[0].bezier_points[2].co = (wall.obj_z.location.z,wall.obj_y.location.y,0)
+
+        self.left_dim.obj.location.z = wall.obj_z.location.z
+        self.right_dim.obj.location.z = wall.obj_z.location.z
+        self.center_dim.obj.location.z = self.hit_location[2]
+
+        snap_x = self.snap_line.location.x
+
+        left_x, left_assembly = self.get_left_collision_location_and_assembly(wall)
+        right_x, right_assembly = self.get_right_collision_location_and_assembly(wall)
+
+        self.left_dim.obj.parent = wall.obj_bp
+        self.left_dim.obj.data.splines[0].bezier_points[0].co = (left_x,0,0)
+        self.left_dim.obj.data.splines[0].bezier_points[1].co = (snap_x,0,0)  
+        self.left_dim.update()
+
+        self.right_dim.obj.parent = wall.obj_bp
+        self.right_dim.obj.data.splines[0].bezier_points[0].co = (snap_x,0,0)
+        self.right_dim.obj.data.splines[0].bezier_points[1].co = (right_x,0,0)
+        self.right_dim.update()
+
+        self.center_dim.obj.parent = wall.obj_bp
+        self.center_dim.obj.data.splines[0].bezier_points[0].co = (left_x,0,0)
+        self.center_dim.obj.data.splines[0].bezier_points[1].co = (right_x,0,0) 
+        self.center_dim.update()
         
 
 class home_builder_OT_go_back_to_previous_view(bpy.types.Operator):
