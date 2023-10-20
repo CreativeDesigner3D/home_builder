@@ -98,7 +98,13 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row = box.row()
                 row.prop(hb_scene,'wall_thickness')
                 row.operator('home_builder.update_wall_thickness',text="",icon='FILE_REFRESH',emboss=False)
-
+                row = box.row()
+                row.label(text="Snapping")
+                row = box.row()
+                row.prop(hb_scene,'wall_distance_snap_value',text="Distance")
+                row = box.row()
+                row.prop(hb_scene,'wall_angle_snap_value',text="Angle")
+                
                 wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
                 if wall_bp:
                     wall = pc_types.Assembly(wall_bp)
