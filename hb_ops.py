@@ -1537,20 +1537,26 @@ class home_builder_OT_add_wall_length_dimension(bpy.types.Operator):
     bl_idname = "home_builder.add_wall_length_dimension"
     bl_label = "Add Wall Length Dimension"
     bl_description = "This will add a length dimension to the selected wall"
+    
+    wall_bp_name: bpy.props.StringProperty(name="Wall BP Name")
 
     def execute(self, context):
         wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
         wall = pc_types.Assembly(wall_bp)
 
-        dim = pc_types.Dimension()
-        dim.create_dimension()
-        dim.obj_y.location.y = wall.obj_y.location.y + .2
-        dim.obj_bp.parent = wall.obj_bp
-        dim.obj_bp.location = (0,0,0)
-        dim.obj_bp.location.z += wall.obj_z.location.z
-        dim.obj_x.location.x = wall.obj_x.location.x
-        dim.update_dim_text()
-
+        dim = pc_types.GeoNodeDimension()
+        dim.create()
+        dim.set_input("Leader Length",wall.obj_y.location.y + pc_unit.inch(3))
+        dim.obj.rotation_euler.x = 0
+        dim.obj.select_set(False)
+        dim.obj.color = (0,0,0,1)
+        dim.obj.show_in_front = True
+        dim.obj.parent = wall.obj_bp
+        dim.obj.location = (0,0,0)
+        dim.obj.location.z += wall.obj_z.location.z
+        dim.obj.data.splines[0].bezier_points[0].co = (0,0,0)
+        dim.obj.data.splines[0].bezier_points[1].co = (wall.obj_x.location.x,0,0)   
+        dim.update()
         return {'FINISHED'}
 
 
