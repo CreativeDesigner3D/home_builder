@@ -103,7 +103,6 @@ class home_builder_OT_draw_multiple_walls(pc_snap.Drop_Operator):
 
     def execute(self, context):
         self.setup_drop_operator(context)
-        bpy.data.objects.remove(self.snap_line, do_unlink=True)
         self.reset_properties()   
         self.create_wall()
         context.workspace.status_text_set(text=self.ht_start)

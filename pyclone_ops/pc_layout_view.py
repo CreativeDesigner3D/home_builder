@@ -131,6 +131,91 @@ class pc_layout_view_OT_toggle_dimension_mode(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class pc_layout_view_OT_add_elevation_dimension(pc_snap.Drop_Operator):
+    bl_idname = "pc_layout_view.add_elevation_dimension"
+    bl_label = "Add Elevation Dimension"
+
+    elevation_dim = None
+
+    def execute(self, context):
+        self.setup_drop_operator(context)
+        self.create_data(context)
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+    
+    def hide_objects(self,hide):
+        self.elevation_dim.obj.hide_viewport = hide
+
+    def modal(self, context, event):
+        context.area.tag_redraw()    
+
+        #RUN SNAP
+        self.hide_objects(True)
+        self.mouse_pos = Vector((event.mouse_x - self.region.x, event.mouse_y - self.region.y))  
+        context.view_layer.update()          
+        pc_snap.main(self, event.ctrl, context)
+        self.hide_objects(False)
+
+        self.update_data(context)
+
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            bpy.data.objects.remove(self.snap_line, do_unlink=True)
+            self.remove_drop_operator(context)
+            return {'FINISHED'}
+
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            self.delete_data(context)
+            self.remove_drop_operator(context)
+            return {'CANCELLED'}
+
+        return {'PASS_THROUGH'}
+    
+    def create_data(self,context):
+        self.create_snap_line(context)
+        self.elevation_dim = self.create_dimension(context)
+
+    def delete_data(self,context):
+        bpy.data.objects.remove(self.elevation_dim.obj, do_unlink=True)
+        bpy.data.objects.remove(self.snap_line, do_unlink=True)
+
+    def update_data(self,context):
+        wall_bp = None
+        hit_assembly = None
+        if self.hit_object:
+            wall_bp = pc_utils.get_bp_by_tag(self.hit_object,'IS_WALL_BP')
+
+            assembly_tags = ['IS_WINDOW_BP','IS_ENTRY_DOOR_BP','IS_APPLIANCE_BP','IS_OPENING_BP','IS_CABINET_FF_STARTER_BP']
+            hit_assembly = self.get_hit_assembly_from_tag(assembly_tags)
+
+        if self.snap_line and wall_bp:
+            wall = pc_types.Assembly(wall_bp)
+            self.snap_line.parent = wall_bp
+            self.elevation_dim.obj.parent = wall_bp
+            self.snap_line.matrix_world[0][3] = self.hit_location[0]
+            self.snap_line.matrix_world[1][3] = self.hit_location[1]      
+            self.elevation_dim.obj.matrix_world[0][3] = self.hit_location[0]
+            self.elevation_dim.obj.matrix_world[1][3] = self.hit_location[1]  
+            self.elevation_dim.obj.rotation_euler.z = 0
+
+            if hit_assembly:
+                assembly_x_loc = hit_assembly.obj_bp.location.x
+                assembly_width = hit_assembly.obj_x.location.x
+                self.elevation_dim.obj.location.x = assembly_x_loc
+                self.elevation_dim.obj.location.y = 0
+                self.elevation_dim.obj.location.z = self.hit_location[2]
+                self.elevation_dim.obj.data.splines[0].bezier_points[0].co = (0,0,0)
+                self.elevation_dim.obj.data.splines[0].bezier_points[1].co = (assembly_width,0,0)                
+            else:
+                left_x, left_assembly = self.get_left_collision_location_and_assembly(wall)
+                right_x, right_assembly = self.get_right_collision_location_and_assembly(wall)
+                
+                self.elevation_dim.obj.location.x = left_x
+                self.elevation_dim.obj.location.y = 0
+                self.elevation_dim.obj.location.z = self.hit_location[2]
+                self.elevation_dim.obj.data.splines[0].bezier_points[0].co = (0,0,0)
+                self.elevation_dim.obj.data.splines[0].bezier_points[1].co = (right_x-left_x,0,0)
+
+
 class pc_layout_view_OT_draw_geo_node_dimension(bpy.types.Operator):
     bl_idname = "pc_layout_view.draw_geo_node_dimension"
     bl_label = "Add Geo Node Dimension"
@@ -937,6 +1022,7 @@ class pc_layout_view_OT_delete_view(Operator):
 
 classes = (
     pc_layout_view_OT_toggle_dimension_mode,
+    pc_layout_view_OT_add_elevation_dimension,
     pc_layout_view_OT_draw_geo_node_dimension,
     pc_layout_view_OT_add_text,
     pc_layout_view_OT_draw_geo_node_arrow,

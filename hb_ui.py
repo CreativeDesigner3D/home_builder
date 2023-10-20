@@ -86,9 +86,6 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 col.separator()
                 row = col.row(align=True)
                 row.operator('home_builder.add_wall_snap_line',text="Add Wall Snap Line",icon='THREE_DOTS')
-                col.separator()
-                row = col.row(align=True)                
-                row.operator('home_builder.add_wall_elevation_dim',text="Elevation Dimension",icon='DRIVER_DISTANCE')
 
                 col.separator()
                 box = col.box()

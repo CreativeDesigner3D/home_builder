@@ -39,7 +39,7 @@ class home_builder_OT_place_door_window(pc_snap.Drop_Operator):
 
     def execute(self, context):
         self.setup_drop_operator(context)
-        bpy.data.objects.remove(self.snap_line, do_unlink=True)
+
         self.create_assembly(context)
         view_name = self.get_view_orientation_from_quaternion()
         self.left_dim = pc_types.GeoNodeDimension()

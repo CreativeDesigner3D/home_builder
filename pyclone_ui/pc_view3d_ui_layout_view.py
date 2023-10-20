@@ -46,8 +46,10 @@ class VIEW3D_PT_pc_layout_view(Panel):
 
         box = layout.box()
         box.label(text="Layout View Tools")
-        box.operator('pc_layout_view.draw_geo_node_dimension',text="Add Dimension")
-        
+        row = box.row()
+        row.operator('pc_layout_view.draw_geo_node_dimension',text="Plan Dimension",icon='DRIVER_DISTANCE')          
+        row.operator('pc_layout_view.add_elevation_dimension',text="Elevation Dimension",icon='DRIVER_DISTANCE')
+
         box = layout.box()
 
         row = box.row()

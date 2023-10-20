@@ -1,7 +1,7 @@
 import bpy
 import math
 import gpu
-from . import pc_utils, pc_unit, pc_types, pc_placement_utils
+from . import pc_utils, pc_unit, pc_types, pc_const, pc_placement_utils
 # import mathutils
 from mathutils import Vector
 import bgl
@@ -223,8 +223,8 @@ def main(self, crtl_is_pressed, context):
 class Drop_Operator(bpy.types.Operator):
 
     #USED FOR PLACEMENT
-    snap_cursor_to_cabinet: bpy.props.BoolProperty(name="Snap Cursor to Cabinet",default=False)
-    obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
+    # snap_cursor_to_cabinet: bpy.props.BoolProperty(name="Snap Cursor to Cabinet",default=False)
+    # obj_bp_name: bpy.props.StringProperty(name="Obj Base Point Name")
 
     region = None
     hit_location = (0,0,0)
@@ -241,17 +241,14 @@ class Drop_Operator(bpy.types.Operator):
         self.region = pc_utils.get_3d_view_region(context)
         self.mouse_pos = Vector()
         self.hit_object = None
+        args = (self, context)
+        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
 
-        if self.snap_cursor_to_cabinet:
-            if self.obj_bp_name != "":
-                obj_bp = bpy.data.objects[self.obj_bp_name]
-            else:
-                obj_bp = self.cabinet.obj_bp            
-            region = context.region
-            co = location_3d_to_region_2d(region,context.region_data,obj_bp.matrix_world.translation)
-            region_offset = Vector((region.x,region.y))
-            context.window.cursor_warp(*(co + region_offset))  
+    def remove_drop_operator(self,context):
+        bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW')
+        context.workspace.status_text_set(text=None)  
 
+    def create_snap_line(self,context):
         curve = bpy.data.curves.new('SNAPLINE','CURVE')
         spline = curve.splines.new('BEZIER')
         spline.bezier_points.add(1)
@@ -263,8 +260,15 @@ class Drop_Operator(bpy.types.Operator):
         self.snap_line['IS_WALL_SNAP_POINT'] = True
         context.view_layer.active_layer_collection.collection.objects.link(self.snap_line)
 
-        args = (self, context)
-        self._handle = bpy.types.SpaceView3D.draw_handler_add(draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
+    def create_dimension(self,context):
+        dim = pc_types.GeoNodeDimension()
+        dim.create()
+        dim.set_input("Leader Length",pc_unit.inch(0))
+        dim.obj.rotation_euler.x = math.radians(90)
+        dim.obj.select_set(False)
+        dim.obj.color = (0,0,0,1)
+        dim.obj.show_in_front = True
+        return dim
 
     def get_view_orientation_from_quaternion(self):
         view_quat = self.region.data.view_rotation
@@ -334,9 +338,7 @@ class Drop_Operator(bpy.types.Operator):
             self.set_placed_properties(child) 
 
     def set_child_properties(self,obj,parent):
-        if not self.is_from_build_library:
-            pc_utils.update_id_props(obj,parent)
-        # home_builder_utils.assign_current_material_index(obj)
+        pc_utils.update_id_props(obj,parent)
         if obj.type == 'EMPTY':
             obj.hide_viewport = True    
         if obj.type == 'MESH':
@@ -367,13 +369,17 @@ class Drop_Operator(bpy.types.Operator):
                 return True
         return False
 
-    def get_left_collision_info(self,wall):
+    def get_hit_assembly_from_tag(self,tags):
+        for tag in tags:
+            bp = pc_utils.get_bp_by_tag(self.hit_object,tag)
+            if bp:
+                return pc_types.Assembly(bp)
+            
+    def get_left_collision_location_and_assembly(self,wall,collision_assembly=None):
         search_point_left = (self.snap_line.location.x,0,self.hit_location[2])
-        left_assembly = pc_placement_utils.get_left_wall_collision_assembly_from_selected_point(wall,search_point_left,ignore_assembly = self.cabinet)
+        left_assembly = pc_placement_utils.get_left_wall_collision_assembly_from_selected_point(wall,search_point_left,ignore_assembly = collision_assembly)
         snap_points = pc_placement_utils.get_snap_points(wall)
         left_sp = self.get_left_snap_point(snap_points)
-        offset_amount = 0
-        adj_assembly = None
 
         #GET LEFT SNAP LOCATION
         cal_left_x_snap = 0
@@ -400,30 +406,30 @@ class Drop_Operator(bpy.types.Operator):
                     #LOOK FOR ASSEMBLY ON NEXT WALL
                     for assembly_bp in left_assemblies:
                         assembly = pc_types.Assembly(assembly_bp)
-                        if self.hit_location[2] > assembly.obj_bp.location.z and self.hit_location[2] < (assembly.obj_bp.location.z + assembly.obj_z.location.z):
-                            if (assembly.obj_bp.location.x + assembly.obj_x.location.x) > left_wall.obj_x.location.x - math.fabs(self.cabinet.obj_y.location.y):
+                        assembly_height =  assembly.obj_z.location.z
+                        assembly_z_loc = assembly.obj_bp.location.z                        
+                        #IF HAS HEIGHT COLLISION
+                        if self.hit_location[2] > assembly_z_loc and self.hit_location[2] < (assembly_z_loc + assembly_height):
+                            if collision_assembly:
+                                assembly_depth = math.fabs(self.cabinet.obj_y.location.y)
+                            else:
+                                assembly_depth = 0
+                            #IF ASSEMBLY IS CLOSE ENOUGH TO END OF WALL
+                            if (assembly.obj_bp.location.x + assembly.obj_x.location.x) > left_wall.obj_x.location.x - assembly_depth:
                                 found_left_x = math.fabs(assembly.obj_y.location.y)
-                                adj_assembly = assembly
+                                left_assembly = assembly
                                 break
-                    #IF NO ASSEMBLY SET WALL OFFSET                
-                    if found_left_x == 0:
-                        offset_amount = pc_unit.inch(.5)
 
             cal_left_x_snap = found_left_x
 
-        return cal_left_x_snap, offset_amount, adj_assembly 
-
-    def get_right_collision_info(self,wall):
+        return cal_left_x_snap, left_assembly
+    
+    def get_right_collision_location_and_assembly(self,wall,collision_assembly=None):
         wall_length = wall.obj_x.location.x
-        if self.fill_on:
-            search_point_right = (self.snap_line.location.x,0,self.hit_location[2])
-        else:
-            search_point_right = (self.snap_line.location.x+self.cabinet.obj_x.location.x+pc_unit.inch(3),0,self.hit_location[2])
-        right_assembly = pc_placement_utils.get_right_wall_collision_assembly_from_selected_point(wall,search_point_right,ignore_assembly = self.cabinet)
+        search_point_right = (self.snap_line.location.x,0,self.hit_location[2])
+        right_assembly = pc_placement_utils.get_right_wall_collision_assembly_from_selected_point(wall,search_point_right,ignore_assembly = collision_assembly)
         snap_points = pc_placement_utils.get_snap_points(wall)
         right_sp = self.get_right_snap_point(snap_points)
-        offset_amount = 0
-        adj_assembly = None
 
         cal_right_x_snap = 0
         if right_assembly and right_sp:
@@ -449,20 +455,73 @@ class Drop_Operator(bpy.types.Operator):
                     #LOOK FOR ASSEMBLY ON RIGHT WALL
                     for assembly_bp in right_assemblies:
                         assembly = pc_types.Assembly(assembly_bp)
-                        if self.hit_location[2] > assembly.obj_bp.location.z and self.hit_location[2] < (assembly.obj_bp.location.z + assembly.obj_z.location.z):
-                            if assembly.obj_bp.location.x < math.fabs(self.cabinet.obj_y.location.y):
+                        assembly_height =  assembly.obj_z.location.z
+                        assembly_z_loc = assembly.obj_bp.location.z
+                        #IF HAS HEIGHT COLLISION
+                        if self.hit_location[2] > assembly_z_loc and self.hit_location[2] < (assembly_z_loc + assembly_height):
+                            if collision_assembly:
+                                assembly_depth = math.fabs(self.cabinet.obj_y.location.y)
+                            else:
+                                assembly_depth = 0                            
+                            #IF ASSEMBLY IS CLOSE ENOUGH TO START OF WALL
+                            if assembly.obj_bp.location.x < assembly_depth:
                                 found_right_x = wall_length - math.fabs(assembly.obj_y.location.y)
-                                adj_assembly = assembly
+                                right_assembly = assembly
                                 break
-                    #IF NO ASSEMBLY SET WALL OFFSET
-                    if found_right_x == wall_length:
-                        offset_amount = pc_unit.inch(.5)
             cal_right_x_snap = found_right_x
 
-        return cal_right_x_snap, offset_amount, adj_assembly
+        return cal_right_x_snap, right_assembly
     
     def cancel_drop(self,context,obj_bp):
         pc_utils.delete_object_and_children(obj_bp)
         bpy.types.SpaceView3D.draw_handler_remove(self._handle, 'WINDOW') 
         context.workspace.status_text_set(text=None)     
-        return {'CANCELLED'}        
+        return {'CANCELLED'}
+
+
+class pc_template_OT_template_snap_op(Drop_Operator):
+    bl_idname = "pc_template.template_snap_op"
+    bl_label = "Template Snap Operator"
+
+    def execute(self, context):
+        self.setup_drop_operator(context)
+        #---CREATE DATA HERE
+        context.window_manager.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+    
+    def hide_objects(self,hide):
+        #HIDE OBJECTS NOT USED IN SNAP
+        pass
+
+    def modal(self, context, event):
+        context.area.tag_redraw()    
+
+        #RUN SNAP
+        self.hide_objects(True)
+        self.mouse_pos = Vector((event.mouse_x - self.region.x, event.mouse_y - self.region.y))  
+        context.view_layer.update()          
+        # pc_snap.main(self, event.ctrl, context)
+        self.hide_objects(False)
+
+        #RETURNED VALUES FROM SNAP
+        print('HIT OBJECT',self.hit_object)
+        print('HIT LOCATION',self.hit_location)
+        print('SNAP LOCATION',self.get_snap_location(self.hit_location))
+        wall_bp = pc_utils.get_bp_by_tag(self.hit_object,pc_const.IS_WALL_BP)
+        if wall_bp:
+            wall = pc_types.Assembly(wall_bp)
+            left_x, left_assembly = self.get_left_collision_location_and_assembly(wall)
+            right_x, right_assembly = self.get_right_collision_location_and_assembly(wall)            
+
+        #---UPDATE DATA HERE
+
+        if event.type == 'LEFTMOUSE' and event.value == 'PRESS':
+            self.remove_drop_operator(context)
+            return {'FINISHED'}
+
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
+            #---DELETE DATA
+            self.remove_drop_operator(context)
+            return {'CANCELLED'}
+
+        return {'PASS_THROUGH'}    
