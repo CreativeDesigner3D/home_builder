@@ -13,6 +13,7 @@ from bpy.types import (
 from bpy.props import (
         BoolProperty,
         FloatProperty,
+        FloatVectorProperty,
         IntProperty,
         PointerProperty,
         StringProperty,
@@ -140,6 +141,15 @@ class Home_Builder_Scene_Props(PropertyGroup):
     wall_distance_snap_value: FloatProperty(name="Wall Distance Snap Value",default=pc_unit.inch(1),subtype='DISTANCE')
     wall_angle_snap_value: FloatProperty(name="Wall Angle Snap Value",default=math.radians(45),subtype='ANGLE')
 
+    is_elevation_view: BoolProperty(name="Is Elevation View",default=False)
+    view_rotation: FloatVectorProperty(name="View Rotation",size=4)
+    view_location: FloatVectorProperty(name="View Location",size=3)
+    view_distance: FloatProperty(name="View Distance")
+    view_perspective: EnumProperty(name="View Perspective",
+                                   items=[('PERSP',"Perspective","Perspective"),
+                                          ('ORTHO',"Orthographic","Orthographic"),
+                                          ('CAMERA',"Camera","Camera")])
+    
     @classmethod
     def register(cls):
         bpy.types.Scene.home_builder = PointerProperty(

@@ -104,7 +104,7 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                 row.prop(hb_scene,'wall_distance_snap_value',text="Distance")
                 row = box.row()
                 row.prop(hb_scene,'wall_angle_snap_value',text="Angle")
-                
+
                 wall_bp = pc_utils.get_bp_by_tag(context.object,'IS_WALL_BP')
                 if wall_bp:
                     wall = pc_types.Assembly(wall_bp)
@@ -137,7 +137,11 @@ class HOME_BUILDER_PT_library(bpy.types.Panel):
                     row.operator('home_builder.draw_floor_plane',text='Add Floor',icon='MESH_PLANE')   
 
                     box.template_list("HOMEBUILDER_UL_walls"," ", hb_scene, "walls", hb_scene, "wall_index",rows=5,type='DEFAULT')
-                 
+
+                if hb_scene.is_elevation_view:
+                    row = box.row()
+                    row.operator('home_builder.go_back_to_previous_view',text='Go Back to Previous View',icon='SCREEN_BACK')
+                    
                 if hb_scene.wall_index + 1 <= len(hb_scene.walls):
                     wall_prop_box = box.box()
                     wall_prop_box.use_property_split = True
