@@ -1504,6 +1504,30 @@ class home_builder_OT_go_back_to_previous_view(bpy.types.Operator):
         hb_props.is_elevation_view = False
         return {'FINISHED'} 
     
+
+class home_builder_OT_select_room_base_point(bpy.types.Operator):
+    bl_idname = "home_builder.select_room_base_point"
+    bl_label = "Select Room Base Point"
+
+    wall_bp_name: bpy.props.StringProperty("Wall BP Name")
+
+    @classmethod
+    def poll(cls, context): 
+        return True
+    
+    def get_first_wall_bp(self,context,bp):
+        if len(bp.constraints) > 0:
+            bp = bp.constraints[0].target.parent
+            return self.get_first_wall_bp(context,bp)
+        else:
+            return bp   
+
+    def execute(self, context):  
+        wall_bp = bpy.data.objects[self.wall_bp_name]
+        bp = self.get_first_wall_bp(context,wall_bp)
+        bpy.ops.pc_assembly.select_base_point(obj_bp_name=bp.name)
+        return {'FINISHED'} 
+
     
 class HOMEBUILDER_UL_walls(bpy.types.UIList):
     
@@ -1533,6 +1557,7 @@ classes = (
     home_builder_OT_snap_line_prompts,
     home_builder_OT_add_wall_snap_line,
     home_builder_OT_go_back_to_previous_view,
+    home_builder_OT_select_room_base_point,
     HOMEBUILDER_UL_walls,
 )
 

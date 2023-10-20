@@ -9,6 +9,7 @@ class HOME_BUILDER_MT_wall_commands(bpy.types.Menu):
         layout = self.layout
         layout.operator('home_builder.edit_part',text="Edit Wall",icon='EDITMODE_HLT')
         layout.operator('home_builder.add_wall_length_dimension',text="Add Wall Length Dimension",icon='DRIVER_DISTANCE').wall_bp_name = wall_bp.name
+        layout.operator('home_builder.select_room_base_point',text="Select Room Base Point",icon='EMPTY_DATA').wall_bp_name = wall_bp.name
         layout.separator()
         layout.operator('home_builder.delete_wall',text="Delete Wall",icon='X').wall_obj_bp_name = wall_bp.name
 
