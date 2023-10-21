@@ -996,18 +996,22 @@ class pc_layout_view_OT_toggle_model_selection(Operator):
 
         context.area.tag_redraw()
         return {'FINISHED'}
-        
 
-class pc_layout_view_OT_delete_view(Operator):
-    bl_idname = "pc_layout_view.delete_view"
-    bl_label = "Delete View"
-    bl_description = "This deletes the active layout view"
+
+class pc_layout_view_OT_delete_layout_view(Operator):
+    bl_idname = "pc_layout_view.delete_layout_view"
+    bl_label = "Delete Layout View"
+    bl_description = "This will delete the layout view"
     bl_options = {'UNDO'}
 
     view_name: StringProperty(name="View Name",default="New Layout View")
 
+    @classmethod
+    def poll(cls, context):
+        return True
+
     def execute(self, context):
-        scene = context.scene
+        scene = bpy.data.scenes[self.view_name]
         bpy.data.scenes.remove(scene)
         return {'FINISHED'}
 
@@ -1017,7 +1021,8 @@ class pc_layout_view_OT_delete_view(Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Are you sure you want to delete the current view?")
+        layout.label(text="Are you sure you want to delete the view layout?")
+        layout.label(text="Layout Name - " + self.view_name)
 
 
 classes = (
@@ -1033,7 +1038,7 @@ classes = (
     pc_layout_view_OT_show_elv_symbol_properties,
     pc_layout_view_OT_flip_selected_dimensions,
     pc_layout_view_OT_create_iso_view,
-    pc_layout_view_OT_delete_view,
+    pc_layout_view_OT_delete_layout_view,
     pc_layout_view_OT_toggle_model_selection,
 )
 

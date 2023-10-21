@@ -248,8 +248,7 @@ class pc_assembly_OT_add_object(Operator):
             assembly.add_light(self.object_name,'POINT')
         if self.object_type == 'GEONODE_PART':
             obj = assembly.create_geo_part(self.object_name)
-            # obj = self.add_object_from_file(geo_part_path)
-            # obj.name = "Left Side"
+
         return {'FINISHED'}
 
     def invoke(self,context,event):
@@ -514,34 +513,6 @@ class pc_assembly_OT_create_render_view(Operator):
         assembly_layout.add_3d_layout_camera()
 
         return {'FINISHED'}
-
-
-class pc_assembly_OT_delete_assembly_layout(Operator):
-    bl_idname = "pc_assembly.delete_assembly_layout"
-    bl_label = "Delete Assembly Layout"
-    bl_description = "This will delete the layout scene"
-    bl_options = {'UNDO'}
-
-    view_name: StringProperty(name="View Name",default="New Layout View")
-
-    @classmethod
-    def poll(cls, context):
-        return True
-
-    def execute(self, context):
-        model_scene = context.scene
-        scene = bpy.data.scenes[self.view_name]
-        bpy.data.scenes.remove(scene)
-        return {'FINISHED'}
-
-    def invoke(self,context,event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=400)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.label(text="Are you sure you want to delete the view layout?")
-        layout.label(text="Layout Name - " + self.view_name)
 
 
 class pc_assembly_OT_create_assembly_dimension(bpy.types.Operator):
@@ -1166,7 +1137,6 @@ classes = (
     pc_assembly_OT_create_assembly_script,
     pc_assembly_OT_select_parent_assembly,
     pc_assembly_OT_create_assembly_layout,
-    pc_assembly_OT_delete_assembly_layout,
     pc_assembly_OT_create_assembly_dimension,
     pc_assembly_OT_show_annotation_properties,
     pc_assembly_OT_show_dimension_properties,
