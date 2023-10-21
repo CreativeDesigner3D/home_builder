@@ -107,6 +107,42 @@ def set_leader_length(dim,hit_location,second_point,view_name,dim_rot):
             if view_name == 'BACK':
                 dim.set_input("Leader Length",-x)                                     
 
+class pc_layout_view_OT_create_3d_view(Operator):
+    bl_idname = "pc_layout_view.create_3d_view"
+    bl_label = "Create 3D View"
+    bl_description = "This will create a new render view"
+    bl_options = {'UNDO'}
+
+    view_name: StringProperty(name="View Name",default="New Layout View")
+
+    def invoke(self,context,event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=300)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self,'view_name')
+
+    def execute(self, context):
+        model_scene = context.scene
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.collection.create(name=self.view_name)
+
+        collection = bpy.data.collections[self.view_name]
+
+        bpy.ops.scene.new(type='EMPTY')
+        context.scene.name = self.view_name
+        assembly_layout = pc_types.Assembly_Layout(context.scene)
+        assembly_layout.scene.world = model_scene.world
+        assembly_layout.setup_assembly_layout()
+
+        obj = assembly_layout.add_assembly_view(collection)
+
+        assembly_layout.add_3d_layout_camera()
+
+        return {'FINISHED'}
+    
+
 class pc_layout_view_OT_toggle_dimension_mode(bpy.types.Operator):
     bl_idname = "pc_layout_view.toggle_dimension_mode"
     bl_label = "Toggle Dimension Mode"
@@ -1026,6 +1062,7 @@ class pc_layout_view_OT_delete_layout_view(Operator):
 
 
 classes = (
+    pc_layout_view_OT_create_3d_view,
     pc_layout_view_OT_toggle_dimension_mode,
     pc_layout_view_OT_add_elevation_dimension,
     pc_layout_view_OT_draw_geo_node_dimension,

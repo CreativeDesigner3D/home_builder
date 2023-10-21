@@ -135,8 +135,6 @@ class VIEW3D_PT_pc_layout_view(Panel):
         #     box = layout.box()
         #     box.menu('VIEW3D_MT_layout_view_creation')
 
-            # box.operator('pc_assembly.create_render_view',text="Add Render View",icon='MENU_PANEL')
-
 
     def draw(self, context):
         layout = self.layout
@@ -165,7 +163,7 @@ class VIEW3D_MT_layout_view_creation(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator('pc_assembly.create_render_view',text="Add Current 3D View",icon='MENU_PANEL')
+        layout.operator('pc_layout_view.create_3d_view',text="Add Current 3D View",icon='MENU_PANEL')
 
 classes = (
     VIEW3D_PT_pc_layout_view,

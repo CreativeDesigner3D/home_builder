@@ -477,42 +477,6 @@ class pc_assembly_OT_create_assembly_layout(Operator):
         row.prop(self,'include_front_view',text="Front")
         row.prop(self,'include_top_view',text="Top")
         row.prop(self,'include_side_view',text="Side")
-        
-
-class pc_assembly_OT_create_render_view(Operator):
-    bl_idname = "pc_assembly.create_render_view"
-    bl_label = "Create Render View"
-    bl_description = "This will create a new render view"
-    bl_options = {'UNDO'}
-
-    view_name: StringProperty(name="View Name",default="New Layout View")
-
-    def invoke(self,context,event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self, width=300)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self,'view_name')
-
-    def execute(self, context):
-        model_scene = context.scene
-        bpy.ops.object.select_all(action='SELECT')
-        bpy.ops.collection.create(name=self.view_name)
-
-        collection = bpy.data.collections[self.view_name]
-
-        bpy.ops.scene.new(type='EMPTY')
-        context.scene.name = self.view_name
-        assembly_layout = pc_types.Assembly_Layout(context.scene)
-        assembly_layout.scene.world = model_scene.world
-        assembly_layout.setup_assembly_layout()
-
-        obj = assembly_layout.add_assembly_view(collection)
-
-        assembly_layout.add_3d_layout_camera()
-
-        return {'FINISHED'}
 
 
 class pc_assembly_OT_create_assembly_dimension(bpy.types.Operator):
@@ -1147,7 +1111,6 @@ classes = (
     pc_assembly_OT_convert_to_object,
     pc_assembly_OT_return_to_model_view,
     pc_assembly_OT_create_assembly_view,
-    pc_assembly_OT_create_render_view,
     pc_assembly_OT_create_pdf_of_assembly_views
 )
 
