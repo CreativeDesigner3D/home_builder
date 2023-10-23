@@ -190,17 +190,14 @@ class pc_layout_view_OT_create_2d_plan_view(bpy.types.Operator):
         return font_obj
 
     def create_wall_width_dim(self,view_layout,parent,y_loc,z_loc,width):
-        dim = pc_types.Dimension()
-        dim.create_dimension(view_layout)
-        dim.obj_bp['PLAN_VIEW'] = True
-        dim.obj_bp.rotation_euler.x = 0
-        dim.obj_bp.rotation_euler.y = 0
-        dim.obj_y.location.y = .2
-        dim.obj_bp.parent = parent
-        dim.obj_bp.location.y = y_loc
-        dim.obj_bp.location.z = z_loc
-        dim.obj_x.location.x = width
-        dim.update_dim_text()
+        dim = pc_types.GeoNodeDimension()
+        dim.create(view_layout)
+        dim.obj.parent = parent
+        dim.obj.data.splines[0].bezier_points[0].co = (0,0,0)
+        dim.obj.data.splines[0].bezier_points[1].co = (width,0,0)  
+        dim.obj.location.z = z_loc
+        dim.obj.location.y = y_loc
+        dim.update()
         return dim
 
     def add_wall_labels(self,wall,view_layout):
