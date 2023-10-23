@@ -825,6 +825,7 @@ class Title_Block(Assembly):
 
     def create_title_block(self,layout_view,title_block_name="Title Block"):
         collection = layout_view.dimension_collection
+        mat = pc_utils.get_dimension_material()
 
         PATH = os.path.join(os.path.dirname(__file__),'assets','Title Blocks',title_block_name + ".blend")
 
@@ -868,6 +869,9 @@ class Title_Block(Assembly):
         self.obj_bp.location.z = -0.694355
 
         for child in self.obj_bp.children:
+            for slot in child.material_slots:
+                if slot.material == None:
+                    slot.material = mat
             if child.type == 'EMPTY':
                 child.hide_viewport = True
 
