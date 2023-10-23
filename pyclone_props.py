@@ -599,6 +599,111 @@ def update_numeric_page_scale(self,context):
     cam_obj.scale = (self.numeric_page_scale,self.numeric_page_scale,self.numeric_page_scale)
     cam_obj.data.ortho_scale = self.numeric_page_scale
 
+def update_page_size(self,context):
+    title_block = None
+    scene = context.scene
+    cam_obj = scene.camera
+    for child in cam_obj.children:
+        if 'IS_ASSEMBLY_BP' in child:
+            title_block = pc_types.Assembly(child)
+
+    if self.page_size == 'LETTER': #8.5 x 11
+        scene.render.resolution_x = int(11 * 140)
+        scene.render.resolution_y = int(8.5 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.386363 
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.7727
+    if self.page_size == 'LEGAL': #8.5 x 14
+        scene.render.resolution_x = int(14 * 140)
+        scene.render.resolution_y = int(8.5 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.303607
+            title_block.obj_bp.location.z = -0.694355   
+            title_block.obj_y.location.y = 0.6072     
+    if self.page_size == 'ANSI_A': #8.5 x 11
+        scene.render.resolution_x = int(11 * 140)
+        scene.render.resolution_y = int(8.5 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.386363 
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.7727 
+    if self.page_size == 'ANSI_B': #11x17
+        scene.render.resolution_x = int(17 * 140)
+        scene.render.resolution_y = int(11 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.3236
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.6472        
+    if self.page_size == 'ANSI_C': #17x22
+        scene.render.resolution_x = int(22 * 140)
+        scene.render.resolution_y = int(17 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.3863
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.7730
+    if self.page_size == 'ANSI_D': #22x34
+        scene.render.resolution_x = int(34 * 140)
+        scene.render.resolution_y = int(22 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.323616
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.647       
+    if self.page_size == 'ANSI_E': #34x44
+        scene.render.resolution_x = int(44 * 140)
+        scene.render.resolution_y = int(34 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.386409 
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.773            
+    if self.page_size == 'ARCH_A': #9x12
+        scene.render.resolution_x = int(12 * 140)
+        scene.render.resolution_y = int(9 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.375046
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.7501          
+    if self.page_size == 'ARCH_B': #12x18
+        scene.render.resolution_x = int(18 * 140)
+        scene.render.resolution_y = int(12 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.333412
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.6671          
+    if self.page_size == 'ARCH_C': #18x24
+        scene.render.resolution_x = int(24 * 140)
+        scene.render.resolution_y = int(18 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.375052
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.7501          
+    if self.page_size == 'ARCH_D': #24x36
+        scene.render.resolution_x = int(36 * 140)
+        scene.render.resolution_y = int(24 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.333384
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.6671           
+    if self.page_size == 'ARCH_E': #36x48
+        scene.render.resolution_x = int(48 * 140)
+        scene.render.resolution_y = int(36 * 140)
+        if title_block:
+            title_block.obj_bp.location.x = -0.5
+            title_block.obj_bp.location.y = -0.375075
+            title_block.obj_bp.location.z = -0.694355
+            title_block.obj_y.location.y = 0.7501          
+
 def update_dimension_info(self,context):
     scene = context.scene
     for obj in scene.objects:
@@ -667,25 +772,19 @@ class PC_Scene_Props(PropertyGroup):
 
     page_size: EnumProperty(name="Page Size",
                             items=[('LETTER',"Letter 216 x 279 mm (8.5 X 11 in)","Letter 216 x 279 mm (8.5 X 11 in)"),
-                                   ('LEGAL',"Legal 216 x 356 mm (8.5 X 14 in)","Legal 216 x 356 mm (8.5 X 14 in)")],
+                                   ('LEGAL',"Legal 216 x 356 mm (8.5 X 14 in)","Legal 216 x 356 mm (8.5 X 14 in)"),
+                                   ('ANSI_A',"ANSI A 216 x 279 mm (8.5 X 11 in)","ANSI A 216 x 279 mm (8.5 X 11 in)"),
+                                   ('ANSI_B',"ANSI B 279 x 432 mm (11 X 17 in)","ANSI B 279 x 432 mm (11 X 17 in)"),
+                                   ('ANSI_C',"ANSI C 432 x 559 mm (17 X 22 in)","ANSI C 432 x 559 mm (17 X 22 in)"),
+                                   ('ANSI_D',"ANSI D 559 x 864 mm (22 X 34 in)","ANSI D 559 x 864 mm (22 X 34 in)"),
+                                   ('ANSI_E',"ANSI E 216 x 279 mm (34 X 44 in)","ANSI E 216 x 279 mm (34 X 44 in)"),
+                                   ('ARCH_A',"ARCH A 229 x 305 mm (9 X 12 in)","ARCH A 229 x 305 mm (9 X 12 in)"),
+                                   ('ARCH_B',"ARCH B 305 x 457 mm (12 X 18 in)","ARCH B 305 x 457 mm (12 X 18 in)"),
+                                   ('ARCH_C',"ARCH C 457 x 610 mm (18 X 24 in)","ARCH C 457 x 610 mm (18 X 24 in)"),
+                                   ('ARCH_D',"ARCH D 610 x 914 mm (24 X 36 in)","ARCH D 610 x 914 mm (24 X 36 in)"),
+                                   ('ARCH_E',"ARCH E 914 x 1219 mm (36 X 48 in)","ARCH E 914 x 1219 mm (36 X 48 in)")],
                               default='LETTER',
-                              update=update_page_scale)
-
-    #TODO: SETUP PAGE SIZES
-    # page_size: EnumProperty(name="Page Size",
-    #                         items=[('LETTER',"Letter 216 x 279 mm (8.5 X 11 in)","Letter 216 x 279 mm (8.5 X 11 in)"),
-    #                                ('LEGAL',"Legal 216 x 356 mm (8.5 X 14 in)","Legal 216 x 356 mm (8.5 X 14 in)"),
-    #                                ('ANSI_A',"ANSI A 216 x 279 mm (8.5 X 11 in)","ANSI A 216 x 279 mm (8.5 X 11 in)"),
-    #                                ('ANSI_B',"ANSI B 279 x 432 mm (11 X 17 in)","ANSI B 279 x 432 mm (11 X 17 in)"),
-    #                                ('ANSI_C',"ANSI C 432 x 559 mm (17 X 22 in)","ANSI C 432 x 559 mm (17 X 22 in)"),
-    #                                ('ANSI_D',"ANSI D 559 x 864 mm (22 X 34 in)","ANSI D 559 x 864 mm (22 X 34 in)"),
-    #                                ('ANSI_E',"ANSI E 216 x 279 mm (34 X 44 in)","ANSI E 216 x 279 mm (34 X 44 in)"),
-    #                                ('ARCH_A',"ARCH A 229 × 305 mm (9 X 12 in)","ARCH A 229 × 305 mm (9 X 12 in)"),
-    #                                ('ARCH_B',"ARCH B 305 × 457 mm (12 X 18 in)","ARCH B 305 × 457 mm (12 X 18 in)"),
-    #                                ('ARCH_C',"ARCH C 457 × 610 mm (18 X 24 in)","ARCH C 457 × 610 mm (18 X 24 in)"),
-    #                                ('ARCH_D',"ARCH D 610 × 914 mm (24 X 36 in)","ARCH D 610 × 914 mm (24 X 36 in)"),
-    #                                ('ARCH_E',"ARCH E 914 × 1219 mm (36 X 48 in)","ARCH E 914 × 1219 mm (36 X 48 in)")],
-    #                           default='LETTER')
+                              update=update_page_size)
 
     fit_to_paper: BoolProperty(name="Fit to Paper",default=False,update=update_page_scale)
 

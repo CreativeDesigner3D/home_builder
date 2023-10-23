@@ -65,6 +65,10 @@ class VIEW3D_PT_pc_layout_view(Panel):
             
             box = layout.box()
             box.label(text="Page Setup",icon='FILE')
+            row = box.row()
+            row.label(text="Page Size")
+            row.prop(scene_props,'page_size',text="")
+
             # row = box.row()
             # row.label(text="Page Size")
             # row.prop(scene_props,'page_size',text="")
