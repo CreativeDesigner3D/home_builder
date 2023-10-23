@@ -242,55 +242,6 @@ def calc_distance(point1, point2):
     """
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 + (point1[2] - point2[2]) ** 2)
 
-def floor_raycast(context, mx, my):
-    '''
-    This casts a ray into the 3D view and returns information based on what is under the mouse
-
-    ARGS
-    context (bpy.context) = current blender context
-    mx (float) = 2D mouse x location
-    my (float) = 2D mouse y location
-
-    RETURNS tuple
-    has_hit (boolean) - determines if an object is under the mouse
-    snapped_location (tuple) - x,y,z location of location under mouse
-    snapped_normal (tuple) - normal direction
-    snapped_rotation (tuple) - rotation
-    face_index (int) - face index under mouse
-    object (bpy.types.Object) - Blender Object under mouse
-    martix (float multi-dimensional array of 4 * 4 items in [-inf, inf]) - matrix of placement under mouse
-    '''
-    r = context.region
-    rv3d = context.region_data
-    coord = mx, my
-
-    # get the ray from the viewport and mouse
-    view_vector = view3d_utils.region_2d_to_vector_3d(r, rv3d, coord)
-    ray_origin = view3d_utils.region_2d_to_origin_3d(r, rv3d, coord)
-    # ray_target = ray_origin + (view_vector * 1000000000)
-    ray_target = ray_origin + view_vector
-
-    snapped_location = mathutils.geometry.intersect_line_plane(ray_origin, ray_target, (0, 0, 0), (0, 0, 1),
-                                                               False)
-    if snapped_location != None:
-        has_hit = True
-        snapped_normal = Vector((0, 0, 1))
-        face_index = None
-        object = None
-        matrix = None
-        snapped_rotation = snapped_normal.to_track_quat('Z', 'Y').to_euler()
-        offset_rotation_amount = 0
-        randomize_rotation_amount = 0
-        randomize_rotation = False
-        if randomize_rotation:
-            randoffset = offset_rotation_amount + math.pi + (
-                    random.random() - 0.5) * randomize_rotation_amount
-        else:
-            randoffset = offset_rotation_amount + math.pi
-        snapped_rotation.rotate_axis('Z', randoffset)
-
-    return has_hit, snapped_location, snapped_normal, snapped_rotation, face_index, object, matrix
-
 def get_selection_point(context, region, event, ray_max=10000.0, objects=None, floor=None, exclude_objects=[],ignore_opening_meshes=False):
     """Run this function on left mouse, execute the ray cast"""
     # get the context arguments

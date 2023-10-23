@@ -1,6 +1,6 @@
 import bpy
 import os, math
-from . import pc_utils, pc_unit
+from . import pc_utils, pc_unit, pc_const
 import xml.etree.ElementTree as ET
 
 class HB_XML():
@@ -62,152 +62,238 @@ class HB_XML():
             
         self.format_xml_file(path)
 
-class GeoPart:
+# class GeoPart:
 
-    coll = None
-    obj = None
-    node_group = None
-    modifier = None
+#     coll = None
+#     obj = None
+#     node_group = None
+#     modifier = None
 
-    def __init__(self,obj=None,filepath=""):
-        if obj:
-            self.obj = obj
-            for mod in self.obj.modifiers:
-                if mod.type == 'NODES':
-                    self.mod = mod              
+#     def __init__(self,obj=None,filepath=""):
+#         if obj:
+#             self.obj = obj
+#             for mod in self.obj.modifiers:
+#                 if mod.type == 'NODES':
+#                     self.mod = mod              
 
-        if filepath:
-            self.coll = bpy.context.view_layer.active_layer_collection.collection
+#         if filepath:
+#             self.coll = bpy.context.view_layer.active_layer_collection.collection
 
-            self.obj = pc_utils.create_empty_mesh("Door")
-            self.coll.objects.link(self.obj)
+#             self.obj = pc_utils.create_empty_mesh("Door")
+#             self.coll.objects.link(self.obj)
             
-            # with bpy.data.libraries.load(filepath) as (data_from, data_to):
-            #     data_to.objects = data_from.objects
-            ngroup = None
-            if "Door" in bpy.data.node_groups:
-                ngroup = bpy.data.node_groups["Door"]
+#             # with bpy.data.libraries.load(filepath) as (data_from, data_to):
+#             #     data_to.objects = data_from.objects
+#             ngroup = None
+#             if "Door" in bpy.data.node_groups:
+#                 ngroup = bpy.data.node_groups["Door"]
 
-            else:
-                with bpy.data.libraries.load(filepath) as (data_from, data_to):
-                    data_to.node_groups = ["Door"]
+#             else:
+#                 with bpy.data.libraries.load(filepath) as (data_from, data_to):
+#                     data_to.node_groups = ["Door"]
                     
-                for node_group in data_to.node_groups:
-                    ngroup = node_group
-                    # if "geo_part" in obj and obj["geo_part"] == True:
-                    #     self.obj = obj
+#                 for node_group in data_to.node_groups:
+#                     ngroup = node_group
+#                     # if "geo_part" in obj and obj["geo_part"] == True:
+#                     #     self.obj = obj
                     
-                    # self.coll.objects.link(obj)
+#                     # self.coll.objects.link(obj)
 
-            mod = self.obj.modifiers.new("Door",'NODES')
-            mod.node_group = ngroup
-            self.node_group = mod.node_group
+#             mod = self.obj.modifiers.new("Door",'NODES')
+#             mod.node_group = ngroup
+#             self.node_group = mod.node_group
             
-    def get_prompt(self,name):
-        if name in self.obj.pyclone.prompts:
-            return self.obj.pyclone.prompts[name]
+#     def get_prompt(self,name):
+#         if name in self.obj.pyclone.prompts:
+#             return self.obj.pyclone.prompts[name]
         
-        for calculator in self.obj.pyclone.calculators:
-            if name in calculator.prompts:
-                return calculator.prompts[name]
+#         for calculator in self.obj.pyclone.calculators:
+#             if name in calculator.prompts:
+#                 return calculator.prompts[name]
 
-    def loc_x(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.obj.location.x = value
+#     def loc_x(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.obj.location.x = value
+#         else:
+#             self.obj.pyclone.loc_x(expression,variables)
+
+#     def loc_y(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.obj.location.y = value
+#         else:
+#             self.obj.pyclone.loc_y(expression,variables)
+
+#     def loc_z(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.obj.location.z = value
+#         else:
+#             self.obj.pyclone.loc_z(expression,variables)           
+
+#     def rot_x(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.obj.rotation_euler.x = value
+#         else:
+#             self.obj.pyclone.rot_x(expression,variables)             
+
+#     def rot_y(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.obj.rotation_euler.y = value
+#         else:
+#             self.obj.pyclone.rot_y(expression,variables)      
+
+#     def rot_z(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.obj.rotation_euler.z = value
+#         else:
+#             self.obj.pyclone.rot_z(expression,variables)      
+
+#     def dim_x(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.mod["Input_2"] = value
+#             return
+#         driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_2"]')
+#         pc_utils.add_driver_variables(driver,variables)
+#         driver.driver.expression = expression
+
+#     def dim_y(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.mod["Input_3"] = value
+#             return
+#         driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_3"]')
+#         pc_utils.add_driver_variables(driver,variables)
+#         driver.driver.expression = expression
+
+#     def dim_z(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.mod["Input_4"] = bpy.utils.units.to_value('METRIC','LENGTH',str(value)+"m")
+#             return
+#         driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_4"]')
+#         pc_utils.add_driver_variables(driver,variables)
+#         driver.driver.expression = expression
+
+#     def mirror_x(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.mod["Input_5"] = value
+#             return
+#         driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_5"]')
+#         pc_utils.add_driver_variables(driver,variables)
+#         driver.driver.expression = expression
+
+#     def mirror_y(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.mod["Input_6"] = value
+#             return
+#         driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_6"]')
+#         pc_utils.add_driver_variables(driver,variables)
+#         driver.driver.expression = expression
+
+#     def mirror_z(self,expression="",variables=[],value=0):
+#         if expression == "":
+#             self.mod["Input_7"] = value
+#             return
+#         driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_7"]')
+#         pc_utils.add_driver_variables(driver,variables)
+#         driver.driver.expression = expression
+
+#     def hide(self,expression="",variables=[],value=0):
+#         hide = self.get_prompt("Hide")
+#         if hide and expression == "":
+#             hide.set_value(value)
+#         else:
+#             hide.set_formula(expression,variables)     
+
+#     def prompt(self,prompt_name="",expression="",variables=[],value=0):
+#         prompt = self.get_prompt(prompt_name)
+#         if prompt and expression == "":
+#             prompt.set_value(value)
+#         else:
+#             prompt.set_formula(expression,variables)   
+
+class Room:
+
+    scene = None
+
+    def __init__(self,scene):
+        pass
+
+    def get_walls(self):
+        wall_bps = []
+        for obj in bpy.data.objects:
+            if pc_const.IS_WALL_BP in obj and obj not in wall_bps:
+                wall_bps.append(obj)
+        walls = []
+        for obj in wall_bps:
+            walls.append(Assembly(obj))
+        return walls
+
+    def show_all_walls(self,context):
+        walls = []
+        for obj in context.scene.objects:
+            if 'IS_WALL_BP' in obj:
+                wall_is_hidden = False
+                for child in obj.children:
+                    if child.type == 'MESH' and child.hide_get():
+                        wall_is_hidden = True
+                if wall_is_hidden:
+                    walls.append(obj)
+        
+        for wall in walls:
+            bpy.ops.home_builder.show_hide_walls(wall_obj_bp=wall.name)
+
+    def get_center_of_room(self):
+        wall_assemblies = self.get_walls()
+
+        first_wall = wall_assemblies[0]
+        if first_wall:
+            largest_x = first_wall.obj_bp.matrix_world[0][3]
+            largest_y = first_wall.obj_bp.matrix_world[1][3]
+            smallest_x = first_wall.obj_bp.matrix_world[0][3]
+            smallest_y = first_wall.obj_bp.matrix_world[1][3]
+            tallest_wall = first_wall.obj_z.location.z
+
+        for assembly in wall_assemblies:
+            start_point = (assembly.obj_bp.matrix_world[0][3],assembly.obj_bp.matrix_world[1][3],0)
+            end_point = (assembly.obj_x.matrix_world[0][3],assembly.obj_x.matrix_world[1][3],0)
+            if assembly.obj_z.location.z > tallest_wall:
+                tallest_wall = assembly.obj_z.location.z
+            
+            if start_point[0] > largest_x:
+                largest_x = start_point[0]
+            if start_point[1] > largest_y:
+                largest_y = start_point[1]
+            if start_point[0] < smallest_x:
+                smallest_x = start_point[0]
+            if start_point[1] < smallest_y:
+                smallest_y = start_point[1]
+            if end_point[0] > largest_x:
+                largest_x = end_point[0]
+            if end_point[1] > largest_y:
+                largest_y = end_point[1]
+            if end_point[0] < smallest_x:
+                smallest_x = end_point[0]
+            if end_point[1] < smallest_y:
+                smallest_y = end_point[1]
+
+        if largest_x > smallest_x:
+            x = (largest_x - smallest_x)/2 + smallest_x
         else:
-            self.obj.pyclone.loc_x(expression,variables)
+            x = (smallest_x - largest_x)/2 + largest_x
 
-    def loc_y(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.obj.location.y = value
+        if largest_y > smallest_y:
+            y = (largest_y - smallest_y)/2 + smallest_y
         else:
-            self.obj.pyclone.loc_y(expression,variables)
+            y = (smallest_y - largest_y)/2 + largest_y
 
-    def loc_z(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.obj.location.z = value
+        z = tallest_wall - pc_unit.inch(.01)
+
+        width = largest_x - smallest_x
+        depth = largest_y - smallest_y
+        if width > depth:
+            size = width
         else:
-            self.obj.pyclone.loc_z(expression,variables)           
+            size = depth
+        return x,y,z,size  
 
-    def rot_x(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.obj.rotation_euler.x = value
-        else:
-            self.obj.pyclone.rot_x(expression,variables)             
-
-    def rot_y(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.obj.rotation_euler.y = value
-        else:
-            self.obj.pyclone.rot_y(expression,variables)      
-
-    def rot_z(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.obj.rotation_euler.z = value
-        else:
-            self.obj.pyclone.rot_z(expression,variables)      
-
-    def dim_x(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.mod["Input_2"] = value
-            return
-        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_2"]')
-        pc_utils.add_driver_variables(driver,variables)
-        driver.driver.expression = expression
-
-    def dim_y(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.mod["Input_3"] = value
-            return
-        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_3"]')
-        pc_utils.add_driver_variables(driver,variables)
-        driver.driver.expression = expression
-
-    def dim_z(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.mod["Input_4"] = bpy.utils.units.to_value('METRIC','LENGTH',str(value)+"m")
-            return
-        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_4"]')
-        pc_utils.add_driver_variables(driver,variables)
-        driver.driver.expression = expression
-
-    def mirror_x(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.mod["Input_5"] = value
-            return
-        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_5"]')
-        pc_utils.add_driver_variables(driver,variables)
-        driver.driver.expression = expression
-
-    def mirror_y(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.mod["Input_6"] = value
-            return
-        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_6"]')
-        pc_utils.add_driver_variables(driver,variables)
-        driver.driver.expression = expression
-
-    def mirror_z(self,expression="",variables=[],value=0):
-        if expression == "":
-            self.mod["Input_7"] = value
-            return
-        driver = self.obj.driver_add('modifiers["' + self.mod.name + '"]["Input_7"]')
-        pc_utils.add_driver_variables(driver,variables)
-        driver.driver.expression = expression
-
-    def hide(self,expression="",variables=[],value=0):
-        hide = self.get_prompt("Hide")
-        if hide and expression == "":
-            hide.set_value(value)
-        else:
-            hide.set_formula(expression,variables)     
-
-    def prompt(self,prompt_name="",expression="",variables=[],value=0):
-        prompt = self.get_prompt(prompt_name)
-        if prompt and expression == "":
-            prompt.set_value(value)
-        else:
-            prompt.set_formula(expression,variables)   
 
 class Assembly:
 
@@ -544,6 +630,27 @@ class Assembly:
         else:
             self.obj_z.pyclone.loc_z(expression,variables)                                                                      
 
+class Wall(Assembly):
+
+    def __init__(self,obj_bp):
+        super().__init__(obj_bp=obj_bp)  
+    
+    def get_wall_assembly_bps_by_tag(self,tag,loc_sort='X'):
+        """ This returns a sorted list of all of the assemblies base points
+            parented to the wall
+        """
+        list_obj_bp = []
+        for child in self.obj_bp.children:
+            cabinet_bp = pc_utils.get_bp_by_tag(child,tag)
+            if cabinet_bp:
+                list_obj_bp.append(child)
+        if loc_sort == 'X':
+            list_obj_bp.sort(key=lambda obj: obj.location.x, reverse=False)
+        if loc_sort == 'Y':
+            list_obj_bp.sort(key=lambda obj: obj.location.y, reverse=False)            
+        if loc_sort == 'Z':
+            list_obj_bp.sort(key=lambda obj: obj.location.z, reverse=False)
+        return list_obj_bp
 
 class Assembly_Layout():
 
@@ -674,6 +781,7 @@ class Assembly_Layout():
         spd = bpy.context.space_data
         bpy.ops.object.camera_add(align='VIEW')
         camera = bpy.context.active_object
+        self.camera = camera
         camera["PROMPT_ID"] = "camera_presets.camera_properties"   
         bpy.ops.view3d.camera_to_view()
         camera.data.clip_start = spd.clip_start
@@ -684,8 +792,8 @@ class Assembly_Layout():
         spd.region_3d.view_camera_offset = [0,0]
         spd.region_3d.view_camera_zoom = 29.0746         
 
-        self.scene.render.resolution_x = 1920
-        self.scene.render.resolution_y = 1486
+        self.scene.render.resolution_x = int(11 * 140)
+        self.scene.render.resolution_y = int(8.5 * 140)
   
 
 class Title_Block(Assembly):
@@ -767,8 +875,8 @@ class Title_Block(Assembly):
         # self.obj_bp.scale = (11,11,11)
         self.obj_bp.location.x = -0.5
         self.obj_bp.location.y = -0.386363 
-        self.obj_bp.location.z = -1
-        self.obj_bp.scale = (3.5791,3.5791,3.5791)
+        self.obj_bp.location.z = -0.694355
+        # self.obj_bp.scale = (3.5791,3.5791,3.5791)
 
         # if bpy.context.scene.pyclone.page_size == 'LETTER':
         #     self.obj_bp.location.x = -0.13959

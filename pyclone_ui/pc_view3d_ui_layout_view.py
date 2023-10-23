@@ -164,6 +164,8 @@ class VIEW3D_MT_layout_view_creation(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator('pc_layout_view.create_3d_view',text="Add Current 3D View",icon='MENU_PANEL')
+        layout.operator('pc_layout_view.create_2d_plan_view',text="Add 2D Plan View",icon='MENU_PANEL')
+        layout.operator('pc_layout_view.create_2d_elevation_views',text="Add 2D Elevation Views",icon='MENU_PANEL')
 
 classes = (
     VIEW3D_PT_pc_layout_view,

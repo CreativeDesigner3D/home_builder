@@ -1,5 +1,14 @@
+import bpy
 import math
 from . import pc_types, pc_unit, pc_utils, pc_const
+
+def get_walls():
+    walls = []
+    for obj in bpy.data.objects:
+        wall_bp = pc_utils.get_bp_by_tag(obj,'IS_WALL_BP')
+        if wall_bp and wall_bp not in walls:
+            walls.append(wall_bp)
+    return walls
 
 def get_wall_assemblies(wall):
     """ This returns a sorted list of all of the assemblies base points
